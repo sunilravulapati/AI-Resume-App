@@ -19,7 +19,7 @@ function RootLayout() {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <Header />
-      <main className="flex-grow max-w-7xl mx-auto w-full px-6 py-8">
+      <main className="grow max-w-7xl mx-auto w-full px-6 py-8">
         <Outlet />
       </main>
       <Footer />
