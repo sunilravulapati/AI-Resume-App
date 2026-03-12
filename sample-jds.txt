@@ -1,0 +1,76 @@
+Company: TechNova Solutions
+Location: Hyderabad, India
+Experience: 0–2 years
+Employment Type: Full-time
+
+About the Role
+
+We are looking for a motivated Software Engineer (Full-Stack) to join our engineering team. The ideal candidate should have strong fundamentals in web development, data structures, and backend systems, and a passion for building scalable applications.
+
+You will work closely with product managers and designers to develop modern web applications and improve system performance.
+
+Responsibilities
+
+Design and develop scalable full-stack web applications
+
+Build responsive user interfaces using React.js
+
+Develop RESTful APIs using Node.js and Express
+
+Integrate backend services with MongoDB or SQL databases
+
+Optimize application performance and improve code quality
+
+Participate in code reviews and technical discussions
+
+Write clean, maintainable, and well-documented code
+
+Collaborate with cross-functional teams to deliver features
+
+Required Skills
+
+Strong knowledge of JavaScript / TypeScript
+
+Experience with React.js
+
+Experience with Node.js and Express.js
+
+Understanding of REST APIs
+
+Experience with MongoDB or SQL databases
+
+Good understanding of HTML, CSS, Tailwind
+
+Familiarity with Git and GitHub
+
+Strong Data Structures and Algorithms fundamentals
+
+Preferred Skills
+
+Experience with Next.js
+
+Knowledge of Docker or containerization
+
+Familiarity with CI/CD pipelines
+
+Experience with AWS / Cloud platforms
+
+Understanding of system design basics
+
+Qualifications
+
+Bachelor’s degree in Computer Science / IT or related field
+
+Strong problem-solving and analytical skills
+
+Ability to work in a fast-paced team environment
+
+Bonus
+
+Personal projects on GitHub
+
+Participation in hackathons or coding competitions
+
+Experience building AI/ML applications
+
+

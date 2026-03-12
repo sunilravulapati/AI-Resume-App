@@ -7,6 +7,9 @@ import {
   formCard, inputClass, labelClass, mutedText, bodyText,
   successClass, loadingClass, emptyStateClass, divider
 } from '../styles/common';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import TailoredPDF from './TailoredPDF';
+import useUserStore from '../store/userStore';
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
@@ -16,6 +19,7 @@ export default function StudentDashboard() {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState(null);
+  const { userRecord } = useUserStore();
 
   // History State
   const [history, setHistory] = useState([]);
@@ -400,6 +404,18 @@ export default function StudentDashboard() {
                       </div>
                     ))}
                   </div>
+                  {/* PDF Download Button */}
+                <div className="pt-6 border-t border-[#e8e8ed] mt-6">
+                  <PDFDownloadLink 
+                    document={<TailoredPDF tailoredData={tailoredData} user={userRecord} />} 
+                    fileName={`Tailored_Resume_${userRecord?.firstName}.pdf`}
+                    className={`${primaryBtn} w-full py-3 flex items-center justify-center gap-2`}
+                  >
+                    {({ loading }) => (
+                      loading ? 'Generating PDF...' : '⬇️ Download ATS-Ready PDF'
+                    )}
+                  </PDFDownloadLink>
+                </div>
                 </div>
               </div>
             )}

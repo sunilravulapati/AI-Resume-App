@@ -131,7 +131,7 @@ export default function Home() {
         ══════════════════════════════════════════════ */}
         <section className="relative min-h-[92vh] flex items-center dot-grid">
           {/* radial fade over grid */}
-          <div className="absolute inset-0 bg-gradient-to-b from-white via-white/80 to-white pointer-events-none" />
+          <div className="absolute inset-0 bg-linear-to-b from-white via-white/80 to-white pointer-events-none" />
 
           <div className="relative max-w-5xl mx-auto px-6 py-28 text-center">
 

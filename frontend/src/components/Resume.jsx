@@ -99,7 +99,7 @@ export default function Resume() {
                 <span className="text-base font-normal text-[#a1a1a6]">/100</span>
               </p>
             </div>
-            <div className="flex flex-col gap-1.5 min-w-[100px]">
+            <div className="flex flex-col gap-1.5 min-w-25">
               <span className={`text-xs font-semibold ${badge.text}`}>{badge.label}</span>
               <div className="w-full bg-[#e8e8ed] rounded-full h-2 overflow-hidden">
                 <div className={`h-full rounded-full ${badge.bar}`} style={{ width: `${score}%` }} />
@@ -113,7 +113,7 @@ export default function Resume() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
         {/* LEFT: PDF / Text Preview */}
-        <div className="bg-[#f5f5f7] rounded-2xl border border-[#e8e8ed] overflow-hidden flex flex-col h-[780px]">
+        <div className="bg-[#f5f5f7] rounded-2xl border border-[#e8e8ed] overflow-hidden flex flex-col h-195">
           <div className="bg-[#ebebf0] px-4 py-2.5 border-b border-[#e8e8ed]">
             <p className={`${mutedText} text-[0.65rem] uppercase tracking-wider font-semibold text-center`}>
               Original Document
