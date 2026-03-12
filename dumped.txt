@@ -1,0 +1,105 @@
+dumped code will be here, mainly for like future references
+import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from '@clerk/clerk-react'
+import UploadTest from './components/UploadTest'
+
+function App() {
+  return (
+    <div className="min-h-screen bg-gray-50 p-8">
+      {/* Header Section */}
+      <header className="flex justify-between items-center bg-white p-4 rounded-lg shadow mb-8">
+        <h1 className="text-xl font-bold text-gray-800">AI Resume Analyzer</h1>
+        
+        <div>
+          <SignedOut>
+            <div className="space-x-4">
+              {/* Added some basic Tailwind styling to the buttons */}
+              <div className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                <SignInButton mode="modal" />
+              </div>
+              <div className="inline-block bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300">
+                <SignUpButton mode="modal" />
+              </div>
+            </div>
+          </SignedOut>
+          
+          <SignedIn>
+            {/* Clerk's pre-built user profile button */}
+            <UserButton />
+          </SignedIn>
+        </div>
+      </header>
+
+      {/* Main Content Section */}
+      <main>
+        <SignedOut>
+          <div className="text-center mt-20 text-gray-500">
+            <p>Please sign in to access the Resume Analyzer.</p>
+          </div>
+        </SignedOut>
+
+        <SignedIn>
+          {/* Your PDF Upload Component renders here once logged in */}
+          <UploadTest />
+        </SignedIn>
+      </main>
+    </div>
+  )
+}
+
+export default App
+
+import axios from "axios";
+import { useNavigate } from "react-router";
+import toast from "react-hot-toast";
+import useUserStore from "../store/userStore";
+
+export default function Onboarding() {
+  const { userRecord, fetchUser } = useUserStore();
+  const navigate = useNavigate();
+
+  const selectRole = async (role) => {
+    try {
+      // Send your MongoDB _id (not clerkId anymore)
+      await axios.put("http://localhost:4000/api/user/update-role", {
+        userId: userRecord._id, 
+        role: role
+      });
+      
+      toast.success(`Welcome! You are now a ${role}`);
+      
+      // Refresh local store so role is no longer 'pending'
+      await fetchUser(); 
+      
+      if (role === 'student') navigate("/student-dashboard");
+      else navigate("/recruiter-dashboard");
+    } catch (err) {
+      toast.error("Failed to save selection");
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[80vh]">
+      <h1 className="text-3xl font-bold mb-4">Final Step</h1>
+      <p className="text-gray-500 mb-8">Tell us how you'll be using the platform.</p>
+      <div className="flex gap-8">
+        <button 
+          onClick={() => selectRole('student')}
+          className="p-8 border-2 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition text-center w-64"
+        >
+          <div className="text-3xl mb-2">🎓</div>
+          <h2 className="text-xl font-bold">Student</h2>
+          <p className="text-gray-500 text-sm mt-2">Analyze and improve my resume</p>
+        </button>
+        
+        <button 
+          onClick={() => selectRole('recruiter')}
+          className="p-8 border-2 rounded-xl hover:border-green-500 hover:bg-green-50 transition text-center w-64"
+        >
+          <div className="text-3xl mb-2">💼</div>
+          <h2 className="text-xl font-bold">Recruiter</h2>
+          <p className="text-gray-500 text-sm mt-2">Find and score top candidates</p>
+        </button>
+      </div>
+    </div>
+  );
+}
