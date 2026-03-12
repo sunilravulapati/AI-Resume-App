@@ -10,7 +10,21 @@ config()
 
 const app = exp()
 
-app.use(cors({ origin: ["http://localhost:5173"],credentials:true }));
+const allowedOrigins = [
+  'http://localhost:5173', // local dev environment
+  'https://your-app-name.vercel.app'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true // Crucial for HTTP-only cookies to work across domains
+}));
 app.use(exp.json());
 app.use(cookieParser());
 app.use("/api/resume", resumeRouter);
