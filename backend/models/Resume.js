@@ -8,7 +8,7 @@ const resumeSchema = new Schema({
   parsedText: String,
 
   atsScore: { type: Number, min: 0, max: 100 },
-
+  fileUrl:{type: String},
   feedback: {
     strengths: [String],
     improvements: [String],

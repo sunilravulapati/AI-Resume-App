@@ -1,4 +1,4 @@
-import { Outlet, Navigate, useLocation } from 'react-router';
+import { Outlet, useLocation } from 'react-router';
 import Header from './Header';
 import Footer from './Footer';
 import { useEffect } from 'react';
@@ -9,19 +9,24 @@ function RootLayout() {
   const location = useLocation();
   const token = localStorage.getItem("token");
 
+  // If token exists but store is empty, sync with backend
   useEffect(() => {
-    // If token exists but store is empty, sync with backend
     if (token && !userRecord && !loading) {
-      fetchUser(); 
+      fetchUser();
     }
   }, [token, userRecord, loading, fetchUser]);
 
+  const isHome = location.pathname === '/';
+
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-white">
       <Header />
-      <main className="grow max-w-7xl mx-auto w-full px-6 py-8">
+
+      {/* Home gets full-bleed; every other page gets the standard container */}
+      <main className={isHome ? 'grow w-full' : 'grow max-w-7xl mx-auto w-full px-6 py-8'}>
         <Outlet />
       </main>
+
       <Footer />
     </div>
   );

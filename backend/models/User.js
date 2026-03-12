@@ -7,16 +7,17 @@ const userSchema = new Schema({
   email: { type: String, required: true, unique: true },
   mobile: { type: String, required: true },
   password: { type: String, required: true }, // Hashed with bcrypt
-  role: { 
-    type: String, 
-    enum: ['student', 'recruiter', 'faculty','admin'], 
-    required: true 
+  role: {
+    type: String,
+    enum: ['student', 'recruiter', 'faculty', 'admin'],
+    required: true
   },
-  resumes: [{ 
-    type: Types.ObjectId, 
-    ref: "Resume" 
+  isActive: { type: Boolean, default: true },
+  resumes: [{
+    type: Types.ObjectId,
+    ref: "Resume"
   }]
-}, { timestamps: true,strict:"throw", versionKey:false });
+}, { timestamps: true, strict: "throw", versionKey: false });
 
 const User = model('User', userSchema);
 export default User

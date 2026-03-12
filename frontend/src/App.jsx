@@ -7,6 +7,7 @@ import Login from "./components/Login";
 import Register from "./components/Register";
 import StudentDashboard from "./components/StudentDashboard";
 import RecruiterDashboard from "./components/RecruiterDashboard";
+import Resume from "./components/Resume";
 
 import useUserStore from "./store/userStore";
 
@@ -47,6 +48,14 @@ function App() {
           element: (
             <ProtectedRoute role="recruiter">
               <RecruiterDashboard />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "resume/:id",
+          element: (
+            <ProtectedRoute>
+              <Resume />
             </ProtectedRoute>
           ),
         },

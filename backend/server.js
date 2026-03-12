@@ -5,6 +5,7 @@ import { config } from 'dotenv'
 import cookieParser from 'cookie-parser'
 import {resumeRouter} from './apis/resume.js';
 import {userRouter} from './apis/user.js'
+import path from 'path';
 config()
 
 const app = exp()
@@ -14,7 +15,7 @@ app.use(exp.json());
 app.use(cookieParser());
 app.use("/api/resume", resumeRouter);
 app.use("/api/user", userRouter);
-
+app.use('/uploads', exp.static(path.join(process.cwd(), 'uploads')));
 const connectDB = async () => {
     try{
         await connect(process.env.DB_URL)
