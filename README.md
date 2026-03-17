@@ -195,7 +195,7 @@ ResumeAI goes beyond simple keyword matching. It combines:
 ## 👨‍💻 Developer
 
 **Sunil Ravulapati**  
-B.Tech Computer Science — Anurag University | CGPA: 9.19  
+B.Tech Computer Science — Anurag University | CGPA: 9.05  
 💻 Full-Stack Developer &nbsp;·&nbsp; 🏆 Competitive Programmer
 
 | Platform | Stats |
