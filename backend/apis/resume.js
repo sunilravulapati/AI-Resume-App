@@ -3,97 +3,109 @@ import multer from "multer";
 import PDFParser from "pdf2json";
 import { Resume } from "../models/Resume.js";
 import User from "../models/User.js";
-import { calculateProgrammaticScore } from "../services/scorer.js";
-import { analyzeResume, tailorResume } from "../services/aiAnalyzer.js";
+import { calculateProgrammaticScore, calculateFinalScore } from "../services/scorer.js";
+import { analyzeResume, analyzeResumeTargeted, tailorResume, generateLatexWithAI } from "../services/aiAnalyzer.js";
 import { extractJSON } from "../utils/jsonExtractor.js";
 import { verifyToken } from "../middleware/auth.js";
+import { parseResume } from "../services/resumeParser.js";
 import fs from "fs";
 
 export const resumeRouter = express.Router();
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    // Ensure the folder exists
-    if (!fs.existsSync('uploads')) {
-      fs.mkdirSync('uploads');
-    }
-    cb(null, 'uploads/');
+    if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
+    cb(null, "uploads/");
   },
   filename: function (req, file, cb) {
-    // Make the filename unique to avoid overwriting
-    cb(null, Date.now() + '-' + file.originalname.replace(/\s+/g, '-'));
-  }
+    cb(null, Date.now() + "-" + file.originalname.replace(/\s+/g, "-"));
+  },
 });
+const upload = multer({ storage });
 
-const upload = multer({ storage: storage });
 
-// 1. UPLOAD & ANALYZE ROUTE (Protected: Students Only)
-// 1. UPLOAD & ANALYZE ROUTE (Protected: Students Only)
-resumeRouter.post("/upload", verifyToken("student"), upload.single("resume"), async (req, res) => {
-  try {
-    if (!req.file) return res.status(400).json({ error: "No resume uploaded" });
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. UPLOAD & ANALYZE
+// ─────────────────────────────────────────────────────────────────────────────
+resumeRouter.post(
+  "/upload",
+  verifyToken("student"),
+  upload.single("resume"),
+  async (req, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ error: "No resume uploaded" });
 
-    // 👇 ADD THIS LINE RIGHT HERE! 👇
-    const fileUrl = `http://localhost:4000/uploads/${req.file.filename}`;
+      const fileUrl        = `http://localhost:4000/uploads/${req.file.filename}`;
+      const analysisMode   = req.body.analysisMode   || "general";
+      const jobDescription = req.body.jobDescription || "";
+      const company        = req.body.company        || "";
+      const roleName       = req.body.roleName       || "";
 
-    const pdfParser = new PDFParser(null, 1);
-
-    pdfParser.on("pdfParser_dataError", (errData) => {
-      return res.status(500).json({ error: "Failed to parse PDF" });
-    });
-
-    pdfParser.on("pdfParser_dataReady", async () => {
-      try {
-        let extractedText = pdfParser.getRawTextContent().replace(/\s+/g, " ").trim();
-
-        const programmaticScore = calculateProgrammaticScore(extractedText);
-        const aiResponse = await analyzeResume(extractedText);
-        const analysisData = extractJSON(aiResponse);
-        const finalScore = programmaticScore + (analysisData.semanticScore || 0);
-
-        // SAVE TO MONGODB
-        const newResume = await Resume.create({
-          userId: req.user.id,
-          parsedText: extractedText,
-          atsScore: finalScore,
-          fileUrl: fileUrl, // <--- Now this knows what to save!
-          feedback: {
-            strengths: analysisData.strengths,
-            improvements: analysisData.improvements,
-            summary: analysisData.summary
-          }
-        });
-
-        // Link resume to User
-        await User.findByIdAndUpdate(req.user.id, {
-          $push: { resumes: newResume._id }
-        });
-
-        return res.status(200).json({
-          message: "Analyzed successfully",
-          analysis: {
-            atsScore: finalScore,
-            strengths: analysisData.strengths,
-            improvements: analysisData.improvements,
-            summary: analysisData.summary
-          }
-        });
-      } catch (err) {
-        console.error("AI Analysis Error:", err); // <-- Pro-tip: Log this so you can see errors in your terminal
-        return res.status(500).json({ error: "AI analysis failed" });
+      if (analysisMode === "targeted" && !jobDescription.trim()) {
+        return res.status(400).json({ error: "Job description is required for Targeted Analysis." });
       }
-    });
 
-    pdfParser.loadPDF(req.file.path);
-  } catch (err) {
-    console.error("Upload Route Error:", err);
-    return res.status(500).json({ error: "Server error" });
+      const pdfParser = new PDFParser(null, 1);
+      pdfParser.on("pdfParser_dataError", () => res.status(500).json({ error: "Failed to parse PDF" }));
+
+      pdfParser.on("pdfParser_dataReady", async () => {
+        try {
+          // rawText keeps structure for PDF section detection
+          const rawText = pdfParser.getRawTextContent();
+          // extractedText is normalised for scoring, AI analysis and DB storage
+          const extractedText = rawText.replace(/\s+/g, " ").trim();
+          parseResume(extractedText);
+
+          const programmaticScore = calculateProgrammaticScore(extractedText);
+
+          let aiResponse;
+          if (analysisMode === "targeted") {
+            aiResponse = await analyzeResumeTargeted(extractedText, jobDescription, company, roleName);
+          } else {
+            aiResponse = await analyzeResume(extractedText);
+          }
+
+          const analysisData = extractJSON(aiResponse) || {};
+          const finalScore   = calculateFinalScore(programmaticScore, analysisData.semanticScore || 0);
+
+          const newResume = await Resume.create({
+            userId: req.user.id, parsedText: extractedText, rawText: rawText, atsScore: finalScore, fileUrl, analysisMode,
+            ...(analysisMode === "targeted" && { jobDescription, company: company || undefined, roleName: roleName || undefined }),
+            feedback: {
+              strengths: analysisData.strengths || [], improvements: analysisData.improvements || [], summary: analysisData.summary || "",
+              ...(analysisMode === "targeted" && { matchScore: analysisData.matchScore ?? undefined, keywordMatchRate: analysisData.keywordMatchRate ?? undefined, missingSkills: analysisData.missingSkills || [], experienceGap: analysisData.experienceGap || undefined }),
+            },
+          });
+
+          await User.findByIdAndUpdate(req.user.id, { $push: { resumes: newResume._id } });
+
+          return res.status(200).json({
+            message: "Analyzed successfully",
+            analysis: {
+              atsScore: finalScore, strengths: analysisData.strengths || [], improvements: analysisData.improvements || [], summary: analysisData.summary || "",
+              ...(analysisMode === "targeted" && { matchScore: analysisData.matchScore ?? null, keywordMatchRate: analysisData.keywordMatchRate ?? null, missingSkills: analysisData.missingSkills || [], experienceGap: analysisData.experienceGap || null, roleName: roleName || null }),
+            },
+          });
+        } catch (err) {
+          console.error("AI Analysis Error:", err);
+          return res.status(500).json({ error: "AI analysis failed" });
+        }
+      });
+
+      pdfParser.loadPDF(req.file.path);
+    } catch (err) {
+      console.error("Upload Route Error:", err);
+      return res.status(500).json({ error: "Server error" });
+    }
   }
-});
+);
 
-// 2. GET RESUME HISTORY ROUTE (Protected: Students Only)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2. GET RESUME HISTORY
+// ─────────────────────────────────────────────────────────────────────────────
 resumeRouter.get("/history", verifyToken("student"), async (req, res) => {
   try {
-    // Notice we use req.user.id now!
     const history = await Resume.find({ userId: req.user.id }).sort({ createdAt: -1 });
     res.status(200).json(history);
   } catch (error) {
@@ -101,15 +113,13 @@ resumeRouter.get("/history", verifyToken("student"), async (req, res) => {
   }
 });
 
-// 3. GET ALL RESUMES ROUTE (Protected: Recruiters & Admins Only)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. GET ALL RESUMES (Recruiters & Admins)
+// ─────────────────────────────────────────────────────────────────────────────
 resumeRouter.get("/all", verifyToken("recruiter", "admin"), async (req, res) => {
   try {
-    // Fetch all resumes, sort by highest ATS score first
-    // Populate the userId field to get the student's contact details
-    const resumes = await Resume.find()
-      .sort({ atsScore: -1 })
-      .populate("userId", "firstName lastName email mobile username");
-
+    const resumes = await Resume.find().sort({ atsScore: -1 }).populate("userId", "firstName lastName email mobile username");
     res.status(200).json(resumes);
   } catch (error) {
     console.error("Error fetching all resumes:", error);
@@ -117,58 +127,82 @@ resumeRouter.get("/all", verifyToken("recruiter", "admin"), async (req, res) => 
   }
 });
 
-// 4. TAILOR RESUME ROUTE (Protected: Students Only)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. TAILOR RESUME
+//    Returns parsedText alongside tailoredResume so TailoredPDF can build
+//    a fully dynamic PDF from the actual uploaded resume — not hardcoded data.
+// ─────────────────────────────────────────────────────────────────────────────
 resumeRouter.post("/tailor", verifyToken("student"), async (req, res) => {
   try {
     const { resumeId, jobDescription } = req.body;
-
-    if (!resumeId || !jobDescription) {
+    if (!resumeId || !jobDescription)
       return res.status(400).json({ error: "Missing resume ID or job description" });
-    }
 
-    // 1. Fetch the base resume (Ensure it belongs to this specific user!)
-    const baseResume = await Resume.findOne({
-      _id: resumeId,
-      userId: req.user.id
-    });
+    const baseResume = await Resume.findOne({ _id: resumeId, userId: req.user.id });
+    if (!baseResume) return res.status(404).json({ error: "Resume not found" });
 
-    if (!baseResume) {
-      return res.status(404).json({ error: "Resume not found" });
-    }
-
-    // 2. Send the raw text to Llama 3 for tailoring
-    const aiResponse = await tailorResume(baseResume.parsedText, jobDescription);
-
-    // 3. Safely extract the JSON
+    const aiResponse   = await tailorResume(baseResume.parsedText, jobDescription);
     const tailoredData = extractJSON(aiResponse);
 
-    // 4. Send it back to the frontend
     return res.status(200).json({
-      message: "Resume tailored successfully",
-      tailoredResume: tailoredData
+      message:        "Resume tailored successfully",
+      tailoredResume: tailoredData,
+      parsedText:     baseResume.rawText || baseResume.parsedText,  // rawText preserves structure for PDF
     });
-
   } catch (err) {
     console.error("Tailoring Error:", err);
     return res.status(500).json({ error: "Failed to tailor resume", details: err.message });
   }
 });
 
-// GET SINGLE RESUME (Protected: Owner or Recruiter)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. GENERATE LATEX
+//    Accepts { resumeId, tailoredData } — looks up the stored resume text,
+//    then asks the AI to produce a complete Overleaf-ready .tex file.
+// ─────────────────────────────────────────────────────────────────────────────
+resumeRouter.post("/generate-latex", verifyToken("student"), async (req, res) => {
+  try {
+    const { resumeId, tailoredData } = req.body;
+
+    if (!resumeId || !tailoredData)
+      return res.status(400).json({ error: "Missing resumeId or tailoredData." });
+
+    const baseResume = await Resume.findOne({ _id: resumeId, userId: req.user.id });
+    if (!baseResume) return res.status(404).json({ error: "Resume not found." });
+
+    // Prefer rawText (preserves original structure); fall back to parsedText
+    const resumeText = baseResume.rawText || baseResume.parsedText;
+
+    const latex = await generateLatexWithAI(resumeText, tailoredData);
+
+    if (!latex || latex.trim().length < 100)
+      return res.status(500).json({ error: "AI returned an empty or invalid LaTeX response. Please try again." });
+
+    // Strip accidental markdown fences the model may add despite instructions
+    const clean = latex
+      .replace(/^```(?:latex|tex)?\s*/i, "")
+      .replace(/\s*```\s*$/, "")
+      .trim();
+
+    return res.status(200).json({ latex: clean });
+  } catch (err) {
+    console.error("Generate LaTeX Error:", err);
+    return res.status(500).json({ error: "Failed to generate LaTeX.", details: err.message });
+  }
+});
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 6. GET SINGLE RESUME
+// ─────────────────────────────────────────────────────────────────────────────
 resumeRouter.get("/:id", verifyToken(), async (req, res) => {
   try {
-    const resume = await Resume.findById(req.params.id)
-      .populate("userId", "firstName lastName email mobile username");
-
-    if (!resume) {
-      return res.status(404).json({ error: "Resume not found" });
-    }
-
-    // Security Check: If the user is a student, they must own this resume
-    if (req.user.role === "student" && resume.userId._id.toString() !== req.user.id) {
+    const resume = await Resume.findById(req.params.id).populate("userId", "firstName lastName email mobile username");
+    if (!resume) return res.status(404).json({ error: "Resume not found" });
+    if (req.user.role === "student" && resume.userId._id.toString() !== req.user.id)
       return res.status(403).json({ error: "Access denied. You do not own this resume." });
-    }
-
     res.status(200).json(resume);
   } catch (error) {
     console.error(error);

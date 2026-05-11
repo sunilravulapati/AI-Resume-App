@@ -7,30 +7,31 @@ import {
   formCard, inputClass, labelClass, mutedText, bodyText,
   successClass, loadingClass, emptyStateClass, divider
 } from '../styles/common';
-import { PDFDownloadLink } from '@react-pdf/renderer';
-import TailoredPDF from './TailoredPDF';
+import ExportPanel from './ExportPanel';
 import useUserStore from '../store/userStore';
+import UploadModal from './UploadModal';
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('upload');
-
-  // Upload State
-  const [file, setFile] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [analysis, setAnalysis] = useState(null);
   const { userRecord } = useUserStore();
 
-  // History State
-  const [history, setHistory] = useState([]);
+  // ── Upload / Modal state ───────────────────────────────────────────────
+  const [showModal, setShowModal]   = useState(false);
+  const [analysis,  setAnalysis]    = useState(null);   // last completed analysis
+
+  // ── History state ──────────────────────────────────────────────────────
+  const [history,        setHistory]        = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  // Tailor State
+  // ── Tailor state ───────────────────────────────────────────────────────
   const [selectedResumeId, setSelectedResumeId] = useState('');
-  const [jobDescription, setJobDescription] = useState('');
-  const [isTailoring, setIsTailoring] = useState(false);
-  const [tailoredData, setTailoredData] = useState(null);
+  const [jobDescription,   setJobDescription]   = useState('');
+  const [isTailoring,      setIsTailoring]      = useState(false);
+  const [tailoredData,     setTailoredData]      = useState(null);
+  const [parsedText,       setParsedText]        = useState('');
 
+  // ── Fetch history when History or Tailor tabs are opened ──────────────
   useEffect(() => {
     if ((activeTab === 'history' || activeTab === 'tailor') && history.length === 0) {
       fetchHistory();
@@ -40,81 +41,82 @@ export default function StudentDashboard() {
   const fetchHistory = async () => {
     setLoadingHistory(true);
     try {
-      const res = await axios.get("http://localhost:4000/api/resume/history", { withCredentials: true });
+      const res = await axios.get('http://localhost:4000/api/resume/history', { withCredentials: true });
       setHistory(res.data);
       if (res.data.length > 0) setSelectedResumeId(res.data[0]._id);
     } catch {
-      toast.error("Failed to load history");
+      toast.error('Failed to load history');
     } finally {
       setLoadingHistory(false);
     }
   };
 
-  const handleUpload = async () => {
-    if (!file) return toast.error("Please select a PDF!");
-    const formData = new FormData();
-    formData.append("resume", file);
-    setLoading(true);
-    setAnalysis(null);
-    try {
-      const res = await axios.post("http://localhost:4000/api/resume/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-        withCredentials: true
-      });
-      setAnalysis(res.data.analysis);
-      toast.success("Analysis complete!");
-      setHistory([]);
-    } catch {
-      toast.error("Upload failed.");
-    } finally {
-      setLoading(false);
-    }
+  // Called by UploadModal's onSuccess prop when analysis finishes
+  const handleAnalysisComplete = (analysisResult) => {
+    setAnalysis(analysisResult);
+    setShowModal(false);
+    // Invalidate cached history so next visit to History tab re-fetches
+    setHistory([]);
+    toast.success('Analysis complete!');
   };
 
+  // ── Tailor ────────────────────────────────────────────────────────────
   const handleTailor = async () => {
-    if (!selectedResumeId) return toast.error("Please select a base resume");
-    if (!jobDescription.trim()) return toast.error("Please paste a Job Description");
+    if (!selectedResumeId)      return toast.error('Please select a base resume');
+    if (!jobDescription.trim()) return toast.error('Please paste a Job Description');
     setIsTailoring(true);
     setTailoredData(null);
+    setParsedText('');
     try {
-      const res = await axios.post("http://localhost:4000/api/resume/tailor", {
-        resumeId: selectedResumeId,
-        jobDescription
-      }, { withCredentials: true });
+      const res = await axios.post(
+        'http://localhost:4000/api/resume/tailor',
+        { resumeId: selectedResumeId, jobDescription },
+        { withCredentials: true }
+      );
       setTailoredData(res.data.tailoredResume);
-      toast.success("Resume tailored successfully!");
+      setParsedText(res.data.parsedText || '');
+      toast.success('Resume tailored successfully!');
     } catch (err) {
       console.error(err);
-      toast.error("Failed to tailor resume");
+      toast.error('Failed to tailor resume');
     } finally {
       setIsTailoring(false);
     }
   };
 
-  // Score badge helper
+  // ── Score helpers ──────────────────────────────────────────────────────
   const scoreBadge = (score) => {
     if (score >= 75) return 'bg-[#34c759]/10 text-[#248a3d] border border-[#34c759]/20';
     if (score >= 50) return 'bg-[#ff9f0a]/10 text-[#b86e00] border border-[#ff9f0a]/20';
     return 'bg-[#ff3b30]/10 text-[#cc2f26] border border-[#ff3b30]/20';
   };
-
   const scoreLabel = (score) => {
     if (score >= 75) return '✅ Strong';
     if (score >= 50) return '⚠️ Average';
     return '❌ Needs Work';
   };
 
+  // ── Render ─────────────────────────────────────────────────────────────
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
+
+      {/* Modal — rendered at root level so it overlays everything */}
+      {showModal && (
+        <UploadModal
+          onClose={() => setShowModal(false)}
+          onSuccess={handleAnalysisComplete}
+        />
+      )}
+
       <h1 className={`${headingClass} text-3xl mb-1`}>Student Dashboard</h1>
       <p className={`${bodyText} mb-8 text-sm`}>Analyze, track, and tailor your resume with AI</p>
 
-      {/* TABS */}
+      {/* ── TABS ── */}
       <div className="flex gap-2 mb-8 border-b border-[#e8e8ed]">
         {[
-          { key: 'upload', label: '📄 Analyze Resume' },
-          { key: 'history', label: '🗂 Resume History' },
-          { key: 'tailor', label: '✨ Tailor to Job' },
+          { key: 'upload',  label: '📄 Analyze Resume' },
+          { key: 'history', label: '🗂 Resume History'  },
+          { key: 'tailor',  label: '✨ Tailor to Job'   },
         ].map(tab => (
           <button
             key={tab.key}
@@ -130,59 +132,154 @@ export default function StudentDashboard() {
         ))}
       </div>
 
-      {/* ── UPLOAD TAB ── */}
+
+      {/* ══════════════════════════════════════════════
+          UPLOAD TAB
+      ══════════════════════════════════════════════ */}
       {activeTab === 'upload' && (
         <div className={`${formCard} max-w-2xl mx-auto`}>
-          <h2 className={`${headingClass} mb-1`}>Upload New Resume</h2>
-          <p className={`${mutedText} mb-6`}>Supports PDF format only. Analysis takes ~10 seconds.</p>
 
-          <label className="block mb-4 cursor-pointer group">
-            <div className="border-2 border-dashed border-[#d2d2d7] group-hover:border-[#0066cc] rounded-2xl px-6 py-8 text-center transition-colors duration-200 bg-white">
-              <div className="text-3xl mb-2">📎</div>
-              <p className="text-sm font-medium text-[#1d1d1f]">
-                {file ? file.name : 'Click to select a PDF'}
+          {/* ── No analysis yet — invite user to open the modal ── */}
+          {!analysis && (
+            <>
+              <h2 className={`${headingClass} mb-1`}>Analyze Your Resume</h2>
+              <p className={`${mutedText} mb-8`}>
+                Choose between a quick best-practices scan or a targeted match against a specific job description.
               </p>
-              <p className={`${mutedText} mt-1`}>or drag and drop here</p>
-            </div>
-            <input
-              type="file"
-              accept="application/pdf"
-              onChange={(e) => setFile(e.target.files[0])}
-              className="hidden"
-            />
-          </label>
 
-          <button
-            onClick={handleUpload}
-            disabled={loading || !file}
-            className={`${primaryBtn} w-full py-3 text-sm disabled:opacity-50 disabled:cursor-not-allowed`}
-          >
-            {loading ? "⏳ Analyzing..." : "Upload & Analyze"}
-          </button>
+              {/* Two-path cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
 
-          {loading && (
-            <p className={`${loadingClass} mt-4`}>Running ATS analysis on your resume…</p>
+                {/* General */}
+                <button
+                  onClick={() => setShowModal(true)}
+                  className="text-left p-5 rounded-2xl border-2 border-[#e8e8ed] hover:border-[#0066cc] hover:bg-[#0066cc]/[0.03] transition-all duration-200 group"
+                >
+                  <div className="text-2xl mb-3">⚡</div>
+                  <h3 className="font-bold text-[#1d1d1f] text-sm mb-1 group-hover:text-[#0066cc] transition-colors">
+                    General Analysis
+                  </h3>
+                  <p className="text-xs text-[#6e6e73] leading-relaxed">
+                    Best practices scan — formatting, impact language, metrics & ATS hygiene. No JD needed.
+                  </p>
+                  <span className="mt-3 inline-block text-xs font-semibold text-[#0066cc]">Start →</span>
+                </button>
+
+                {/* Targeted */}
+                <button
+                  onClick={() => setShowModal(true)}
+                  className="text-left p-5 rounded-2xl border-2 border-[#e8e8ed] hover:border-[#248a3d] hover:bg-[#248a3d]/[0.03] transition-all duration-200 group"
+                >
+                  <div className="text-2xl mb-3">🎯</div>
+                  <h3 className="font-bold text-[#1d1d1f] text-sm mb-1 group-hover:text-[#248a3d] transition-colors">
+                    Match My Resume
+                  </h3>
+                  <p className="text-xs text-[#6e6e73] leading-relaxed">
+                    Deep JD analysis — keyword gaps, role fit score, missing skills & seniority alignment.
+                  </p>
+                  <span className="mt-3 inline-block text-xs font-semibold text-[#248a3d]">Start →</span>
+                </button>
+              </div>
+
+              {/* Tip strip */}
+              <div className="flex items-start gap-3 bg-[#0066cc]/[0.05] border border-[#0066cc]/15 rounded-xl px-4 py-3">
+                <span className="text-base shrink-0 mt-0.5">💡</span>
+                <p className="text-xs text-[#1d1d1f] leading-relaxed">
+                  <span className="font-semibold">Tip:</span> Run a General Analysis first to get your baseline score, then use Match My Resume for every specific role you apply to.
+                </p>
+              </div>
+            </>
           )}
 
+          {/* ── Analysis result (shown after modal completes) ── */}
           {analysis && (
-            <div className="mt-8">
-              <div className={divider} />
-
-              <div className="flex items-center justify-between mb-5">
+            <>
+              {/* Header row: score + re-analyze button */}
+              <div className="flex items-center justify-between mb-6">
                 <div>
-                  <p className={`${mutedText} uppercase tracking-wider text-[0.65rem] font-semibold mb-1`}>ATS Score</p>
+                  <p className={`${mutedText} uppercase tracking-wider text-[0.65rem] font-semibold mb-1`}>
+                    {analysis.matchScore != null ? 'General Score' : 'ATS Score'}
+                  </p>
                   <p className="text-4xl font-bold text-[#0066cc] tracking-tight">
                     {analysis.atsScore}
                     <span className="text-lg text-[#a1a1a6] font-normal">/100</span>
                   </p>
                 </div>
-                <div className={`px-4 py-2 rounded-full text-sm font-semibold ${scoreBadge(analysis.atsScore)}`}>
-                  {scoreLabel(analysis.atsScore)}
+                <div className="flex flex-col items-end gap-2">
+                  <span className={`px-4 py-1.5 rounded-full text-sm font-semibold ${scoreBadge(analysis.atsScore)}`}>
+                    {scoreLabel(analysis.atsScore)}
+                  </span>
+                  <button
+                    onClick={() => { setAnalysis(null); setShowModal(true); }}
+                    className={`${secondaryBtn} text-xs px-3 py-1.5`}
+                  >
+                    + Analyze Another
+                  </button>
                 </div>
               </div>
 
+              {/* Targeted extras */}
+              {analysis.matchScore != null && (
+                <div className="space-y-4 mb-6">
+
+                  {/* Dual score row */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className={`rounded-2xl border p-4 text-center ${scoreBadge(analysis.atsScore)}`}>
+                      <p className="text-[0.6rem] font-bold uppercase tracking-widest mb-1 opacity-70">General</p>
+                      <p className="text-2xl font-black">{analysis.atsScore}<span className="text-sm font-normal opacity-60">/100</span></p>
+                    </div>
+                    <div className={`rounded-2xl border p-4 text-center ${scoreBadge(analysis.matchScore)}`}>
+                      <p className="text-[0.6rem] font-bold uppercase tracking-widest mb-1 opacity-70">Role Match</p>
+                      <p className="text-2xl font-black">{analysis.matchScore}<span className="text-sm font-normal opacity-60">/100</span></p>
+                    </div>
+                  </div>
+
+                  {/* Keyword match bar */}
+                  {analysis.keywordMatchRate != null && (
+                    <div className="bg-[#f5f5f7] rounded-xl p-4">
+                      <div className="flex justify-between mb-2">
+                        <p className="text-xs font-bold text-[#1d1d1f]">Keyword Match Rate</p>
+                        <span className="text-xs font-black text-[#0066cc]">{analysis.keywordMatchRate}%</span>
+                      </div>
+                      <div className="w-full bg-[#e8e8ed] rounded-full h-2 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-[#0066cc]"
+                          style={{ width: `${analysis.keywordMatchRate}%`, transition: 'width 1s ease' }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Missing skills */}
+                  {analysis.missingSkills?.length > 0 && (
+                    <div className="bg-[#ff3b30]/[0.04] border border-[#ff3b30]/20 rounded-xl p-4">
+                      <p className="text-[0.65rem] font-bold text-[#cc2f26] uppercase tracking-wider mb-2">🚨 Missing Critical Skills</p>
+                      <div className="flex flex-wrap gap-2">
+                        {analysis.missingSkills.map((s, i) => (
+                          <span key={i} className="text-xs bg-[#ff3b30]/10 text-[#cc2f26] border border-[#ff3b30]/20 px-2.5 py-1 rounded-full font-medium">
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Experience gap */}
+                  {analysis.experienceGap && (
+                    <div className="bg-[#ff9f0a]/[0.05] border border-[#ff9f0a]/25 rounded-xl p-4">
+                      <p className="text-[0.65rem] font-bold text-[#b86e00] uppercase tracking-wider mb-1.5">📊 Experience Gap</p>
+                      <p className="text-sm text-[#1d1d1f] leading-relaxed">{analysis.experienceGap}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className={divider} />
+
+              {/* AI Summary */}
               <p className={`${bodyText} text-sm italic mb-6`}>{analysis.summary}</p>
 
+              {/* Strengths + Improvements */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-[#34c759]/[0.06] border border-[#34c759]/20 rounded-2xl p-5">
                   <h4 className="font-bold text-[#248a3d] text-sm mb-3">✅ Top Strengths</h4>
@@ -205,12 +302,15 @@ export default function StudentDashboard() {
                   </ul>
                 </div>
               </div>
-            </div>
+            </>
           )}
         </div>
       )}
 
-      {/* ── HISTORY TAB ── */}
+
+      {/* ══════════════════════════════════════════════
+          HISTORY TAB
+      ══════════════════════════════════════════════ */}
       {activeTab === 'history' && (
         <div>
           {loadingHistory ? (
@@ -231,7 +331,6 @@ export default function StudentDashboard() {
                     onClick={() => navigate(`/resume/${item._id}`)}
                     className={`${cardClass} flex flex-col gap-3 cursor-pointer hover:shadow-lg transition-all duration-200`}
                   >
-                    {/* Card Top: Number + Score + Date */}
                     <div className="flex justify-between items-start">
                       <div>
                         <p className={`${mutedText} text-[0.65rem] uppercase tracking-wider font-semibold mb-0.5`}>
@@ -246,18 +345,29 @@ export default function StudentDashboard() {
                         <span className={`${mutedText} text-xs`}>
                           {new Date(item.createdAt).toLocaleDateString()}
                         </span>
-                        <span className={`px-2 py-0.5 rounded-full text-[0.65rem] font-semibold ${scoreBadge(item.atsScore)}`}>
-                          {scoreLabel(item.atsScore)}
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className={`px-2 py-0.5 rounded-full text-[0.65rem] font-semibold ${scoreBadge(item.atsScore)}`}>
+                            {scoreLabel(item.atsScore)}
+                          </span>
+                          {item.analysisMode === 'targeted' && (
+                            <span className="px-2 py-0.5 rounded-full text-[0.65rem] font-semibold bg-[#248a3d]/10 text-[#248a3d] border border-[#248a3d]/20">
+                              🎯 Targeted
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    {/* Summary snippet */}
+                    {item.roleName && (
+                      <p className="text-[0.7rem] font-semibold text-[#248a3d]">
+                        {item.company ? `${item.company} · ` : ''}{item.roleName}
+                      </p>
+                    )}
+
                     <p className="text-sm text-[#6e6e73] line-clamp-3 leading-relaxed">
                       {item.feedback?.summary}
                     </p>
 
-                    {/* CTA hint */}
                     <div className="flex items-center gap-1 mt-1">
                       <span className="text-xs text-[#0066cc] font-medium">View full analysis</span>
                       <span className="text-[#0066cc] text-xs">→</span>
@@ -270,7 +380,10 @@ export default function StudentDashboard() {
         </div>
       )}
 
-      {/* ── TAILOR TAB ── */}
+
+      {/* ══════════════════════════════════════════════
+          TAILOR TAB
+      ══════════════════════════════════════════════ */}
       {activeTab === 'tailor' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
@@ -315,7 +428,7 @@ export default function StudentDashboard() {
                   disabled={isTailoring || !jobDescription.trim()}
                   className={`${primaryBtn} w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  {isTailoring ? "🧠 Rewriting your resume…" : "Generate Tailored Resume"}
+                  {isTailoring ? '🧠 Rewriting your resume…' : 'Generate Tailored Resume'}
                 </button>
               </>
             )}
@@ -334,8 +447,8 @@ export default function StudentDashboard() {
                 </p>
                 <div className="space-y-5 text-left w-full max-w-sm">
                   {[
-                    { n: 1, title: 'Keyword Extraction', desc: 'Scans the JD for required technical and soft skills.' },
-                    { n: 2, title: 'Smart Reordering', desc: 'Prioritizes your projects that match the tech stack in the JD.' },
+                    { n: 1, title: 'Keyword Extraction',    desc: 'Scans the JD for required technical and soft skills.' },
+                    { n: 2, title: 'Smart Reordering',      desc: 'Prioritizes your projects that match the tech stack in the JD.' },
                     { n: 3, title: 'STAR Method Rewriting', desc: 'Enhances bullet points for maximum ATS compatibility.' },
                   ].map(({ n, title, desc }) => (
                     <div key={n} className="flex items-start gap-4">
@@ -404,18 +517,14 @@ export default function StudentDashboard() {
                       </div>
                     ))}
                   </div>
-                  {/* PDF Download Button */}
-                <div className="pt-6 border-t border-[#e8e8ed] mt-6">
-                  <PDFDownloadLink 
-                    document={<TailoredPDF tailoredData={tailoredData} user={userRecord} />} 
-                    fileName={`Tailored_Resume_${userRecord?.firstName}.pdf`}
-                    className={`${primaryBtn} w-full py-3 flex items-center justify-center gap-2`}
-                  >
-                    {({ loading }) => (
-                      loading ? 'Generating PDF...' : '⬇️ Download ATS-Ready PDF'
-                    )}
-                  </PDFDownloadLink>
-                </div>
+
+                  {/* ── Export Panel — Copy / PDF / LaTeX ── */}
+                  <ExportPanel
+                    tailoredData={tailoredData}
+                    parsedText={parsedText}
+                    user={userRecord}
+                    resumeId={selectedResumeId}
+                  />
                 </div>
               </div>
             )}

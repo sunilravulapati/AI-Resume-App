@@ -1,42 +1,36 @@
 import { NavLink } from "react-router";
 
-// ─── tiny inline style block for the font import + custom animations ───────
 const globalStyles = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
 
   .home-root { font-family: 'DM Sans', sans-serif; }
   .display-font { font-family: 'DM Serif Display', serif; }
 
-  /* subtle dot grid */
   .dot-grid {
     background-image: radial-gradient(circle, #d2d2d7 1px, transparent 1px);
     background-size: 28px 28px;
   }
 
-  /* staggered fade-up */
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(22px); }
     to   { opacity: 1; transform: translateY(0); }
   }
-  .fade-up   { animation: fadeUp 0.65s ease both; }
-  .delay-1   { animation-delay: 0.10s; }
-  .delay-2   { animation-delay: 0.22s; }
-  .delay-3   { animation-delay: 0.34s; }
-  .delay-4   { animation-delay: 0.46s; }
-  .delay-5   { animation-delay: 0.58s; }
+  .fade-up  { animation: fadeUp 0.65s ease both; }
+  .delay-1  { animation-delay: 0.10s; }
+  .delay-2  { animation-delay: 0.22s; }
+  .delay-3  { animation-delay: 0.34s; }
+  .delay-4  { animation-delay: 0.46s; }
+  .delay-5  { animation-delay: 0.58s; }
 
-  /* score ticker */
   @keyframes countUp {
     from { opacity: 0; transform: translateY(8px); }
     to   { opacity: 1; transform: translateY(0); }
   }
   .score-tick { animation: countUp 0.5s ease both; animation-delay: 0.8s; }
 
-  /* hover lift */
   .card-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
   .card-lift:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.10); }
 
-  /* gradient text */
   .grad-text {
     background: linear-gradient(135deg, #0066cc 0%, #004499 100%);
     -webkit-background-clip: text;
@@ -44,17 +38,32 @@ const globalStyles = `
     background-clip: text;
   }
 
-  /* split-section slant */
-  .slant-left  { clip-path: polygon(0 0, 100% 0, 90% 100%, 0 100%); }
-  .slant-right { clip-path: polygon(10% 0, 100% 0, 100% 100%, 0 100%); }
+  @keyframes bar-fill {
+    from { width: 0%; }
+    to   { width: 68%; }
+  }
+  .bar-animate { animation: bar-fill 1.4s cubic-bezier(0.4,0,0.2,1) both; animation-delay: 1s; }
+
+  @keyframes shimmer-slide {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(300%); }
+  }
+  .shimmer-line::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+    animation: shimmer-slide 2s infinite;
+  }
 `;
 
-// ─── data ───────────────────────────────────────────────────────────────────
+// ─── updated feature data ────────────────────────────────────────────────────
+
 const studentFeatures = [
   {
     icon: "⚡",
-    title: "Hybrid ATS Scoring",
-    desc: "60-point deterministic baseline via regex + 40-point Llama-3 semantic layer. Mathematically grounded, never a guess.",
+    title: "Two-Path Analysis",
+    desc: "General scan for ATS best practices, or a deep Targeted Match against a specific Job Description — with role fit score, keyword gap, and seniority alignment.",
   },
   {
     icon: "🎯",
@@ -64,12 +73,36 @@ const studentFeatures = [
   {
     icon: "📈",
     title: "Version History & Tracking",
-    desc: "Every upload is saved with its score. Watch your ATS number climb as you iterate.",
+    desc: "Every upload is saved with its score. Watch your ATS number climb as you iterate across general and targeted analyses.",
   },
   {
     icon: "🔍",
-    title: "Actionable AI Feedback",
-    desc: "Specific \"Top Strengths\" and \"Red Flags\" — not vague tips, but fixable issues a recruiter would actually flag.",
+    title: "Keyword Gap Analysis",
+    desc: "See exactly which required skills from the JD are missing from your resume — listed as chips, not vague advice.",
+  },
+];
+
+const exportFeatures = [
+  {
+    icon: "📋",
+    badge: "Instant",
+    badgeColor: "#0066cc",
+    title: "Copy & Paste",
+    desc: "Copy all AI suggestions as plain text. Drop straight into Word, Notion, Google Docs — any editor you already use.",
+  },
+  {
+    icon: "⬇️",
+    badge: "Quick",
+    badgeColor: "#248a3d",
+    title: "Download PDF",
+    desc: "One-click ATS-ready PDF built from your actual uploaded resume with AI content applied on top.",
+  },
+  {
+    icon: "🧪",
+    badge: "Best Quality",
+    badgeColor: "#b86e00",
+    title: "Overleaf / LaTeX",
+    desc: "Generate Jake's Resume template pre-filled with your AI tailored content. Paste into Overleaf, recompile, done.",
   },
 ];
 
@@ -92,9 +125,9 @@ const recruiterFeatures = [
 ];
 
 const steps = [
-  { n: "01", title: "Upload Base Resume", desc: "Drop your PDF. Our hybrid engine parses and scores it in seconds." },
-  { n: "02", title: "Paste Target JD", desc: "Copy the job description. The AI cross-references every keyword and requirement." },
-  { n: "03", title: "Get Tailored Output", desc: "Receive a fully rewritten, ATS-optimized resume — ready to submit." },
+  { n: "01", title: "Upload & Choose Mode", desc: "Drop your PDF. Pick General for a best-practices scan, or Targeted to match a specific role." },
+  { n: "02", title: "Paste Target JD", desc: "In Targeted mode, paste the job description. The AI extracts every keyword and maps them to your resume." },
+  { n: "03", title: "Get Tailored Output", desc: "Receive a fully rewritten resume. Export via Copy, PDF download, or Overleaf LaTeX." },
 ];
 
 const differentiators = [
@@ -118,7 +151,7 @@ const differentiators = [
   },
 ];
 
-// ─── component ──────────────────────────────────────────────────────────────
+// ─── component ───────────────────────────────────────────────────────────────
 export default function Home() {
   return (
     <>
@@ -130,15 +163,13 @@ export default function Home() {
             HERO
         ══════════════════════════════════════════════ */}
         <section className="relative min-h-[92vh] flex items-center dot-grid">
-          {/* radial fade over grid */}
-          <div className="absolute inset-0 bg-linear-to-b from-white via-white/80 to-white pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white via-white/80 to-white pointer-events-none" />
 
           <div className="relative max-w-5xl mx-auto px-6 py-28 text-center">
 
-            {/* eyebrow pill */}
             <div className="fade-up delay-1 inline-flex items-center gap-2 bg-[#0066cc]/[0.07] border border-[#0066cc]/20 rounded-full px-4 py-1.5 mb-8">
               <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc] animate-pulse" />
-              <span className="text-[0.72rem] font-semibold text-[#0066cc] uppercase tracking-widest">AI-Powered · ATS-Proven</span>
+              <span className="text-[0.72rem] font-semibold text-[#0066cc] uppercase tracking-widest">AI-Powered · ATS-Proven · Overleaf-Ready</span>
             </div>
 
             <h1 className="display-font fade-up delay-2 text-[clamp(2.8rem,7vw,5.5rem)] leading-[1.05] text-[#1d1d1f] mb-6">
@@ -147,10 +178,9 @@ export default function Home() {
             </h1>
 
             <p className="fade-up delay-3 text-[#6e6e73] text-lg max-w-xl mx-auto leading-relaxed mb-12">
-              Upload your resume. Paste a job description. Get an AI-tailored, ATS-optimized version — without a single hallucinated credential.
+              Upload your resume. Get a general ATS score — or match it against a specific job description for a role fit score, keyword gap analysis, and a tailored rewrite.
             </p>
 
-            {/* dual CTAs */}
             <div className="fade-up delay-4 flex flex-col sm:flex-row gap-3 justify-center mb-16">
               <NavLink
                 to="/register"
@@ -166,23 +196,35 @@ export default function Home() {
               </NavLink>
             </div>
 
-            {/* floating score card */}
-            <div className="fade-up delay-5 inline-flex items-center gap-6 bg-white border border-[#e8e8ed] rounded-2xl px-7 py-4 shadow-xl shadow-black/5">
+            {/* Hero score card — updated to show dual scores */}
+            <div className="fade-up delay-5 inline-flex flex-wrap items-center justify-center gap-6 bg-white border border-[#e8e8ed] rounded-2xl px-7 py-4 shadow-xl shadow-black/5">
               <div className="text-left">
-                <p className="text-[0.65rem] font-semibold text-[#a1a1a6] uppercase tracking-widest mb-0.5">ATS Score</p>
+                <p className="text-[0.65rem] font-semibold text-[#a1a1a6] uppercase tracking-widest mb-0.5">General Score</p>
                 <p className="score-tick text-3xl font-black text-[#0066cc] tracking-tight leading-none">
-                  87<span className="text-base font-normal text-[#a1a1a6]">/100</span>
+                  85<span className="text-base font-normal text-[#a1a1a6]">/100</span>
                 </p>
               </div>
               <div className="w-px h-10 bg-[#e8e8ed]" />
               <div className="text-left">
-                <p className="text-[0.65rem] font-semibold text-[#a1a1a6] uppercase tracking-widest mb-1">Verdict</p>
-                <span className="text-xs font-semibold text-[#248a3d] bg-[#34c759]/10 border border-[#34c759]/20 px-2.5 py-0.5 rounded-full">✅ Strong Match</span>
+                <p className="text-[0.65rem] font-semibold text-[#a1a1a6] uppercase tracking-widest mb-0.5">Role Match</p>
+                <p className="score-tick text-3xl font-black text-[#248a3d] tracking-tight leading-none">
+                  72<span className="text-base font-normal text-[#a1a1a6]">/100</span>
+                </p>
+              </div>
+              <div className="w-px h-10 bg-[#e8e8ed]" />
+              <div className="text-left min-w-[120px]">
+                <p className="text-[0.65rem] font-semibold text-[#a1a1a6] uppercase tracking-widest mb-1.5">Keyword Match</p>
+                <div className="flex items-center gap-2">
+                  <div className="relative w-20 h-1.5 bg-[#e8e8ed] rounded-full overflow-hidden shimmer-line">
+                    <div className="absolute left-0 top-0 h-full bg-[#0066cc] rounded-full bar-animate" />
+                  </div>
+                  <span className="text-xs font-black text-[#0066cc]">68%</span>
+                </div>
               </div>
               <div className="w-px h-10 bg-[#e8e8ed]" />
               <div className="text-left">
-                <p className="text-[0.65rem] font-semibold text-[#a1a1a6] uppercase tracking-widest mb-0.5">Tailored for</p>
-                <p className="text-xs font-medium text-[#1d1d1f]">Senior Frontend Eng.</p>
+                <p className="text-[0.65rem] font-semibold text-[#a1a1a6] uppercase tracking-widest mb-1">Tailored for</p>
+                <span className="text-xs font-semibold text-[#248a3d] bg-[#34c759]/10 border border-[#34c759]/20 px-2.5 py-0.5 rounded-full">✅ Senior SWE @ JPMC</span>
               </div>
             </div>
 
@@ -210,6 +252,127 @@ export default function Home() {
                   <p className="text-sm text-[#6e6e73] leading-relaxed">{step.desc}</p>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════════
+            ANALYSIS MODES — NEW SECTION
+        ══════════════════════════════════════════════ */}
+        <section className="py-24 px-6">
+          <div className="max-w-5xl mx-auto">
+            <p className="text-[0.65rem] font-semibold text-[#0066cc] uppercase tracking-widest mb-3 text-center">Two Analysis Modes</p>
+            <h2 className="display-font text-4xl text-center text-[#1d1d1f] mb-4">General or Targeted — you choose</h2>
+            <p className="text-center text-[#6e6e73] text-sm max-w-lg mx-auto mb-14">
+              Run a General scan to get your baseline ATS score. Then use Targeted mode for every specific role you apply to.
+            </p>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+              {/* General */}
+              <div className="bg-white border-2 border-[#e8e8ed] rounded-3xl p-8 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#0066cc]/[0.03] rounded-full -translate-y-1/2 translate-x-1/2" />
+                <div className="relative">
+                  <div className="inline-flex items-center gap-2 bg-[#0066cc]/[0.07] border border-[#0066cc]/20 rounded-full px-3 py-1 mb-5">
+                    <span className="text-xs">⚡</span>
+                    <span className="text-[0.65rem] font-bold text-[#0066cc] uppercase tracking-wider">General Analysis</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-[#1d1d1f] mb-3">Best-practices baseline scan</h3>
+                  <p className="text-sm text-[#6e6e73] leading-relaxed mb-6">
+                    No JD needed. Checks formatting, impact language, metrics usage, action verbs, and ATS hygiene. Get a 0–100 score in seconds.
+                  </p>
+                  <ul className="space-y-2.5">
+                    {["ATS score (0–100)", "Top 3 strengths", "Top 3 fixable issues", "Brutally honest AI summary"].map((item, i) => (
+                      <li key={i} className="flex items-center gap-2.5 text-sm text-[#1d1d1f]">
+                        <span className="w-4 h-4 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-[0.6rem] font-black flex items-center justify-center shrink-0">✓</span>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              {/* Targeted */}
+              <div className="bg-white border-2 border-[#248a3d]/30 rounded-3xl p-8 relative overflow-hidden shadow-lg shadow-[#248a3d]/5">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#34c759]/[0.04] rounded-full -translate-y-1/2 translate-x-1/2" />
+                <div className="relative">
+                  <div className="inline-flex items-center gap-2 bg-[#248a3d]/[0.07] border border-[#248a3d]/20 rounded-full px-3 py-1 mb-5">
+                    <span className="text-xs">🎯</span>
+                    <span className="text-[0.65rem] font-bold text-[#248a3d] uppercase tracking-wider">Match My Resume</span>
+                    <span className="text-[0.55rem] font-bold bg-[#248a3d] text-white px-1.5 py-0.5 rounded-full">New</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-[#1d1d1f] mb-3">Deep JD match analysis</h3>
+                  <p className="text-sm text-[#6e6e73] leading-relaxed mb-6">
+                    Paste a job description. The AI extracts every required skill, cross-references your resume, and scores how well you fit the role.
+                  </p>
+                  <ul className="space-y-2.5">
+                    {[
+                      "Role Match Score (0–100)",
+                      "Keyword Match Rate (%)",
+                      "Missing Critical Skills — listed explicitly",
+                      "Experience Gap Analysis vs. seniority level",
+                      "Role-specific strengths & improvements",
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-center gap-2.5 text-sm text-[#1d1d1f]">
+                        <span className="w-4 h-4 rounded-full bg-[#248a3d]/10 text-[#248a3d] text-[0.6rem] font-black flex items-center justify-center shrink-0">✓</span>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════════
+            EXPORT OPTIONS — NEW SECTION
+        ══════════════════════════════════════════════ */}
+        <section className="py-24 px-6 bg-[#f5f5f7]">
+          <div className="max-w-5xl mx-auto">
+            <p className="text-[0.65rem] font-semibold text-[#0066cc] uppercase tracking-widest mb-3 text-center">Three Ways to Export</p>
+            <h2 className="display-font text-4xl text-center text-[#1d1d1f] mb-4">Use your tailored resume anywhere</h2>
+            <p className="text-center text-[#6e6e73] text-sm max-w-lg mx-auto mb-14">
+              After the AI rewrites your resume, choose how you want it. Every format is designed for a different workflow.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {exportFeatures.map((f, i) => (
+                <div key={i} className="card-lift bg-white rounded-2xl p-7 border border-[#e8e8ed]">
+                  <div className="flex items-start justify-between mb-5">
+                    <span className="text-3xl">{f.icon}</span>
+                    <span
+                      className="text-[0.55rem] font-bold uppercase tracking-wider border px-2 py-0.5 rounded-full"
+                      style={{ color: f.badgeColor, borderColor: `${f.badgeColor}40`, background: `${f.badgeColor}10` }}
+                    >
+                      {f.badge}
+                    </span>
+                  </div>
+                  <h3 className="text-base font-bold text-[#1d1d1f] mb-2">{f.title}</h3>
+                  <p className="text-sm text-[#6e6e73] leading-relaxed">{f.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Overleaf callout */}
+            <div className="mt-8 bg-white border border-[#b86e00]/25 rounded-2xl px-7 py-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="text-3xl shrink-0">🧪</div>
+              <div className="flex-1">
+                <p className="font-bold text-[#1d1d1f] text-sm mb-0.5">Why LaTeX / Overleaf?</p>
+                <p className="text-xs text-[#6e6e73] leading-relaxed">
+                  LaTeX produces typographically perfect output that looks identical on every device. ATS scanners parse LaTeX-generated PDFs more reliably than Word or Google Docs exports.
+                  We generate Jake's Resume template — the most popular ATS-proven template on Overleaf — pre-filled with your tailored content.
+                </p>
+              </div>
+              <a
+                href="https://www.overleaf.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-bold text-[#b86e00] border border-[#b86e00]/30 bg-[#b86e00]/[0.07] px-4 py-2 rounded-full hover:bg-[#b86e00]/15 transition-colors shrink-0"
+              >
+                Learn about Overleaf →
+              </a>
             </div>
           </div>
         </section>
@@ -259,14 +422,13 @@ export default function Home() {
         {/* ══════════════════════════════════════════════
             SPLIT VALUE PROP
         ══════════════════════════════════════════════ */}
-        <section className="py-4 px-6 bg-[#f5f5f7]">
+        <section className="py-20 px-6 bg-[#f5f5f7]">
           <div className="max-w-5xl mx-auto">
             <p className="text-[0.65rem] font-semibold text-[#0066cc] uppercase tracking-widest mb-3 text-center">Two sides. One platform.</p>
             <h2 className="display-font text-4xl text-center text-[#1d1d1f] mb-12">Built for both sides of the table</h2>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-              {/* Student side */}
               <div className="bg-[#0066cc] rounded-3xl p-10 text-white relative overflow-hidden">
                 <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-white/5" />
                 <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-white/5" />
@@ -274,10 +436,14 @@ export default function Home() {
                   <span className="text-xs font-semibold uppercase tracking-widest text-white/60 mb-4 block">Student View</span>
                   <h3 className="display-font text-3xl mb-4 leading-tight">Your resume,<br />optimized for every role.</h3>
                   <p className="text-white/75 text-sm leading-relaxed mb-8">
-                    Upload once. Tailor infinitely. Track your ATS score improving in real time as you refine your resume for different companies.
+                    Upload once. Run a General scan for your baseline. Switch to Targeted mode for any role — get keyword gaps, role fit score, and a fully rewritten resume with three export options.
                   </p>
                   <div className="space-y-3">
-                    {["Upload & Score in seconds", "Tailor to any Job Description", "Track score history over time"].map((item, i) => (
+                    {[
+                      "General & Targeted analysis modes",
+                      "Keyword gap + role match scoring",
+                      "Export via Copy, PDF, or Overleaf LaTeX",
+                    ].map((item, i) => (
                       <div key={i} className="flex items-center gap-3">
                         <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[0.6rem] font-bold shrink-0">{i + 1}</span>
                         <span className="text-sm text-white/90">{item}</span>
@@ -293,7 +459,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Recruiter side */}
               <div className="bg-[#1d1d1f] rounded-3xl p-10 text-white relative overflow-hidden">
                 <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-white/5" />
                 <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-white/5" />

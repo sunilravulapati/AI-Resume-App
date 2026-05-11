@@ -1,7 +1,7 @@
 import express from "express";
 import User from "../models/User.js";
 import { registerUser, authenticateUser } from "../services/authService.js";
-import { verifyToken } from "../middleware/auth.js"; // Make sure auth.js exists!
+import { verifyToken } from "../middleware/auth.js";
 
 export const userRouter = express.Router();
 

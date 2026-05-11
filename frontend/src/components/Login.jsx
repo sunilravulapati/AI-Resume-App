@@ -1,18 +1,9 @@
 import { useForm } from 'react-hook-form';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, NavLink } from 'react-router';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 import useUserStore from '../store/userStore';
-import { 
-  formCard, 
-  formTitle, 
-  inputClass, 
-  submitBtn, 
-  errorClass, 
-  loadingClass,
-  labelClass 
-} from '../styles/common';
 
 function Login() {
   const { register, handleSubmit, formState: { errors } } = useForm();
@@ -25,20 +16,14 @@ function Login() {
     setLoading(true);
     setError(null);
     try {
-      // Adjusted to your custom backend login logic
       const resObj = await axios.post("http://localhost:4000/api/user/login", {
-        loginIdentifier: userCredObj.email, // Can be email or username
+        loginIdentifier: userCredObj.email,
         password: userCredObj.password
       });
 
-      const { token, user } = resObj.data;
-      
-      // Store token
+      const { token } = resObj.data;
       localStorage.setItem('token', token);
-      
-      // Sync global store
-      await fetchUser(); 
-      
+      await fetchUser();
       toast.success("Logged in successfully");
     } catch (err) {
       setError(err.response?.data?.error || "Login Failed");
@@ -51,44 +36,120 @@ function Login() {
     if (userRecord) {
       if (userRecord.role === 'student') navigate('/student-dashboard');
       else if (userRecord.role === 'recruiter') navigate('/recruiter-dashboard');
+      else if (userRecord.role === 'admin') navigate('/admin-dashboard');
       else navigate('/');
     }
   }, [userRecord, navigate]);
 
-  if (loading) return <p className={loadingClass}>Verifying credentials...</p>;
-
   return (
-    <div className='min-h-[80vh] flex items-center justify-center'>
-      <div className={formCard}>
-        <form onSubmit={handleSubmit(onUserLogin)}>
-          <h1 className={formTitle}>Welcome Back</h1>
-          
-          {error && <p className={`${errorClass} mb-4`}>{error}</p>}
+    <div className="min-h-[85vh] flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
 
-          <div className="mb-4">
-            <label className={labelClass}>Email or Username</label>
-            <input 
-              type="text" 
-              placeholder='your@email.com'
-              {...register("email", { required: "Identity is required" })}
-              className={inputClass}
-            />
-            {errors.email && <p className='text-red-500 text-xs mt-1'>{errors.email.message}</p>}
+        {/* Card */}
+        <div className="relative bg-white dark:bg-[#2a2a2e] border border-[#e8e8ed]/80 dark:border-[#3a3a3e] rounded-3xl shadow-xl shadow-black/5 dark:shadow-black/30 p-10 sm:p-12 transition-colors duration-300">
+
+          {/* Decorative gradient blob */}
+          <div className="absolute -top-px left-1/2 -translate-x-1/2 w-24 h-1 rounded-b-full bg-gradient-to-r from-[#0066cc] to-[#5ac8fa]" />
+
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#0066cc] to-[#5ac8fa] flex items-center justify-center shadow-lg shadow-[#0066cc]/20">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="white" fillOpacity="0.9"/>
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-[#1d1d1f] dark:text-white tracking-tight mb-1">
+              Welcome Back
+            </h1>
+            <p className="text-sm text-[#8e8e93] dark:text-[#98989d]">
+              Sign in to access your dashboard
+            </p>
           </div>
 
-          <div className="mb-6">
-            <label className={labelClass}>Password</label>
-            <input 
-              type="password" 
-              placeholder='••••••••'
-              {...register("password", { required: "Password is required" })}
-              className={inputClass}
-            />
-            {errors.password && <p className='text-red-500 text-xs mt-1'>{errors.password.message}</p>}
-          </div>
+          {/* Error */}
+          {error && (
+            <div className="mb-5 flex items-center gap-2.5 bg-[#ff3b30]/6 dark:bg-[#ff3b30]/10 border border-[#ff3b30]/15 dark:border-[#ff3b30]/20 rounded-xl px-4 py-3">
+              <span className="text-sm shrink-0">⚠️</span>
+              <p className="text-sm text-[#cc2f26] dark:text-[#ff6961]">{error}</p>
+            </div>
+          )}
 
-          <button className={submitBtn}>Log In</button>
-        </form>
+          {/* Form */}
+          <form onSubmit={handleSubmit(onUserLogin)} className="space-y-5">
+            <div>
+              <label className="text-xs font-semibold text-[#6e6e73] dark:text-[#98989d] uppercase tracking-wider mb-2 block">
+                Email or Username
+              </label>
+              <div className="relative">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#a1a1a6] dark:text-[#636366]">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="4" width="20" height="16" rx="3"/>
+                    <path d="M22 7L13.03 12.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  placeholder="your@email.com"
+                  {...register("email", { required: "Email or username is required" })}
+                  className="w-full bg-[#f5f5f7] dark:bg-[#1a1a1e] border border-[#e5e5ea] dark:border-[#3a3a3e] rounded-xl pl-10 pr-4 py-3 text-[#1d1d1f] dark:text-white text-sm placeholder:text-[#c7c7cc] dark:placeholder:text-[#48484a] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/15 transition-all duration-200"
+                />
+              </div>
+              {errors.email && (
+                <p className="text-[#ff3b30] text-xs mt-1.5 ml-1">{errors.email.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-[#6e6e73] dark:text-[#98989d] uppercase tracking-wider mb-2 block">
+                Password
+              </label>
+              <div className="relative">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#a1a1a6] dark:text-[#636366]">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                </div>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  {...register("password", { required: "Password is required" })}
+                  className="w-full bg-[#f5f5f7] dark:bg-[#1a1a1e] border border-[#e5e5ea] dark:border-[#3a3a3e] rounded-xl pl-10 pr-4 py-3 text-[#1d1d1f] dark:text-white text-sm placeholder:text-[#c7c7cc] dark:placeholder:text-[#48484a] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/15 transition-all duration-200"
+                />
+              </div>
+              {errors.password && (
+                <p className="text-[#ff3b30] text-xs mt-1.5 ml-1">{errors.password.message}</p>
+              )}
+            </div>
+
+            <button
+              disabled={loading}
+              className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-[#0066cc] to-[#0077ed] hover:from-[#004499] hover:to-[#0066cc] shadow-md shadow-[#0066cc]/25 hover:shadow-lg hover:shadow-[#0066cc]/30 transition-all duration-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  Signing in…
+                </span>
+              ) : (
+                "Sign In"
+              )}
+            </button>
+          </form>
+
+          {/* Footer link */}
+          <div className="mt-7 text-center">
+            <p className="text-sm text-[#8e8e93] dark:text-[#636366]">
+              Don't have an account?{" "}
+              <NavLink to="/register" className="text-[#0066cc] hover:text-[#004499] font-medium transition-colors">
+                Create one
+              </NavLink>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

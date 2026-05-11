@@ -4,7 +4,7 @@ import axios from 'axios';
 export default function UploadTest() {
   const [file, setFile] = useState(null);
   const [parsedText, setParsedText] = useState("");
-  const [analysis, setAnalysis] = useState(null); // NEW: State to hold the AI analysis
+  const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const handleFileChange = (e) => {

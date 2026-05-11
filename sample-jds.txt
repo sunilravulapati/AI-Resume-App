@@ -74,3 +74,53 @@ Participation in hackathons or coding competitions
 Experience building AI/ML applications
 
 
+JPMorgan Chase & Co. — Software Engineer III
+Corporate & Investment Banking Technology | New York, NY / Jersey City, NJ (Hybrid)
+
+ABOUT THE ROLE
+As a Software Engineer III at JPMorgan Chase within the Corporate & Investment Banking technology division, you will serve as a seasoned member of an agile team to design and deliver trusted, market-leading technology products in a secure, stable, and scalable way. You will carry out critical technology solutions across multiple technical areas within various business functions in support of the firm's business objectives.
+
+JOB RESPONSIBILITIES
+- Design, develop, and deliver scalable, resilient software solutions for hybrid environments (private cloud, public cloud, on-premises)
+- Write clean, maintainable, production-grade code with comprehensive unit and integration test coverage
+- Incorporate non-functional requirements including telemetry, monitoring, alerting, and log aggregation into all software solutions
+- Participate in code reviews and contribute to engineering communities of practice
+- Collaborate with cross-functional agile teams including product managers, architects, and QA engineers to deliver features end-to-end
+- Identify and resolve production incidents; perform root-cause analysis and implement long-term fixes
+- Champion secure coding practices and ensure all deliverables meet firm-wide security and compliance standards
+- Contribute to architectural decisions and technical roadmap discussions
+- Mentor junior engineers and provide technical guidance across the team
+
+REQUIRED QUALIFICATIONS
+- Formal training or certification in software engineering concepts and 3+ years of applied experience
+- Proficiency in at least one of: Java, Python, or Node.js
+- Experience with React or Angular for front-end development
+- Strong understanding of RESTful API design and microservices architecture
+- Hands-on experience with relational databases (Oracle, PostgreSQL, or SQL Server) and NoSQL databases
+- Familiarity with cloud platforms — AWS, Azure, or GCP
+- Experience with CI/CD pipelines (Jenkins, GitHub Actions, or equivalent)
+- Proficiency with Git and trunk-based development workflows
+- Strong grasp of data structures, algorithms, and system design principles
+- Experience working in Agile/Scrum environments
+
+PREFERRED QUALIFICATIONS
+- Experience with containerization and orchestration tools (Docker, Kubernetes)
+- Familiarity with message queue systems such as Kafka or RabbitMQ
+- Knowledge of distributed systems, caching strategies (Redis), and high-availability design patterns
+- Exposure to observability tooling (Splunk, Grafana, Datadog, or similar)
+- Experience in financial services or highly regulated industries is a plus
+- AWS Certified Developer or equivalent cloud certification
+
+TECH STACK
+Java · Python · Node.js · React · Angular · MySQL · Oracle · PostgreSQL · NoSQL · AWS · Docker · Kubernetes · Kafka · Redis · Jenkins · GitHub Actions · Splunk · REST APIs · Microservices
+
+SOFT SKILLS
+- Strong written and verbal communication — ability to explain technical concepts to non-technical stakeholders
+- Business-first mindset: solutions driven by measurable impact, not just technical elegance
+- Demonstrated ability to work in large, matrixed organizations with multiple stakeholders
+- Continuous learning orientation — JPMC invests $15B annually in tech and expects engineers to grow with it
+
+ABOUT JPMORGAN CHASE
+JPMorgan Chase is a leading global financial services firm with over 55,000 technologists worldwide and a $15 billion annual technology budget. The firm serves millions of consumers and many of the world's most prominent corporate, institutional, and government clients under the J.P. Morgan and Chase brands.
+
+Base salary range: $128,000 – $195,000 USD depending on location, experience, and skills.
