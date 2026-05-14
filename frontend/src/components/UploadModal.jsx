@@ -325,7 +325,7 @@ export default function UploadModal({ onClose, onSuccess }) {
     }, 950);
 
     try {
-      const res = await axios.post("http://localhost:4000/api/resume/upload", fd, {
+      const res = await axios.post("https://ai-resume-tauw.onrender.com/api/resume/upload", fd, {
         withCredentials: true,
         headers: { "Content-Type": "multipart/form-data" },
       });

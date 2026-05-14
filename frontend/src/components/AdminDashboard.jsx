@@ -167,7 +167,7 @@ export default function AdminDashboard() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('http://localhost:4000/api/admin/users', { withCredentials: true });
+      const res = await axios.get('https://ai-resume-tauw.onrender.com/api/admin/users', { withCredentials: true });
       setUsers(res.data.users);
     } catch (err) {
       if (err.response?.status === 403) {

@@ -18,7 +18,7 @@ export default function Resume() {
   useEffect(() => {
     const fetchResume = async () => {
       try {
-        const res = await axios.get(`http://localhost:4000/api/resume/${id}`, {
+        const res = await axios.get(`https://ai-resume-tauw.onrender.com/api/resume/${id}`, {
           withCredentials: true
         });
         setResume(res.data);

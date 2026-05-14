@@ -14,7 +14,7 @@ function Register() {
     setLoading(true);
     setError(null);
     try {
-      const resObj = await axios.post("http://localhost:4000/api/user/register", formObj);
+      const resObj = await axios.post("https://ai-resume-tauw.onrender.com/api/user/register", formObj);
       if (resObj.status === 201) {
         toast.success("Registration successful! Please login.");
         navigate('/login');

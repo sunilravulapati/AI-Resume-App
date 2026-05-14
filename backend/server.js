@@ -13,7 +13,7 @@ const app = exp()
 
 const allowedOrigins = [
   'http://localhost:5173', // local dev environment
-  'https://ai-resume-app-psi.vercel.app/'
+  'https://ai-resume-app-psi.vercel.app'
 ];
 
 app.use(cors({
