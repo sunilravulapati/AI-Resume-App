@@ -2,7 +2,10 @@ import { create } from 'zustand';
 import axios from 'axios';
 
 axios.defaults.withCredentials = true; 
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Clean up the URL: remove trailing slash and accidental trailing /api
+const cleanUrl = rawUrl.replace(/\/+$/, '').replace(/\/api$/, '');
+axios.defaults.baseURL = cleanUrl;
 
 const useUserStore = create((set) => ({
   userRecord: null,

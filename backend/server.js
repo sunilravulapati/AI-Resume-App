@@ -14,7 +14,7 @@ app.set('trust proxy', 1);
 
 const allowedOrigins = [
   'http://localhost:5173', // local dev environment
-  'https://ai-resume-seven-eosin.vercel.app/'
+  'https://ai-resume-seven-eosin.vercel.app'
 ];
 
 app.use(cors({
