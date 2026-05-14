@@ -18,6 +18,7 @@ It combines programmatic scoring with Llama 3.3 (via Groq) to simulate how real 
 </div>
 
 ---
+**Live Link**: https://ai-resume-seven-eosin.vercel.app/
 
 ## ✨ Features
 
@@ -204,7 +205,6 @@ B.Tech Computer Science — Anurag University | CGPA: 9.05
 | CodeChef | 760+ problems solved |
 
 ---
-
 <div align="center">
 
 ⭐ **If you find this project useful, consider starring the repository!** ⭐
