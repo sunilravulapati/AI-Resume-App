@@ -31,7 +31,6 @@ app.use(cookieParser());
 app.use("/api/resume", resumeRouter);
 app.use("/api/user", userRouter);
 app.use("/api/admin", adminRouter);
-app.use('/uploads', exp.static(path.join(process.cwd(), 'uploads')));
 const connectDB = async () => {
     try{
         await connect(process.env.DB_URL)

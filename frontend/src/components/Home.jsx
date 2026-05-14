@@ -1,321 +1,772 @@
 import { NavLink } from "react-router";
 
 const globalStyles = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Syne:wght@400;500;600;700;800&display=swap');
 
-  .home-root { font-family: 'DM Sans', sans-serif; }
-  .display-font { font-family: 'DM Serif Display', serif; }
+  *, *::before, *::after { box-sizing: border-box; }
 
-  .dot-grid {
-    background-image: radial-gradient(circle, #d2d2d7 1px, transparent 1px);
-    background-size: 28px 28px;
+  .home-root {
+    font-family: 'Syne', sans-serif;
+    background: #FAFAF8;
+    color: #0F0F0D;
   }
 
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(22px); }
+  .serif { font-family: 'Instrument Serif', serif; }
+
+  /* Noise texture overlay */
+  .home-root::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    opacity: 0.4;
+  }
+
+  /* ── Animations ── */
+  @keyframes in-up {
+    from { opacity: 0; transform: translateY(32px); }
     to   { opacity: 1; transform: translateY(0); }
   }
-  .fade-up  { animation: fadeUp 0.65s ease both; }
-  .delay-1  { animation-delay: 0.10s; }
-  .delay-2  { animation-delay: 0.22s; }
-  .delay-3  { animation-delay: 0.34s; }
-  .delay-4  { animation-delay: 0.46s; }
-  .delay-5  { animation-delay: 0.58s; }
-
-  @keyframes countUp {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: translateY(0); }
+  @keyframes in-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
-  .score-tick { animation: countUp 0.5s ease both; animation-delay: 0.8s; }
-
-  .card-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-  .card-lift:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.10); }
-
-  .grad-text {
-    background: linear-gradient(135deg, #0066cc 0%, #004499 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  @keyframes bar-grow {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+  @keyframes score-pop {
+    0%   { transform: scale(0.8); opacity: 0; }
+    70%  { transform: scale(1.04); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50%       { transform: translateY(-8px); }
+  }
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
   }
 
-  @keyframes bar-fill {
-    from { width: 0%; }
-    to   { width: 68%; }
-  }
-  .bar-animate { animation: bar-fill 1.4s cubic-bezier(0.4,0,0.2,1) both; animation-delay: 1s; }
+  .a-up   { animation: in-up 0.7s cubic-bezier(0.22,1,0.36,1) both; }
+  .a-fade { animation: in-fade 0.6s ease both; }
+  .d1 { animation-delay: 0.05s; }
+  .d2 { animation-delay: 0.14s; }
+  .d3 { animation-delay: 0.23s; }
+  .d4 { animation-delay: 0.32s; }
+  .d5 { animation-delay: 0.42s; }
+  .d6 { animation-delay: 0.52s; }
 
-  @keyframes shimmer-slide {
-    0%   { transform: translateX(-100%); }
-    100% { transform: translateX(300%); }
+  /* ── Hero ── */
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid rgba(15,15,13,0.15);
+    border-radius: 99px;
+    padding: 6px 14px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #4B4B45;
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(8px);
   }
-  .shimmer-line::after {
+  .hero-badge .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #22C55E;
+    animation: float 2s ease-in-out infinite;
+  }
+
+  .hero-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(3.6rem, 9vw, 7.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    color: #0F0F0D;
+  }
+  .hero-title em {
+    font-style: italic;
+    color: #1A5CFF;
+  }
+
+  .hero-sub {
+    font-size: 1rem;
+    font-weight: 400;
+    color: #6B6B62;
+    line-height: 1.7;
+    max-width: 400px;
+  }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #0F0F0D;
+    color: #FAFAF8;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 14px 28px;
+    border-radius: 99px;
+    text-decoration: none;
+    border: 2px solid #0F0F0D;
+    transition: background 0.2s, color 0.2s, transform 0.15s;
+  }
+  .btn-primary:hover {
+    background: #1A5CFF;
+    border-color: #1A5CFF;
+    transform: translateY(-1px);
+  }
+
+  .btn-ghost {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: transparent;
+    color: #0F0F0D;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 14px 28px;
+    border-radius: 99px;
+    text-decoration: none;
+    border: 1.5px solid rgba(15,15,13,0.25);
+    transition: border-color 0.2s, background 0.2s, transform 0.15s;
+  }
+  .btn-ghost:hover {
+    border-color: #0F0F0D;
+    background: rgba(15,15,13,0.04);
+    transform: translateY(-1px);
+  }
+
+  /* ── Score Widget ── */
+  .score-widget {
+    background: #0F0F0D;
+    border-radius: 20px;
+    padding: 28px;
+    color: #FAFAF8;
+    position: relative;
+    overflow: hidden;
+  }
+  .score-widget::before {
     content: '';
     position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
-    animation: shimmer-slide 2s infinite;
+    top: -60px; right: -60px;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(26,92,255,0.3) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .score-num {
+    font-family: 'Instrument Serif', serif;
+    font-size: 4.5rem;
+    line-height: 1;
+    animation: score-pop 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.9s both;
+  }
+  .score-bar-track {
+    height: 3px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    transform-origin: left;
+    animation: bar-grow 1.2s cubic-bezier(0.4,0,0.2,1) 1.1s both;
+  }
+  .chip {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 99px;
+    border: 1px solid;
+  }
+
+  /* ── Marquee ── */
+  .marquee-wrap {
+    overflow: hidden;
+    border-top: 1px solid rgba(15,15,13,0.1);
+    border-bottom: 1px solid rgba(15,15,13,0.1);
+    background: #F0EFE8;
+    padding: 14px 0;
+  }
+  .marquee-inner {
+    display: flex;
+    gap: 48px;
+    width: max-content;
+    animation: marquee 22s linear infinite;
+    white-space: nowrap;
+  }
+  .marquee-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #4B4B45;
+  }
+  .marquee-dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: #1A5CFF;
+    flex-shrink: 0;
+  }
+
+  /* ── Section Labels ── */
+  .section-eyebrow {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #1A5CFF;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(2.4rem, 5vw, 3.8rem);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: #0F0F0D;
+  }
+  .section-title em {
+    font-style: italic;
+    color: #1A5CFF;
+  }
+
+  /* ── Numbered Steps ── */
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1px;
+    background: rgba(15,15,13,0.1);
+    border: 1px solid rgba(15,15,13,0.1);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+  .step-cell {
+    background: #FAFAF8;
+    padding: 36px 32px;
+    transition: background 0.2s;
+    position: relative;
+  }
+  .step-cell:hover { background: #fff; }
+  .step-num {
+    font-family: 'Instrument Serif', serif;
+    font-size: 5rem;
+    line-height: 1;
+    color: rgba(15,15,13,0.06);
+    position: absolute;
+    top: 16px; right: 20px;
+    user-select: none;
+  }
+  .step-arrow {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: #0F0F0D;
+    display: flex; align-items: center; justify-content: center;
+    color: #FAFAF8;
+    font-size: 13px;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+  }
+
+  /* ── Mode cards ── */
+  .mode-card {
+    border-radius: 24px;
+    padding: 40px;
+    position: relative;
+    overflow: hidden;
+    border: 1.5px solid rgba(15,15,13,0.1);
+    transition: transform 0.25s, box-shadow 0.25s;
+  }
+  .mode-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 24px 56px rgba(15,15,13,0.08);
+  }
+  .mode-card.general { background: #fff; }
+  .mode-card.targeted { background: #0F0F0D; color: #FAFAF8; border-color: #0F0F0D; }
+
+  .mode-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 99px;
+    border: 1px solid;
+    margin-bottom: 24px;
+  }
+  .mode-tag.general { color: #1A5CFF; border-color: rgba(26,92,255,0.25); background: rgba(26,92,255,0.06); }
+  .mode-tag.targeted { color: #86EFAC; border-color: rgba(134,239,172,0.25); background: rgba(134,239,172,0.08); }
+
+  .check-list li {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 0;
+  }
+  .check-icon {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px;
+    flex-shrink: 0;
+    font-weight: 900;
+  }
+  .check-icon.blue { background: rgba(26,92,255,0.1); color: #1A5CFF; }
+  .check-icon.green { background: rgba(134,239,172,0.15); color: #86EFAC; }
+
+  /* ── Export cards ── */
+  .export-card {
+    background: #fff;
+    border: 1px solid rgba(15,15,13,0.08);
+    border-radius: 20px;
+    padding: 32px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .export-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 40px rgba(15,15,13,0.07);
+  }
+  .export-icon-wrap {
+    width: 52px; height: 52px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+
+  /* ── Feature grid ── */
+  .feature-card {
+    background: #fff;
+    border: 1px solid rgba(15,15,13,0.08);
+    border-radius: 20px;
+    padding: 32px;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .feature-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(15,15,13,0.2);
+  }
+  .feature-icon {
+    font-size: 28px;
+    margin-bottom: 18px;
+    display: block;
+  }
+
+  /* ── Split CTA ── */
+  .split-card {
+    border-radius: 28px;
+    padding: 52px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+  .split-card.light {
+    background: #fff;
+    border: 1.5px solid rgba(15,15,13,0.1);
+  }
+  .split-card.dark {
+    background: #0F0F0D;
+    color: #FAFAF8;
+  }
+  .split-card .deco-circle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .numbered-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .n-bubble {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ── Differentiator cards ── */
+  .diff-card {
+    background: #fff;
+    border: 1px solid rgba(15,15,13,0.08);
+    border-radius: 20px;
+    padding: 36px;
+    transition: transform 0.2s;
+    position: relative;
+  }
+  .diff-card:hover { transform: translateY(-3px); }
+  .diff-accent-line {
+    width: 32px;
+    height: 2px;
+    border-radius: 99px;
+    margin-bottom: 24px;
+  }
+  .diff-tag {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 99px;
+    margin-bottom: 20px;
+    display: inline-block;
+  }
+
+  /* ── Final CTA ── */
+  .cta-section {
+    background: #0F0F0D;
+    border-radius: 28px;
+    padding: 80px 48px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(2.6rem, 6vw, 5rem);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    color: #FAFAF8;
+    margin-bottom: 20px;
+  }
+  .cta-title em { font-style: italic; color: #7AADFF; }
+  .cta-glow {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px; height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(26,92,255,0.2) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* ── Overleaf Banner ── */
+  .overleaf-banner {
+    background: #FDF6EC;
+    border: 1px solid rgba(180,115,0,0.2);
+    border-radius: 16px;
+    padding: 24px 28px;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    margin-top: 32px;
+  }
+
+  /* ── Recruiter label ── */
+  .recruiter-badge {
+    background: rgba(34,197,94,0.08);
+    color: #15803D;
+    border: 1px solid rgba(34,197,94,0.2);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 99px;
+    display: inline-block;
+    margin-bottom: 32px;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .hero-title { font-size: 3rem; }
+    .split-card { padding: 36px 28px; }
+    .cta-section { padding: 60px 28px; }
   }
 `;
 
-// ─── updated feature data ────────────────────────────────────────────────────
-
-const studentFeatures = [
-  {
-    icon: "⚡",
-    title: "Two-Path Analysis",
-    desc: "General scan for ATS best practices, or a deep Targeted Match against a specific Job Description — with role fit score, keyword gap, and seniority alignment.",
-  },
-  {
-    icon: "🎯",
-    title: "Zero-Hallucination Tailoring",
-    desc: "Rewrites your existing experience to match any JD using the STAR method — without inventing a single fake credential.",
-  },
-  {
-    icon: "📈",
-    title: "Version History & Tracking",
-    desc: "Every upload is saved with its score. Watch your ATS number climb as you iterate across general and targeted analyses.",
-  },
-  {
-    icon: "🔍",
-    title: "Keyword Gap Analysis",
-    desc: "See exactly which required skills from the JD are missing from your resume — listed as chips, not vague advice.",
-  },
+const marqueeItems = [
+  "ATS Scoring", "Role Fit Analysis", "Keyword Gap Detection",
+  "Zero Hallucination", "Overleaf Export", "Recruiter Portal",
+  "STAR Method Rewrites", "Version History", "PDF Download",
+  "Two-Path Analysis",
 ];
 
-const exportFeatures = [
+const steps = [
+  { n: "01", title: "Upload & choose mode", desc: "Drop your PDF. Pick General for a best-practices scan, or Targeted to match a specific role." },
+  { n: "02", title: "Paste your target JD", desc: "In Targeted mode, paste the job description. The AI extracts every keyword and maps them to your resume." },
+  { n: "03", title: "Get tailored output", desc: "Receive a fully rewritten resume. Export via Copy, PDF download, or Overleaf LaTeX." },
+];
+
+const studentFeatures = [
+  { icon: "⚡", title: "Two-path analysis", desc: "General scan for ATS best practices, or deep Targeted Match — with role fit score, keyword gap, and seniority alignment." },
+  { icon: "🎯", title: "Zero-hallucination tailoring", desc: "Rewrites your existing experience using the STAR method — without inventing a single fake credential." },
+  { icon: "📈", title: "Version history & tracking", desc: "Every upload is saved with its score. Watch your ATS number climb as you iterate." },
+  { icon: "🔍", title: "Keyword gap analysis", desc: "See exactly which required skills from the JD are missing — listed as chips, not vague advice." },
+];
+
+const recruiterFeatures = [
+  { icon: "🏊", title: "Instant talent pool", desc: "Candidates ranked by verified ATS score the moment they upload — no manual shortlisting needed." },
+  { icon: "💬", title: "\"Harsh but fair\" summaries", desc: "Objective executive summary: biggest technical asset + most glaring red flag. No fluff." },
+  { icon: "🖥️", title: "Split-screen review portal", desc: "Original PDF side-by-side with the AI's candid breakdown. Everything in one screen." },
+];
+
+const exportOptions = [
   {
     icon: "📋",
     badge: "Instant",
-    badgeColor: "#0066cc",
-    title: "Copy & Paste",
+    badgeColor: "#1A5CFF",
+    badgeBg: "rgba(26,92,255,0.08)",
+    iconBg: "rgba(26,92,255,0.08)",
+    title: "Copy & paste",
     desc: "Copy all AI suggestions as plain text. Drop straight into Word, Notion, Google Docs — any editor you already use.",
   },
   {
     icon: "⬇️",
-    badge: "Quick",
-    badgeColor: "#248a3d",
+    badge: "One click",
+    badgeColor: "#15803D",
+    badgeBg: "rgba(21,128,61,0.08)",
+    iconBg: "rgba(21,128,61,0.08)",
     title: "Download PDF",
-    desc: "One-click ATS-ready PDF built from your actual uploaded resume with AI content applied on top.",
+    desc: "ATS-ready PDF built from your actual uploaded resume with AI content applied on top.",
   },
   {
     icon: "🧪",
-    badge: "Best Quality",
-    badgeColor: "#b86e00",
+    badge: "Best quality",
+    badgeColor: "#B45309",
+    badgeBg: "rgba(180,83,9,0.08)",
+    iconBg: "rgba(180,83,9,0.08)",
     title: "Overleaf / LaTeX",
-    desc: "Generate Jake's Resume template pre-filled with your AI tailored content. Paste into Overleaf, recompile, done.",
+    desc: "Jake's Resume template pre-filled with your AI-tailored content. Paste into Overleaf, recompile, done.",
   },
-];
-
-const recruiterFeatures = [
-  {
-    icon: "🏊",
-    title: "Instant Talent Pool",
-    desc: "Candidates are ranked by verified ATS score the moment they upload — no manual shortlisting needed.",
-  },
-  {
-    icon: "💬",
-    title: "\"Harsh but Fair\" Summaries",
-    desc: "Bypass resume fluff. Get an objective executive summary: biggest technical asset + most glaring red flag.",
-  },
-  {
-    icon: "🖥️",
-    title: "Split-Screen Review Portal",
-    desc: "Original PDF side-by-side with the AI's candid breakdown. Everything you need in one screen.",
-  },
-];
-
-const steps = [
-  { n: "01", title: "Upload & Choose Mode", desc: "Drop your PDF. Pick General for a best-practices scan, or Targeted to match a specific role." },
-  { n: "02", title: "Paste Target JD", desc: "In Targeted mode, paste the job description. The AI extracts every keyword and maps them to your resume." },
-  { n: "03", title: "Get Tailored Output", desc: "Receive a fully rewritten resume. Export via Copy, PDF download, or Overleaf LaTeX." },
 ];
 
 const differentiators = [
   {
     tag: "vs. ChatGPT",
+    tagColor: "#1A5CFF",
+    tagBg: "rgba(26,92,255,0.08)",
+    accent: "#1A5CFF",
     title: "We don't hallucinate.",
-    desc: "Generic AI tools invent fake metrics and jobs to pad resumes — which gets candidates blacklisted in background checks. We are hard-coded to only enhance what you actually did.",
-    accent: "#0066cc",
+    desc: "Generic AI tools invent fake metrics and jobs to pad resumes — getting candidates blacklisted. We are hard-coded to only enhance what you actually did.",
   },
   {
     tag: "vs. Resume Builders",
+    tagColor: "#15803D",
+    tagBg: "rgba(21,128,61,0.08)",
+    accent: "#22C55E",
     title: "A two-sided marketplace.",
-    desc: "Most builders are a dead end: you download a PDF and you're done. When you optimize here, you're instantly placed in a searchable talent pool seen by verified recruiters.",
-    accent: "#248a3d",
+    desc: "Most builders are a dead end. When you optimize here, you're instantly placed in a searchable talent pool seen by verified recruiters.",
   },
   {
     tag: "vs. \"AI Score\" tools",
+    tagColor: "#B45309",
+    tagBg: "rgba(180,83,9,0.08)",
+    accent: "#F59E0B",
     title: "Mathematically grounded.",
-    desc: "Regex proves the existence of GitHub links, metrics, and strong verbs before Llama-3 judges the prose quality. Two layers. One reliable number.",
-    accent: "#b86e00",
+    desc: "Regex proves the existence of GitHub links, metrics, and action verbs before Llama-3 judges prose quality. Two layers. One reliable number.",
   },
 ];
 
-// ─── component ───────────────────────────────────────────────────────────────
 export default function Home() {
   return (
     <>
       <style>{globalStyles}</style>
+      <main className="home-root" style={{ position: "relative", zIndex: 1 }}>
 
-      <main className="home-root bg-white text-[#1d1d1f] overflow-x-hidden">
-
-        {/* ══════════════════════════════════════════════
+        {/* ═══════════════════════════════════════════════
             HERO
-        ══════════════════════════════════════════════ */}
-        <section className="relative min-h-[92vh] flex items-center dot-grid">
-          <div className="absolute inset-0 bg-gradient-to-b from-white via-white/80 to-white pointer-events-none" />
+        ═══════════════════════════════════════════════ */}
+        <section style={{ maxWidth: 1160, margin: "0 auto", padding: "80px 32px 100px" }}>
+          <div style={{ maxWidth: 760 }}>
 
-          <div className="relative max-w-5xl mx-auto px-6 py-28 text-center">
-
-            <div className="fade-up delay-1 inline-flex items-center gap-2 bg-[#0066cc]/[0.07] border border-[#0066cc]/20 rounded-full px-4 py-1.5 mb-8">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc] animate-pulse" />
-              <span className="text-[0.72rem] font-semibold text-[#0066cc] uppercase tracking-widest">AI-Powered · ATS-Proven · Overleaf-Ready</span>
+            <div className="hero-badge a-up d1">
+              <span className="dot" />
+              AI-Powered · ATS-Proven · Overleaf-Ready
             </div>
 
-            <h1 className="display-font fade-up delay-2 text-[clamp(2.8rem,7vw,5.5rem)] leading-[1.05] text-[#1d1d1f] mb-6">
-              Stop Guessing.<br />
-              <em className="grad-text not-italic">Start Landing Interviews.</em>
+            <h1 className="hero-title a-up d2" style={{ margin: "28px 0 24px" }}>
+              Stop guessing.<br />
+              <em>Start landing</em><br />
+              interviews.
             </h1>
 
-            <p className="fade-up delay-3 text-[#6e6e73] text-lg max-w-xl mx-auto leading-relaxed mb-12">
+            <p className="hero-sub a-up d3" style={{ marginBottom: 40 }}>
               Upload your resume. Get a general ATS score — or match it against a specific job description for a role fit score, keyword gap analysis, and a tailored rewrite.
             </p>
 
-            <div className="fade-up delay-4 flex flex-col sm:flex-row gap-3 justify-center mb-16">
-              <NavLink
-                to="/register"
-                className="bg-[#0066cc] text-white font-semibold px-8 py-3.5 rounded-full hover:bg-[#004499] transition-colors text-sm tracking-tight shadow-lg shadow-[#0066cc]/25"
-              >
-                I'm a Student / Job Seeker →
+            <div className="a-up d4" style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 64 }}>
+              <NavLink to="/register" className="btn-primary">
+                I'm a student / job seeker →
               </NavLink>
-              <NavLink
-                to="/register"
-                className="border border-[#d2d2d7] text-[#1d1d1f] font-medium px-8 py-3.5 rounded-full hover:bg-[#f5f5f7] transition-colors text-sm"
-              >
-                I'm a Recruiter / Hiring Manager
+              <NavLink to="/register" className="btn-ghost">
+                I'm a recruiter / hiring manager
               </NavLink>
-            </div>
-
-            {/* Hero score card — updated to show dual scores */}
-            <div className="fade-up delay-5 inline-flex flex-wrap items-center justify-center gap-6 bg-white border border-[#e8e8ed] rounded-2xl px-7 py-4 shadow-xl shadow-black/5">
-              <div className="text-left">
-                <p className="text-[0.65rem] font-semibold text-[#a1a1a6] uppercase tracking-widest mb-0.5">General Score</p>
-                <p className="score-tick text-3xl font-black text-[#0066cc] tracking-tight leading-none">
-                  85<span className="text-base font-normal text-[#a1a1a6]">/100</span>
-                </p>
-              </div>
-              <div className="w-px h-10 bg-[#e8e8ed]" />
-              <div className="text-left">
-                <p className="text-[0.65rem] font-semibold text-[#a1a1a6] uppercase tracking-widest mb-0.5">Role Match</p>
-                <p className="score-tick text-3xl font-black text-[#248a3d] tracking-tight leading-none">
-                  72<span className="text-base font-normal text-[#a1a1a6]">/100</span>
-                </p>
-              </div>
-              <div className="w-px h-10 bg-[#e8e8ed]" />
-              <div className="text-left min-w-[120px]">
-                <p className="text-[0.65rem] font-semibold text-[#a1a1a6] uppercase tracking-widest mb-1.5">Keyword Match</p>
-                <div className="flex items-center gap-2">
-                  <div className="relative w-20 h-1.5 bg-[#e8e8ed] rounded-full overflow-hidden shimmer-line">
-                    <div className="absolute left-0 top-0 h-full bg-[#0066cc] rounded-full bar-animate" />
-                  </div>
-                  <span className="text-xs font-black text-[#0066cc]">68%</span>
-                </div>
-              </div>
-              <div className="w-px h-10 bg-[#e8e8ed]" />
-              <div className="text-left">
-                <p className="text-[0.65rem] font-semibold text-[#a1a1a6] uppercase tracking-widest mb-1">Tailored for</p>
-                <span className="text-xs font-semibold text-[#248a3d] bg-[#34c759]/10 border border-[#34c759]/20 px-2.5 py-0.5 rounded-full">✅ Senior SWE @ JPMC</span>
-              </div>
             </div>
 
           </div>
+
+          {/* ── Score card widget ── */}
+          <div className="a-up d5" style={{ maxWidth: 680 }}>
+            <div className="score-widget">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1px 1fr 1px 1fr", gap: 0, alignItems: "start" }}>
+
+                {/* General Score */}
+                <div style={{ paddingRight: 28 }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(250,250,248,0.4)", marginBottom: 8 }}>General Score</p>
+                  <div className="score-num" style={{ color: "#FAFAF8" }}>85</div>
+                  <p style={{ fontSize: 10, color: "rgba(250,250,248,0.4)", marginTop: 4 }}>out of 100</p>
+                  <div className="score-bar-track" style={{ marginTop: 12 }}>
+                    <div className="score-bar-fill" style={{ width: "85%", background: "#FAFAF8" }} />
+                  </div>
+                </div>
+
+                <div style={{ background: "rgba(250,250,248,0.08)", width: 1, height: "100%", margin: "0 24px" }} />
+
+                {/* Role Match */}
+                <div style={{ padding: "0 4px" }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(250,250,248,0.4)", marginBottom: 8 }}>Role match</p>
+                  <div className="score-num" style={{ color: "#86EFAC", animationDelay: "1s" }}>72</div>
+                  <p style={{ fontSize: 10, color: "rgba(250,250,248,0.4)", marginTop: 4 }}>out of 100</p>
+                  <div className="score-bar-track" style={{ marginTop: 12 }}>
+                    <div className="score-bar-fill" style={{ width: "72%", background: "#86EFAC", animationDelay: "1.2s" }} />
+                  </div>
+                </div>
+
+                <div style={{ background: "rgba(250,250,248,0.08)", width: 1, height: "100%", margin: "0 24px" }} />
+
+                {/* Tailored for */}
+                <div style={{ paddingLeft: 4 }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(250,250,248,0.4)", marginBottom: 16 }}>Tailored for</p>
+                  <div style={{ background: "rgba(134,239,172,0.12)", border: "1px solid rgba(134,239,172,0.2)", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: "#86EFAC", marginBottom: 2 }}>Senior SWE @ JPMC</p>
+                    <p style={{ fontSize: 10, color: "rgba(250,250,248,0.4)" }}>Role match enabled</p>
+                  </div>
+                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(250,250,248,0.4)", marginBottom: 8 }}>Keyword match</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div className="score-bar-track" style={{ flex: 1 }}>
+                      <div className="score-bar-fill" style={{ width: "68%", background: "#7AADFF", animationDelay: "1.3s" }} />
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: "#7AADFF" }}>68%</span>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Missing skills chips */}
+              <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(250,250,248,0.08)" }}>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(250,250,248,0.35)", marginBottom: 10 }}>Missing keywords</p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {["Kubernetes", "gRPC", "System Design", "Distributed Systems"].map(k => (
+                    <span key={k} className="chip" style={{ color: "#F87171", borderColor: "rgba(248,113,113,0.3)", background: "rgba(248,113,113,0.08)" }}>{k}</span>
+                  ))}
+                  {["Spring Boot", "AWS Lambda"].map(k => (
+                    <span key={k} className="chip" style={{ color: "rgba(250,250,248,0.5)", borderColor: "rgba(250,250,248,0.1)", background: "rgba(250,250,248,0.04)" }}>{k}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
 
-        {/* ══════════════════════════════════════════════
+        {/* ═══════════════════════════════════════════════
+            MARQUEE
+        ═══════════════════════════════════════════════ */}
+        <div className="marquee-wrap">
+          <div className="marquee-inner">
+            {[...marqueeItems, ...marqueeItems].map((item, i) => (
+              <div className="marquee-item" key={i}>
+                <span className="marquee-dot" />
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ═══════════════════════════════════════════════
             HOW IT WORKS
-        ══════════════════════════════════════════════ */}
-        <section className="bg-[#f5f5f7] py-24 px-6">
-          <div className="max-w-5xl mx-auto">
-            <p className="text-[0.65rem] font-semibold text-[#0066cc] uppercase tracking-widest mb-3 text-center">Process</p>
-            <h2 className="display-font text-4xl text-center text-[#1d1d1f] mb-16">How it works</h2>
+        ═══════════════════════════════════════════════ */}
+        <section style={{ maxWidth: 1160, margin: "0 auto", padding: "100px 32px" }}>
+          <p className="section-eyebrow">Process</p>
+          <h2 className="section-title" style={{ marginBottom: 56, maxWidth: 500 }}>Three steps to a better resume</h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[#e8e8ed] rounded-2xl overflow-hidden border border-[#e8e8ed]">
-              {steps.map((step, i) => (
-                <div key={i} className="bg-[#f5f5f7] hover:bg-white transition-colors duration-200 p-8 flex flex-col gap-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl font-black text-[#e8e8ed]">{step.n}</span>
-                    {i < steps.length - 1 && (
-                      <span className="hidden md:block ml-auto text-[#d2d2d7] text-xl">→</span>
-                    )}
-                  </div>
-                  <h3 className="text-base font-bold text-[#1d1d1f]">{step.title}</h3>
-                  <p className="text-sm text-[#6e6e73] leading-relaxed">{step.desc}</p>
+          <div className="steps-grid">
+            {steps.map((step, i) => (
+              <div className="step-cell" key={i}>
+                <span className="step-num">{step.n}</span>
+                <div className="step-arrow">
+                  {i < steps.length - 1 ? "→" : "✓"}
                 </div>
-              ))}
-            </div>
+                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 10, color: "#0F0F0D" }}>{step.title}</h3>
+                <p style={{ fontSize: 13, color: "#6B6B62", lineHeight: 1.7 }}>{step.desc}</p>
+              </div>
+            ))}
           </div>
         </section>
 
-        {/* ══════════════════════════════════════════════
-            ANALYSIS MODES — NEW SECTION
-        ══════════════════════════════════════════════ */}
-        <section className="py-24 px-6">
-          <div className="max-w-5xl mx-auto">
-            <p className="text-[0.65rem] font-semibold text-[#0066cc] uppercase tracking-widest mb-3 text-center">Two Analysis Modes</p>
-            <h2 className="display-font text-4xl text-center text-[#1d1d1f] mb-4">General or Targeted — you choose</h2>
-            <p className="text-center text-[#6e6e73] text-sm max-w-lg mx-auto mb-14">
+        {/* ═══════════════════════════════════════════════
+            TWO ANALYSIS MODES
+        ═══════════════════════════════════════════════ */}
+        <section style={{ background: "#F0EFE8", padding: "100px 32px" }}>
+          <div style={{ maxWidth: 1160, margin: "0 auto" }}>
+            <p className="section-eyebrow">Two analysis modes</p>
+            <h2 className="section-title" style={{ marginBottom: 12 }}>General or <em>Targeted</em> — you choose</h2>
+            <p style={{ color: "#6B6B62", fontSize: 14, maxWidth: 440, marginBottom: 56, lineHeight: 1.7 }}>
               Run a General scan to get your baseline ATS score. Then use Targeted mode for every specific role you apply to.
             </p>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
 
               {/* General */}
-              <div className="bg-white border-2 border-[#e8e8ed] rounded-3xl p-8 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-[#0066cc]/[0.03] rounded-full -translate-y-1/2 translate-x-1/2" />
-                <div className="relative">
-                  <div className="inline-flex items-center gap-2 bg-[#0066cc]/[0.07] border border-[#0066cc]/20 rounded-full px-3 py-1 mb-5">
-                    <span className="text-xs">⚡</span>
-                    <span className="text-[0.65rem] font-bold text-[#0066cc] uppercase tracking-wider">General Analysis</span>
-                  </div>
-                  <h3 className="text-xl font-bold text-[#1d1d1f] mb-3">Best-practices baseline scan</h3>
-                  <p className="text-sm text-[#6e6e73] leading-relaxed mb-6">
-                    No JD needed. Checks formatting, impact language, metrics usage, action verbs, and ATS hygiene. Get a 0–100 score in seconds.
-                  </p>
-                  <ul className="space-y-2.5">
-                    {["ATS score (0–100)", "Top 3 strengths", "Top 3 fixable issues", "Brutally honest AI summary"].map((item, i) => (
-                      <li key={i} className="flex items-center gap-2.5 text-sm text-[#1d1d1f]">
-                        <span className="w-4 h-4 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-[0.6rem] font-black flex items-center justify-center shrink-0">✓</span>
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
+              <div className="mode-card general">
+                <div className="mode-tag general">
+                  <span>⚡</span> General analysis
                 </div>
+                <h3 style={{ fontSize: 22, fontFamily: "'Instrument Serif', serif", marginBottom: 12, lineHeight: 1.2 }}>Best-practices baseline scan</h3>
+                <p style={{ fontSize: 13, color: "#6B6B62", lineHeight: 1.7, marginBottom: 28 }}>
+                  No JD needed. Checks formatting, impact language, metrics usage, action verbs, and ATS hygiene. Get a 0–100 score in seconds.
+                </p>
+                <ul className="check-list" style={{ margin: 0, padding: 0 }}>
+                  {["ATS score (0–100)", "Top 3 strengths", "Top 3 fixable issues", "Brutally honest AI summary"].map((item, i) => (
+                    <li key={i}>
+                      <span className="check-icon blue">✓</span>
+                      <span style={{ fontSize: 13, color: "#0F0F0D", fontWeight: 500 }}>{item}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
 
               {/* Targeted */}
-              <div className="bg-white border-2 border-[#248a3d]/30 rounded-3xl p-8 relative overflow-hidden shadow-lg shadow-[#248a3d]/5">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-[#34c759]/[0.04] rounded-full -translate-y-1/2 translate-x-1/2" />
-                <div className="relative">
-                  <div className="inline-flex items-center gap-2 bg-[#248a3d]/[0.07] border border-[#248a3d]/20 rounded-full px-3 py-1 mb-5">
-                    <span className="text-xs">🎯</span>
-                    <span className="text-[0.65rem] font-bold text-[#248a3d] uppercase tracking-wider">Match My Resume</span>
-                    <span className="text-[0.55rem] font-bold bg-[#248a3d] text-white px-1.5 py-0.5 rounded-full">New</span>
+              <div className="mode-card targeted">
+                <div style={{ position: "absolute", top: -40, right: -40, width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle, rgba(26,92,255,0.3) 0%, transparent 70%)", pointerEvents: "none" }} />
+                <div style={{ position: "relative" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24 }}>
+                    <div className="mode-tag targeted">
+                      <span>🎯</span> Match my resume
+                    </div>
+                    <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", background: "#1A5CFF", color: "#fff", padding: "3px 8px", borderRadius: 99 }}>New</span>
                   </div>
-                  <h3 className="text-xl font-bold text-[#1d1d1f] mb-3">Deep JD match analysis</h3>
-                  <p className="text-sm text-[#6e6e73] leading-relaxed mb-6">
+                  <h3 style={{ fontSize: 22, fontFamily: "'Instrument Serif', serif", marginBottom: 12, lineHeight: 1.2, color: "#FAFAF8" }}>Deep JD match analysis</h3>
+                  <p style={{ fontSize: 13, color: "rgba(250,250,248,0.55)", lineHeight: 1.7, marginBottom: 28 }}>
                     Paste a job description. The AI extracts every required skill, cross-references your resume, and scores how well you fit the role.
                   </p>
-                  <ul className="space-y-2.5">
-                    {[
-                      "Role Match Score (0–100)",
-                      "Keyword Match Rate (%)",
-                      "Missing Critical Skills — listed explicitly",
-                      "Experience Gap Analysis vs. seniority level",
-                      "Role-specific strengths & improvements",
-                    ].map((item, i) => (
-                      <li key={i} className="flex items-center gap-2.5 text-sm text-[#1d1d1f]">
-                        <span className="w-4 h-4 rounded-full bg-[#248a3d]/10 text-[#248a3d] text-[0.6rem] font-black flex items-center justify-center shrink-0">✓</span>
-                        {item}
+                  <ul className="check-list" style={{ margin: 0, padding: 0 }}>
+                    {["Role Match Score (0–100)", "Keyword Match Rate (%)", "Missing critical skills — listed explicitly", "Experience gap vs. seniority level", "Role-specific strengths & improvements"].map((item, i) => (
+                      <li key={i}>
+                        <span className="check-icon green">✓</span>
+                        <span style={{ fontSize: 13, color: "rgba(250,250,248,0.85)", fontWeight: 500 }}>{item}</span>
                       </li>
                     ))}
                   </ul>
@@ -326,75 +777,63 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ══════════════════════════════════════════════
-            EXPORT OPTIONS — NEW SECTION
-        ══════════════════════════════════════════════ */}
-        <section className="py-24 px-6 bg-[#f5f5f7]">
-          <div className="max-w-5xl mx-auto">
-            <p className="text-[0.65rem] font-semibold text-[#0066cc] uppercase tracking-widest mb-3 text-center">Three Ways to Export</p>
-            <h2 className="display-font text-4xl text-center text-[#1d1d1f] mb-4">Use your tailored resume anywhere</h2>
-            <p className="text-center text-[#6e6e73] text-sm max-w-lg mx-auto mb-14">
-              After the AI rewrites your resume, choose how you want it. Every format is designed for a different workflow.
-            </p>
+        {/* ═══════════════════════════════════════════════
+            EXPORT OPTIONS
+        ═══════════════════════════════════════════════ */}
+        <section style={{ maxWidth: 1160, margin: "0 auto", padding: "100px 32px" }}>
+          <p className="section-eyebrow">Three ways to export</p>
+          <h2 className="section-title" style={{ marginBottom: 12 }}>Use your tailored resume <em>anywhere</em></h2>
+          <p style={{ color: "#6B6B62", fontSize: 14, maxWidth: 440, marginBottom: 56, lineHeight: 1.7 }}>
+            After the AI rewrites your resume, choose how you want it. Every format is designed for a different workflow.
+          </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {exportFeatures.map((f, i) => (
-                <div key={i} className="card-lift bg-white rounded-2xl p-7 border border-[#e8e8ed]">
-                  <div className="flex items-start justify-between mb-5">
-                    <span className="text-3xl">{f.icon}</span>
-                    <span
-                      className="text-[0.55rem] font-bold uppercase tracking-wider border px-2 py-0.5 rounded-full"
-                      style={{ color: f.badgeColor, borderColor: `${f.badgeColor}40`, background: `${f.badgeColor}10` }}
-                    >
-                      {f.badge}
-                    </span>
-                  </div>
-                  <h3 className="text-base font-bold text-[#1d1d1f] mb-2">{f.title}</h3>
-                  <p className="text-sm text-[#6e6e73] leading-relaxed">{f.desc}</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
+            {exportOptions.map((f, i) => (
+              <div className="export-card" key={i}>
+                <div className="export-icon-wrap" style={{ background: f.iconBg }}>
+                  <span style={{ fontSize: 22 }}>{f.icon}</span>
                 </div>
-              ))}
-            </div>
-
-            {/* Overleaf callout */}
-            <div className="mt-8 bg-white border border-[#b86e00]/25 rounded-2xl px-7 py-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="text-3xl shrink-0">🧪</div>
-              <div className="flex-1">
-                <p className="font-bold text-[#1d1d1f] text-sm mb-0.5">Why LaTeX / Overleaf?</p>
-                <p className="text-xs text-[#6e6e73] leading-relaxed">
-                  LaTeX produces typographically perfect output that looks identical on every device. ATS scanners parse LaTeX-generated PDFs more reliably than Word or Google Docs exports.
-                  We generate Jake's Resume template — the most popular ATS-proven template on Overleaf — pre-filled with your tailored content.
-                </p>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, color: "#0F0F0D" }}>{f.title}</h3>
+                  <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: f.badgeColor, background: f.badgeBg, border: `1px solid ${f.badgeColor}30`, padding: "3px 8px", borderRadius: 99 }}>{f.badge}</span>
+                </div>
+                <p style={{ fontSize: 13, color: "#6B6B62", lineHeight: 1.7 }}>{f.desc}</p>
               </div>
-              <a
-                href="https://www.overleaf.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs font-bold text-[#b86e00] border border-[#b86e00]/30 bg-[#b86e00]/[0.07] px-4 py-2 rounded-full hover:bg-[#b86e00]/15 transition-colors shrink-0"
-              >
-                Learn about Overleaf →
-              </a>
+            ))}
+          </div>
+
+          <div className="overleaf-banner">
+            <span style={{ fontSize: 28, flexShrink: 0 }}>🧪</span>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontWeight: 700, fontSize: 14, color: "#0F0F0D", marginBottom: 4 }}>Why LaTeX / Overleaf?</p>
+              <p style={{ fontSize: 12, color: "#6B6B62", lineHeight: 1.7 }}>
+                LaTeX produces typographically perfect output that looks identical on every device. ATS scanners parse LaTeX-generated PDFs more reliably than Word or Google Docs exports. We generate Jake's Resume template — the most popular ATS-proven template on Overleaf — pre-filled with your tailored content.
+              </p>
             </div>
+            <a href="https://www.overleaf.com" target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0, fontSize: 12, fontWeight: 700, color: "#B45309", border: "1px solid rgba(180,83,9,0.25)", background: "rgba(180,83,9,0.06)", padding: "8px 16px", borderRadius: 99, textDecoration: "none", transition: "background 0.2s", whiteSpace: "nowrap", display: "inline-block" }}>
+              Learn about Overleaf →
+            </a>
           </div>
         </section>
 
-        {/* ══════════════════════════════════════════════
-            FEATURE GRID
-        ══════════════════════════════════════════════ */}
-        <section className="py-24 px-6">
-          <div className="max-w-5xl mx-auto">
+        {/* ═══════════════════════════════════════════════
+            FEATURES GRID
+        ═══════════════════════════════════════════════ */}
+        <section style={{ background: "#F0EFE8", padding: "100px 32px" }}>
+          <div style={{ maxWidth: 1160, margin: "0 auto" }}>
 
             {/* Students */}
-            <div className="mb-16">
-              <div className="flex items-center gap-3 mb-10">
-                <span className="bg-[#0066cc]/10 text-[#0066cc] text-xs font-bold px-3 py-1 rounded-full border border-[#0066cc]/20">For Students & Job Seekers</span>
-                <div className="h-px flex-1 bg-[#e8e8ed]" />
+            <div style={{ marginBottom: 72 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 40 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#1A5CFF", background: "rgba(26,92,255,0.08)", border: "1px solid rgba(26,92,255,0.2)", padding: "5px 14px", borderRadius: 99, whiteSpace: "nowrap" }}>For students & job seekers</span>
+                <div style={{ height: 1, flex: 1, background: "rgba(15,15,13,0.1)" }} />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
                 {studentFeatures.map((f, i) => (
-                  <div key={i} className="card-lift bg-[#f5f5f7] rounded-2xl p-7 border border-transparent hover:border-[#e8e8ed]">
-                    <div className="text-3xl mb-4">{f.icon}</div>
-                    <h3 className="text-base font-bold text-[#1d1d1f] mb-2">{f.title}</h3>
-                    <p className="text-sm text-[#6e6e73] leading-relaxed">{f.desc}</p>
+                  <div className="feature-card" key={i}>
+                    <span className="feature-icon">{f.icon}</span>
+                    <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 10, color: "#0F0F0D" }}>{f.title}</h3>
+                    <p style={{ fontSize: 13, color: "#6B6B62", lineHeight: 1.7 }}>{f.desc}</p>
                   </div>
                 ))}
               </div>
@@ -402,151 +841,128 @@ export default function Home() {
 
             {/* Recruiters */}
             <div>
-              <div className="flex items-center gap-3 mb-10">
-                <span className="bg-[#34c759]/10 text-[#248a3d] text-xs font-bold px-3 py-1 rounded-full border border-[#34c759]/20">For Recruiters & Hiring Managers</span>
-                <div className="h-px flex-1 bg-[#e8e8ed]" />
+              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 40 }}>
+                <span className="recruiter-badge">For recruiters & hiring managers</span>
+                <div style={{ height: 1, flex: 1, background: "rgba(15,15,13,0.1)" }} />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
                 {recruiterFeatures.map((f, i) => (
-                  <div key={i} className="card-lift bg-[#f5f5f7] rounded-2xl p-7 border border-transparent hover:border-[#e8e8ed]">
-                    <div className="text-3xl mb-4">{f.icon}</div>
-                    <h3 className="text-base font-bold text-[#1d1d1f] mb-2">{f.title}</h3>
-                    <p className="text-sm text-[#6e6e73] leading-relaxed">{f.desc}</p>
+                  <div className="feature-card" key={i}>
+                    <span className="feature-icon">{f.icon}</span>
+                    <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 10, color: "#0F0F0D" }}>{f.title}</h3>
+                    <p style={{ fontSize: 13, color: "#6B6B62", lineHeight: 1.7 }}>{f.desc}</p>
                   </div>
                 ))}
               </div>
             </div>
+
           </div>
         </section>
 
-        {/* ══════════════════════════════════════════════
+        {/* ═══════════════════════════════════════════════
             SPLIT VALUE PROP
-        ══════════════════════════════════════════════ */}
-        <section className="py-20 px-6 bg-[#f5f5f7]">
-          <div className="max-w-5xl mx-auto">
-            <p className="text-[0.65rem] font-semibold text-[#0066cc] uppercase tracking-widest mb-3 text-center">Two sides. One platform.</p>
-            <h2 className="display-font text-4xl text-center text-[#1d1d1f] mb-12">Built for both sides of the table</h2>
+        ═══════════════════════════════════════════════ */}
+        <section style={{ maxWidth: 1160, margin: "0 auto", padding: "100px 32px" }}>
+          <p className="section-eyebrow" style={{ textAlign: "center" }}>Two sides. One platform.</p>
+          <h2 className="section-title" style={{ textAlign: "center", marginBottom: 56 }}>Built for both sides of the table</h2>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
 
-              <div className="bg-[#0066cc] rounded-3xl p-10 text-white relative overflow-hidden">
-                <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-white/5" />
-                <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-white/5" />
-                <div className="relative">
-                  <span className="text-xs font-semibold uppercase tracking-widest text-white/60 mb-4 block">Student View</span>
-                  <h3 className="display-font text-3xl mb-4 leading-tight">Your resume,<br />optimized for every role.</h3>
-                  <p className="text-white/75 text-sm leading-relaxed mb-8">
-                    Upload once. Run a General scan for your baseline. Switch to Targeted mode for any role — get keyword gaps, role fit score, and a fully rewritten resume with three export options.
-                  </p>
-                  <div className="space-y-3">
-                    {[
-                      "General & Targeted analysis modes",
-                      "Keyword gap + role match scoring",
-                      "Export via Copy, PDF, or Overleaf LaTeX",
-                    ].map((item, i) => (
-                      <div key={i} className="flex items-center gap-3">
-                        <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[0.6rem] font-bold shrink-0">{i + 1}</span>
-                        <span className="text-sm text-white/90">{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <NavLink
-                    to="/register"
-                    className="mt-8 inline-block bg-white text-[#0066cc] font-bold text-sm px-6 py-2.5 rounded-full hover:bg-[#f5f5f7] transition-colors"
-                  >
-                    Start for free →
-                  </NavLink>
+            {/* Student */}
+            <div className="split-card light">
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#6B6B62", display: "block", marginBottom: 20 }}>Student view</span>
+              <h3 style={{ fontFamily: "'Instrument Serif', serif", fontSize: 30, lineHeight: 1.1, color: "#0F0F0D", marginBottom: 16 }}>Your resume,<br />optimized for every role.</h3>
+              <p style={{ fontSize: 13, color: "#6B6B62", lineHeight: 1.7, marginBottom: 28 }}>
+                Upload once. Run a General scan for your baseline. Switch to Targeted mode for any role — get keyword gaps, role fit score, and a fully rewritten resume.
+              </p>
+              {["General & Targeted analysis modes", "Keyword gap + role match scoring", "Export via Copy, PDF, or Overleaf LaTeX"].map((item, i) => (
+                <div className="numbered-item" key={i}>
+                  <div className="n-bubble" style={{ background: "rgba(15,15,13,0.07)", color: "#0F0F0D" }}>{i + 1}</div>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#0F0F0D" }}>{item}</span>
                 </div>
-              </div>
-
-              <div className="bg-[#1d1d1f] rounded-3xl p-10 text-white relative overflow-hidden">
-                <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-white/5" />
-                <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-white/5" />
-                <div className="relative">
-                  <span className="text-xs font-semibold uppercase tracking-widest text-white/40 mb-4 block">Recruiter View</span>
-                  <h3 className="display-font text-3xl mb-4 leading-tight">A ranked talent pool,<br />ready to hire from.</h3>
-                  <p className="text-white/60 text-sm leading-relaxed mb-8">
-                    Skip the 200-resume pile. Browse pre-scored candidates, read objective AI summaries, and contact top talent in one click.
-                  </p>
-                  <div className="space-y-3">
-                    {["Candidates ranked by ATS score", "AI-generated objective summaries", "Split-screen PDF + analysis view"].map((item, i) => (
-                      <div key={i} className="flex items-center gap-3">
-                        <span className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[0.6rem] font-bold shrink-0">{i + 1}</span>
-                        <span className="text-sm text-white/80">{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <NavLink
-                    to="/register"
-                    className="mt-8 inline-block bg-white/10 border border-white/20 text-white font-bold text-sm px-6 py-2.5 rounded-full hover:bg-white/20 transition-colors"
-                  >
-                    Access Talent Pool →
-                  </NavLink>
-                </div>
-              </div>
-
+              ))}
+              <NavLink to="/register" className="btn-primary" style={{ marginTop: 28, display: "inline-flex" }}>
+                Start for free →
+              </NavLink>
             </div>
+
+            {/* Recruiter */}
+            <div className="split-card dark">
+              <div className="deco-circle" style={{ width: 280, height: 280, background: "radial-gradient(circle, rgba(26,92,255,0.25) 0%, transparent 70%)", top: -80, right: -80 }} />
+              <div style={{ position: "relative" }}>
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(250,250,248,0.35)", display: "block", marginBottom: 20 }}>Recruiter view</span>
+                <h3 style={{ fontFamily: "'Instrument Serif', serif", fontSize: 30, lineHeight: 1.1, color: "#FAFAF8", marginBottom: 16 }}>A ranked talent pool,<br />ready to hire from.</h3>
+                <p style={{ fontSize: 13, color: "rgba(250,250,248,0.55)", lineHeight: 1.7, marginBottom: 28 }}>
+                  Skip the 200-resume pile. Browse pre-scored candidates, read objective AI summaries, and contact top talent in one click.
+                </p>
+                {["Candidates ranked by ATS score", "AI-generated objective summaries", "Split-screen PDF + analysis view"].map((item, i) => (
+                  <div className="numbered-item" key={i}>
+                    <div className="n-bubble" style={{ background: "rgba(250,250,248,0.1)", color: "rgba(250,250,248,0.7)" }}>{i + 1}</div>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(250,250,248,0.8)" }}>{item}</span>
+                  </div>
+                ))}
+                <NavLink to="/register" className="btn-ghost" style={{ marginTop: 28, display: "inline-flex", color: "#FAFAF8", borderColor: "rgba(250,250,248,0.25)" }}>
+                  Access talent pool →
+                </NavLink>
+              </div>
+            </div>
+
           </div>
         </section>
 
-        {/* ══════════════════════════════════════════════
+        {/* ═══════════════════════════════════════════════
             DIFFERENTIATORS
-        ══════════════════════════════════════════════ */}
-        <section className="py-24 px-6">
-          <div className="max-w-5xl mx-auto">
-            <p className="text-[0.65rem] font-semibold text-[#0066cc] uppercase tracking-widest mb-3 text-center">Why not just use ChatGPT?</p>
-            <h2 className="display-font text-4xl text-center text-[#1d1d1f] mb-14">The differences that matter</h2>
+        ═══════════════════════════════════════════════ */}
+        <section style={{ background: "#F0EFE8", padding: "100px 32px" }}>
+          <div style={{ maxWidth: 1160, margin: "0 auto" }}>
+            <p className="section-eyebrow">Why not just use ChatGPT?</p>
+            <h2 className="section-title" style={{ marginBottom: 56 }}>The differences <em>that matter</em></h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
               {differentiators.map((d, i) => (
-                <div key={i} className="card-lift rounded-2xl border border-[#e8e8ed] p-7 bg-white">
-                  <span
-                    className="text-[0.65rem] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border mb-5 inline-block"
-                    style={{ color: d.accent, borderColor: `${d.accent}30`, background: `${d.accent}0f` }}
-                  >
-                    {d.tag}
-                  </span>
-                  <h3 className="text-base font-bold text-[#1d1d1f] mb-3">{d.title}</h3>
-                  <p className="text-sm text-[#6e6e73] leading-relaxed">{d.desc}</p>
+                <div className="diff-card" key={i}>
+                  <div className="diff-accent-line" style={{ background: d.accent }} />
+                  <span className="diff-tag" style={{ color: d.tagColor, background: d.tagBg }}>{d.tag}</span>
+                  <h3 style={{ fontSize: 19, fontFamily: "'Instrument Serif', serif", marginBottom: 14, lineHeight: 1.25, color: "#0F0F0D" }}>{d.title}</h3>
+                  <p style={{ fontSize: 13, color: "#6B6B62", lineHeight: 1.75 }}>{d.desc}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* ══════════════════════════════════════════════
+        {/* ═══════════════════════════════════════════════
             FINAL CTA
-        ══════════════════════════════════════════════ */}
-        <section className="py-28 px-6">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 bg-[#0066cc]/[0.07] border border-[#0066cc]/20 rounded-full px-4 py-1.5 mb-8">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#34c759] animate-pulse" />
-              <span className="text-[0.72rem] font-semibold text-[#0066cc] uppercase tracking-widest">Free to get started</span>
+        ═══════════════════════════════════════════════ */}
+        <section style={{ maxWidth: 1160, margin: "0 auto", padding: "80px 32px 100px" }}>
+          <div className="cta-section">
+            <div className="cta-glow" />
+            <div style={{ position: "relative" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(250,250,248,0.08)", border: "1px solid rgba(250,250,248,0.12)", borderRadius: 99, padding: "6px 14px", marginBottom: 32 }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22C55E", display: "inline-block", animation: "float 2s ease-in-out infinite" }} />
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(250,250,248,0.6)" }}>Free to get started</span>
+              </div>
+
+              <h2 className="cta-title">
+                Your next interview<br />
+                starts with <em>one upload.</em>
+              </h2>
+
+              <p style={{ color: "rgba(250,250,248,0.55)", fontSize: 15, marginBottom: 44, maxWidth: 440, margin: "0 auto 44px", lineHeight: 1.7 }}>
+                Join the platform where students get hired and recruiters find talent — powered by a scoring engine that never lies.
+              </p>
+
+              <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+                <NavLink to="/register" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#FAFAF8", color: "#0F0F0D", fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700, letterSpacing: "0.02em", padding: "14px 28px", borderRadius: 99, textDecoration: "none", transition: "background 0.2s, transform 0.15s" }}>
+                  Create free account →
+                </NavLink>
+                <NavLink to="/login" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "transparent", color: "rgba(250,250,248,0.7)", fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 600, padding: "14px 28px", borderRadius: 99, textDecoration: "none", border: "1.5px solid rgba(250,250,248,0.15)", transition: "border-color 0.2s, color 0.2s" }}>
+                  Sign in
+                </NavLink>
+              </div>
+
+              <p style={{ color: "rgba(250,250,248,0.3)", fontSize: 11, marginTop: 20, letterSpacing: "0.05em" }}>No credit card required · Takes 30 seconds</p>
             </div>
-
-            <h2 className="display-font text-[clamp(2.4rem,6vw,4.5rem)] leading-[1.08] text-[#1d1d1f] mb-6">
-              Your next interview<br />starts with one upload.
-            </h2>
-            <p className="text-[#6e6e73] text-lg mb-12 max-w-lg mx-auto leading-relaxed">
-              Join the platform where students get hired and recruiters find talent — powered by a scoring engine that never lies.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <NavLink
-                to="/register"
-                className="bg-[#0066cc] text-white font-semibold px-10 py-4 rounded-full hover:bg-[#004499] transition-colors text-sm tracking-tight shadow-lg shadow-[#0066cc]/25"
-              >
-                Create Free Account →
-              </NavLink>
-              <NavLink
-                to="/login"
-                className="border border-[#d2d2d7] text-[#1d1d1f] font-medium px-10 py-4 rounded-full hover:bg-[#f5f5f7] transition-colors text-sm"
-              >
-                Sign in
-              </NavLink>
-            </div>
-
-            <p className="text-[#a1a1a6] text-xs mt-6">No credit card required · Takes 30 seconds</p>
           </div>
         </section>
 

@@ -46,42 +46,42 @@ function Login() {
       <div className="w-full max-w-md">
 
         {/* Card */}
-        <div className="relative bg-white dark:bg-[#2a2a2e] border border-[#e8e8ed]/80 dark:border-[#3a3a3e] rounded-3xl shadow-xl shadow-black/5 dark:shadow-black/30 p-10 sm:p-12 transition-colors duration-300">
+        <div className="relative bg-white border border-[#e8e8ed]/80 rounded-3xl shadow-xl shadow-black/5 p-10 sm:p-12 transition-colors duration-300">
 
           {/* Decorative gradient blob */}
-          <div className="absolute -top-px left-1/2 -translate-x-1/2 w-24 h-1 rounded-b-full bg-gradient-to-r from-[#0066cc] to-[#5ac8fa]" />
+          <div className="absolute -top-px left-1/2 -translate-x-1/2 w-24 h-1 rounded-b-full bg-linear-to-r from-[#0066cc] to-[#5ac8fa]" />
 
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[#0066cc] to-[#5ac8fa] flex items-center justify-center shadow-lg shadow-[#0066cc]/20">
+            {/* <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-linear-to-br from-[#0066cc] to-[#5ac8fa] flex items-center justify-center shadow-lg shadow-[#0066cc]/20">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill="white" fillOpacity="0.9"/>
               </svg>
-            </div>
-            <h1 className="text-2xl font-bold text-[#1d1d1f] dark:text-white tracking-tight mb-1">
+            </div> */}
+            <h1 className="text-2xl font-bold text-[#1d1d1f] tracking-tight mb-1">
               Welcome Back
             </h1>
-            <p className="text-sm text-[#8e8e93] dark:text-[#98989d]">
+            <p className="text-sm text-[#8e8e93]">
               Sign in to access your dashboard
             </p>
           </div>
 
           {/* Error */}
           {error && (
-            <div className="mb-5 flex items-center gap-2.5 bg-[#ff3b30]/6 dark:bg-[#ff3b30]/10 border border-[#ff3b30]/15 dark:border-[#ff3b30]/20 rounded-xl px-4 py-3">
+            <div className="mb-5 flex items-center gap-2.5 bg-[#ff3b30]/6 border border-[#ff3b30]/15 rounded-xl px-4 py-3">
               <span className="text-sm shrink-0">⚠️</span>
-              <p className="text-sm text-[#cc2f26] dark:text-[#ff6961]">{error}</p>
+              <p className="text-sm text-[#cc2f26]">{error}</p>
             </div>
           )}
 
           {/* Form */}
           <form onSubmit={handleSubmit(onUserLogin)} className="space-y-5">
             <div>
-              <label className="text-xs font-semibold text-[#6e6e73] dark:text-[#98989d] uppercase tracking-wider mb-2 block">
+              <label className="text-xs font-semibold text-[#6e6e73] uppercase tracking-wider mb-2 block">
                 Email or Username
               </label>
               <div className="relative">
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#a1a1a6] dark:text-[#636366]">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#a1a1a6]">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="2" y="4" width="20" height="16" rx="3"/>
                     <path d="M22 7L13.03 12.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
@@ -91,7 +91,7 @@ function Login() {
                   type="text"
                   placeholder="your@email.com"
                   {...register("email", { required: "Email or username is required" })}
-                  className="w-full bg-[#f5f5f7] dark:bg-[#1a1a1e] border border-[#e5e5ea] dark:border-[#3a3a3e] rounded-xl pl-10 pr-4 py-3 text-[#1d1d1f] dark:text-white text-sm placeholder:text-[#c7c7cc] dark:placeholder:text-[#48484a] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/15 transition-all duration-200"
+                  className="w-full bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl pl-10 pr-4 py-3 text-[#1d1d1f] text-sm placeholder:text-[#c7c7cc] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/15 transition-all duration-200"
                 />
               </div>
               {errors.email && (
@@ -100,11 +100,11 @@ function Login() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-[#6e6e73] dark:text-[#98989d] uppercase tracking-wider mb-2 block">
+              <label className="text-xs font-semibold text-[#6e6e73] uppercase tracking-wider mb-2 block">
                 Password
               </label>
               <div className="relative">
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#a1a1a6] dark:text-[#636366]">
+                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#a1a1a6]">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                     <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
@@ -114,7 +114,7 @@ function Login() {
                   type="password"
                   placeholder="••••••••"
                   {...register("password", { required: "Password is required" })}
-                  className="w-full bg-[#f5f5f7] dark:bg-[#1a1a1e] border border-[#e5e5ea] dark:border-[#3a3a3e] rounded-xl pl-10 pr-4 py-3 text-[#1d1d1f] dark:text-white text-sm placeholder:text-[#c7c7cc] dark:placeholder:text-[#48484a] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/15 transition-all duration-200"
+                  className="w-full bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl pl-10 pr-4 py-3 text-[#1d1d1f] text-sm placeholder:text-[#c7c7cc] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/15 transition-all duration-200"
                 />
               </div>
               {errors.password && (
@@ -142,7 +142,7 @@ function Login() {
 
           {/* Footer link */}
           <div className="mt-7 text-center">
-            <p className="text-sm text-[#8e8e93] dark:text-[#636366]">
+            <p className="text-sm text-[#8e8e93]">
               Don't have an account?{" "}
               <NavLink to="/register" className="text-[#0066cc] hover:text-[#004499] font-medium transition-colors">
                 Create one

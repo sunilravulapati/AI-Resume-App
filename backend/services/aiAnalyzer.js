@@ -144,26 +144,60 @@ ${resumeText}
 // ─────────────────────────────────────────────────────────────────────────────
 export async function tailorResume(resumeText, jobDescription) {
   const prompt = `
-You are an expert Executive Resume Writer.
-Rewrite the BASE RESUME to align with the TARGET JOB DESCRIPTION.
+You are an expert Executive Resume Writer and Data Extractor.
+Your goal is to parse the BASE RESUME into a fully structured JSON format AND simultaneously rewrite specific sections to align with the TARGET JOB DESCRIPTION.
 
 RULES:
-1. DO NOT invent new jobs, degrees, or fake metrics. Only enhance what exists.
-2. Rewrite the Professional Summary using keywords from the Job Description.
-3. Rewrite project/experience bullets using the STAR method, emphasising JD-relevant skills.
-4. Prioritise skills from the JD in the skills section.
+1. EXTRACT ALL ORIGINAL DATA: Extract the candidate's name, contact details (email, phone, linkedin, github, portfolio, location), education, awards, and any other sections verbatim from the BASE RESUME. Do NOT lose any factual information.
+2. DO NOT INVENT: Do not invent fake jobs, degrees, metrics, or contact info. Only enhance what exists in the text.
+3. TAILOR THE SUMMARY: Rewrite the Professional Summary using keywords from the Job Description.
+4. TAILOR THE SKILLS: Return an array of top relevant skills prioritising those found in the JD.
+5. TAILOR THE EXPERIENCE/PROJECTS: Rewrite the project/experience bullets using the STAR method, emphasising JD-relevant skills.
 
-Return ONLY valid JSON, no markdown:
+Return ONLY valid JSON, no markdown, matching this exact structure:
 {
-  "tailoredSummary": "2–3 sentence optimised professional summary.",
-  "tailoredSkills": ["Skill1", "Skill2", "Skill3"],
+  "basics": {
+    "name": "Candidate Name",
+    "email": "email@example.com",
+    "phone": "Phone Number",
+    "linkedin": "linkedin username or url",
+    "github": "github username or url",
+    "portfolio": "portfolio url",
+    "location": "City, Country",
+    "tagline": "Brief professional tagline if present"
+  },
+  "tailoredSummary": "2–3 sentence optimised professional summary incorporating JD keywords.",
+  "tailoredSkills": [
+    { "label": "Category Name (e.g. Languages, Frameworks, Target Skills)", "value": "Comma separated skills" }
+  ],
   "tailoredExperience": [
     {
-      "title": "Project or Role Name",
-      "bullets": ["Optimised bullet 1", "Optimised bullet 2"]
+      "title": "Role or Project Name",
+      "meta": "Company Name / Dates / Location (combine these as found in resume)",
+      "bullets": ["Optimised bullet 1", "Optimised bullet 2"],
+      "tech": "Comma separated technologies used in this specific project/role"
+    }
+  ],
+  "education": [
+    {
+      "institution": "University/College Name",
+      "degree": "Degree Name",
+      "dates": "Start - End Date",
+      "gpa": "GPA or Grade if present",
+      "extra": ["Relevant coursework", "Honors", "Other details"]
+    }
+  ],
+  "awards": [
+    {
+      "title": "Award/Achievement Title",
+      "date": "Date if present",
+      "org": "Issuing Organization if present",
+      "desc": "Short description if present"
     }
   ]
 }
+
+If any field is missing from the resume, leave it as an empty string, null, or empty array as appropriate. Do NOT omit the key.
 
 TARGET JOB DESCRIPTION:
 ${jobDescription}
@@ -174,7 +208,7 @@ ${resumeText}
 
   const completion = await groq.chat.completions.create({
     model: "llama-3.3-70b-versatile",
-    temperature: 0.3,
+    temperature: 0.2, // Slightly lower for more deterministic extraction
     messages: [{ role: "user", content: prompt }],
   });
 

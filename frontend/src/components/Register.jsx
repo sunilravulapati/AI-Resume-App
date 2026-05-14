@@ -90,7 +90,7 @@ function Register() {
                 <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#a1a1a6]">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
                 </div>
-                <input type="text" placeholder="+1 (555) 000-0000" {...register("mobile", { required: "Required" })} className={`${inputBase} pl-10`} />
+                <input type="text" placeholder="+91 9999999999" {...register("mobile", { required: "Required" })} className={`${inputBase} pl-10`} />
               </div>
               {errors.mobile && <p className="text-[#ff3b30] text-xs mt-1 ml-1">{errors.mobile.message}</p>}
             </div>

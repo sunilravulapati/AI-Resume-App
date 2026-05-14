@@ -100,7 +100,7 @@ export function generateCopyText(tailoredData) {
 //     resumeId={selectedResumeId}
 //   />
 // ─────────────────────────────────────────────────────────────────────────────
-export default function ExportPanel({ tailoredData, parsedText, user, resumeId }) {
+export default function ExportPanel({ tailoredData, parsedText, user, resumeId, userLinks }) {
   const [activeOption, setActiveOption] = useState(null); // null | 'copy' | 'pdf' | 'latex'
   const [copied,       setCopied]       = useState(false);
   const [latexCopied,  setLatexCopied]  = useState(false);
@@ -321,7 +321,7 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId }
                 </p>
               </div>
               <PDFDownloadLink
-                document={<TailoredPDF tailoredData={tailoredData} parsedText={parsedText} user={user} />}
+                document={<TailoredPDF tailoredData={tailoredData} parsedText={parsedText} user={user} userLinks={userLinks} />}
                 fileName={`Tailored_Resume_${user?.firstName || 'Resume'}.pdf`}
                 className="flex items-center justify-center gap-2 w-full bg-[#248a3d] text-white font-bold text-sm py-3 px-6 rounded-full hover:bg-[#1a6b2e] transition-colors shadow-md shadow-[#248a3d]/20"
               >

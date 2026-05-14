@@ -8,19 +8,11 @@ import { analyzeResume, analyzeResumeTargeted, tailorResume, generateLatexWithAI
 import { extractJSON } from "../utils/jsonExtractor.js";
 import { verifyToken } from "../middleware/auth.js";
 import { parseResume } from "../services/resumeParser.js";
-import fs from "fs";
+import { uploadToCloudinary } from "../config/cloudinaryUpload.js";
 
 export const resumeRouter = express.Router();
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
-    cb(null, "uploads/");
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + "-" + file.originalname.replace(/\s+/g, "-"));
-  },
-});
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 
@@ -35,7 +27,15 @@ resumeRouter.post(
     try {
       if (!req.file) return res.status(400).json({ error: "No resume uploaded" });
 
-      const fileUrl        = `http://localhost:4000/uploads/${req.file.filename}`;
+      let fileUrl;
+      try {
+        const uploadResult = await uploadToCloudinary(req.file.buffer);
+        fileUrl = uploadResult.secure_url;
+      } catch (uploadError) {
+        console.error("Cloudinary Upload Error:", uploadError);
+        return res.status(500).json({ error: "Failed to upload resume to Cloudinary" });
+      }
+
       const analysisMode   = req.body.analysisMode   || "general";
       const jobDescription = req.body.jobDescription || "";
       const company        = req.body.company        || "";
@@ -92,7 +92,7 @@ resumeRouter.post(
         }
       });
 
-      pdfParser.loadPDF(req.file.path);
+      pdfParser.parseBuffer(req.file.buffer);
     } catch (err) {
       console.error("Upload Route Error:", err);
       return res.status(500).json({ error: "Server error" });
