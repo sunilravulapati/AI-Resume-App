@@ -55,7 +55,7 @@ export default function StudentDashboard() {
   const fetchHistory = async () => {
     setLoadingHistory(true);
     try {
-      const res = await axios.get('https://ai-resume-tauw.onrender.com/api/resume/history', { withCredentials: true });
+      const res = await axios.get('/api/resume/history', { withCredentials: true });
       setHistory(res.data);
       if (res.data.length > 0) setSelectedResumeId(res.data[0]._id);
     } catch {
@@ -80,7 +80,7 @@ export default function StudentDashboard() {
     setParsedText('');
     try {
       const res = await axios.post(
-        'https://ai-resume-tauw.onrender.com/api/resume/tailor',
+        '/api/resume/tailor',
         {
           resumeId: selectedResumeId,
           jobDescription,

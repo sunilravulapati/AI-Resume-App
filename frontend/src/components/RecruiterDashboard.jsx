@@ -20,7 +20,7 @@ export default function RecruiterDashboard() {
 
   const fetchCandidates = async () => {
     try {
-      const res = await axios.get("https://ai-resume-tauw.onrender.com/api/resume/all", {
+      const res = await axios.get("/api/resume/all", {
         withCredentials: true
       });
       setCandidates(res.data);

@@ -16,7 +16,7 @@ function Login() {
     setLoading(true);
     setError(null);
     try {
-      const resObj = await axios.post("https://ai-resume-tauw.onrender.com/api/user/login", {
+      const resObj = await axios.post("/api/user/login", {
         loginIdentifier: userCredObj.email,
         password: userCredObj.password
       });

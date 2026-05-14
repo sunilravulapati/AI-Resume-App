@@ -14,11 +14,12 @@ export default function Resume() {
 
   const [resume, setResume] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pdfFailed, setPdfFailed] = useState(false);
 
   useEffect(() => {
     const fetchResume = async () => {
       try {
-        const res = await axios.get(`https://ai-resume-tauw.onrender.com/api/resume/${id}`, {
+        const res = await axios.get(`/api/resume/${id}`, {
           withCredentials: true
         });
         setResume(res.data);
@@ -119,11 +120,12 @@ export default function Resume() {
               Original Document
             </p>
           </div>
-          {resume.fileUrl ? (
+          {resume.fileUrl && !pdfFailed ? (
             <iframe
               src={`${resume.fileUrl}#toolbar=0`}
               className="w-full h-full border-none bg-white"
               title="Resume PDF"
+              onError={() => setPdfFailed(true)}
             />
           ) : (
             <div className="p-6 h-full overflow-y-auto bg-white text-sm text-[#1d1d1f] whitespace-pre-wrap font-mono leading-relaxed">

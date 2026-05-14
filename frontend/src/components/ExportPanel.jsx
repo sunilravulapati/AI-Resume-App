@@ -128,7 +128,7 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
       }
 
       try {
-        const res = await fetch('https://ai-resume-tauw.onrender.com/api/resume/generate-latex', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/resume/generate-latex`, {
           method:      'POST',
           credentials: 'include',                           // send auth cookie
           headers:     { 'Content-Type': 'application/json' },

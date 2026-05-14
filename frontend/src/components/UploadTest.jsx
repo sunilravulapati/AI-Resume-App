@@ -21,7 +21,7 @@ export default function UploadTest() {
     setAnalysis(null); // Clear previous results
     
     try {
-      const response = await axios.post("https://ai-resume-tauw.onrender.com/api/resume/upload", formData, {
+      const response = await axios.post("/api/resume/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       
