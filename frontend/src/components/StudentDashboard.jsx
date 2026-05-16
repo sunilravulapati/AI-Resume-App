@@ -5,8 +5,10 @@ import toast from 'react-hot-toast';
 import ExportPanel from './ExportPanel';
 import useUserStore from '../store/userStore';
 import UploadModal from './UploadModal';
+import { WelcomeStrip, StatPill, TabNav, EmptyState } from './DashboardShell';
+import TailoredPreview from './TailoredPreview';
 
-/* ─── score helpers ──────────────────────────────────────────────────── */
+/* score helpers */
 const scoreBadge = (score) => {
   if (score >= 75) return 'bg-emerald-50 text-emerald-700 border border-emerald-200 ring-1 ring-emerald-100';
   if (score >= 50) return 'bg-amber-50 text-amber-700 border border-amber-200 ring-1 ring-amber-100';
@@ -40,11 +42,12 @@ export default function StudentDashboard() {
   const [tailoredData, setTailoredData]         = useState(null);
   const [parsedText, setParsedText]             = useState('');
 
-  /* ── URL override states (fix: were missing before) ─────────────────── */
-  const [linkedinUrl, setLinkedinUrl]                       = useState('');
-  const [githubUrl, setGithubUrl]                           = useState('');
-  const [portfolioUrl, setPortfolioUrl]                     = useState('');
+  /* URL override states */
+  const [linkedinUrl, setLinkedinUrl]                             = useState('');
+  const [githubUrl, setGithubUrl]                                 = useState('');
+  const [portfolioUrl, setPortfolioUrl]                           = useState('');
   const [competitiveProgrammingUrl, setCompetitiveProgrammingUrl] = useState('');
+  const [linksOpen, setLinksOpen]                     = useState(false);
 
   useEffect(() => {
     if ((activeTab === 'history' || activeTab === 'tailor') && history.length === 0) {
@@ -84,12 +87,10 @@ export default function StudentDashboard() {
         {
           resumeId: selectedResumeId,
           jobDescription,
-          /* pass user-supplied links so backend can embed them in parsedText
-             or return them alongside tailoredResume */
           userLinks: {
-            linkedin:            linkedinUrl.trim()            || null,
-            github:              githubUrl.trim()              || null,
-            portfolio:           portfolioUrl.trim()           || null,
+            linkedin:               linkedinUrl.trim()               || null,
+            github:                 githubUrl.trim()                 || null,
+            portfolio:              portfolioUrl.trim()              || null,
             competitiveProgramming: competitiveProgrammingUrl.trim() || null,
           },
         },
@@ -106,23 +107,29 @@ export default function StudentDashboard() {
     }
   };
 
-  /* ── userLinks object passed to ExportPanel → TailoredPDF ───────────── */
+  /* ── userLinks object passed to ExportPanel → TailoredPDF ───────── */
   const userLinks = {
-    linkedin:            linkedinUrl.trim()            || null,
-    github:              githubUrl.trim()              || null,
-    portfolio:           portfolioUrl.trim()           || null,
+    linkedin:               linkedinUrl.trim()               || null,
+    github:                 githubUrl.trim()                 || null,
+    portfolio:              portfolioUrl.trim()              || null,
     competitiveProgramming: competitiveProgrammingUrl.trim() || null,
   };
 
   /* ─── tabs config ─────────────────────────────────────────────────── */
   const TABS = [
-    { key: 'upload',  icon: '⚡', label: 'Analyze Resume' },
-    { key: 'history', icon: '🗂',  label: 'Resume History' },
-    { key: 'tailor',  icon: '✨', label: 'Tailor to Job'  },
+    { key: 'upload',  icon: '⚡', label: 'Analyze' },
+    { key: 'history', icon: '📁', label: 'History' },
+    { key: 'tailor',  icon: '✨', label: 'Tailor' },
   ];
 
+  const bestScore = history.length
+    ? Math.max(...history.map((h) => h.atsScore || 0))
+    : analysis?.atsScore ?? null;
+
+  const firstName = userRecord?.firstName;
+
   return (
-    <div className="min-h-screen bg-[#f8f8fc]">
+    <div className="min-h-screen bg-[var(--bg)]">
       {showModal && (
         <UploadModal
           onClose={() => setShowModal(false)}
@@ -130,8 +137,23 @@ export default function StudentDashboard() {
         />
       )}
 
-      {/* ── Page header ───────────────────────────────────────────────── */}
-      <div className="bg-white border-b border-[#ebebf0]">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-2">
+        <WelcomeStrip
+          firstName={firstName}
+          subtitle="Analyze your resume, track scores over time, and tailor content for each job application."
+        >
+          {history.length > 0 && <StatPill label="Resumes" value={history.length} />}
+          {bestScore != null && (
+            <StatPill label="Best score" value={`${bestScore}/100`} accent={scoreAccent(bestScore)} />
+          )}
+        </WelcomeStrip>
+        <div className="mt-6 mb-2">
+          <TabNav tabs={TABS} active={activeTab} onChange={setActiveTab} />
+        </div>
+      </div>
+
+      {/* legacy header — hidden */}
+      <div className="hidden bg-white border-b border-[#ebebf0]">
         <div className="max-w-6xl mx-auto px-6 pt-10 pb-0">
           <div className="flex items-end justify-between mb-6">
             <div>
@@ -476,13 +498,22 @@ export default function StudentDashboard() {
                       )}
                     </div>
 
-                    {/* ── Profile links section ─────────────────────────── */}
+                    {/* ── Profile links (collapsible) ───────────────────── */}
                     <div className="mb-5">
-                      <p className="text-xs font-semibold text-[#44445c] uppercase tracking-wider mb-3">
-                        Profile Links <span className="normal-case font-normal text-[#9191a0]">(optional — overrides parsed values)</span>
-                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setLinksOpen((o) => !o)}
+                        className="w-full flex items-center justify-between text-xs font-semibold text-[#44445c] uppercase tracking-wider py-2"
+                      >
+                        <span>
+                          Profile Links{' '}
+                          <span className="normal-case font-normal text-[#9191a0]">(optional)</span>
+                        </span>
+                        <span className="text-[var(--accent)]">{linksOpen ? '−' : '+'}</span>
+                      </button>
 
-                      <div className="space-y-3">
+                      {linksOpen && (
+                      <div className="space-y-3 pt-1">
                         {/* LinkedIn */}
                         <div>
                           <label className="block text-[0.7rem] font-medium text-[#70708c] mb-1.5">LinkedIn</label>
@@ -531,15 +562,17 @@ export default function StudentDashboard() {
                           <input
                             type="url"
                             className="w-full rounded-xl border border-[#e0e0ec] bg-[#f7f7fc] px-3.5 py-2.5 text-sm text-[#111118] placeholder-[#b0b0c8] focus:outline-none focus:border-[#0055cc] focus:ring-2 focus:ring-[#0055cc]/15 transition-all duration-150"
-                            placeholder="https://codeforces.com/profile/…"
+                            placeholder="https://leetcode.com/u/yourhandle"
                             value={competitiveProgrammingUrl}
                             onChange={(e) => setCompetitiveProgrammingUrl(e.target.value)}
                           />
                         </div>
                       </div>
+                      )}
                     </div>
 
                     <button
+                      type="button"
                       onClick={handleTailor}
                       disabled={isTailoring || !jobDescription.trim()}
                       className="w-full py-3 px-5 rounded-xl bg-[#0055cc] hover:bg-[#003fa8] active:bg-[#003090] text-white text-sm font-bold transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
@@ -609,6 +642,7 @@ export default function StudentDashboard() {
 
                   {tailoredData && !isTailoring && (
                     <div className="space-y-6">
+                      {/* ── Success banner ── */}
                       <div className="bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3.5 flex items-start gap-3">
                         <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
                           <svg className="w-3.5 h-3.5 text-emerald-600" viewBox="0 0 16 16" fill="currentColor">
@@ -618,65 +652,21 @@ export default function StudentDashboard() {
                         <div>
                           <p className="text-sm font-bold text-emerald-800">Optimization Complete</p>
                           <p className="text-xs text-emerald-700 mt-0.5 leading-relaxed">
-                            Your tailored PDF is ready to download below.
+                            Review all sections below, then export as PDF or LaTeX.
                           </p>
                         </div>
                       </div>
 
-                      <div>
-                        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-[#9191a0] mb-2">Professional Summary</p>
-                        <div className="bg-[#f7f7fc] border border-[#ebebf0] rounded-xl p-4 text-sm text-[#111118] leading-relaxed">
-                          {tailoredData.tailoredSummary}
-                        </div>
-                      </div>
+                      <TailoredPreview data={tailoredData} />
 
-                      <div>
-                        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-[#9191a0] mb-2">Targeted Skills</p>
-                        <div className="flex flex-col gap-3">
-                          {tailoredData.tailoredSkills?.map((skillGroup, i) => (
-                            <div key={i} className="flex items-start gap-2">
-                              {skillGroup.label && (
-                                <span className="text-xs font-bold text-[#44445c] mt-1 w-24 shrink-0">{skillGroup.label}:</span>
-                              )}
-                              <div className="flex flex-wrap gap-1.5">
-                                {skillGroup.value?.split(',').map(s => s.trim()).filter(Boolean).map((s, j) => (
-                                  <span key={j} className="bg-[#f0f5ff] text-[#0055cc] border border-[#0055cc]/20 px-2.5 py-0.5 rounded-md text-[0.7rem] font-semibold">
-                                    {s}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-[#9191a0] mb-3">Tailored Experience</p>
-                        <div className="space-y-3">
-                          {tailoredData.tailoredExperience?.map((exp, i) => (
-                            <div key={i} className="bg-[#f7f7fc] border border-[#ebebf0] rounded-xl p-5 hover:border-[#d0d0e0] transition-colors duration-200">
-                              <h4 className="font-bold text-[#111118] text-sm mb-3">{exp.title}</h4>
-                              <ul className="space-y-2">
-                                {exp.bullets.map((bullet, bi) => (
-                                  <li key={bi} className="text-sm text-[#44445c] flex items-start gap-2.5 leading-relaxed">
-                                    <span className="text-[#0055cc] mt-0.5 shrink-0 text-xs font-bold">→</span>
-                                    {bullet}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Pass userLinks through to ExportPanel → TailoredPDF */}
-                        <ExportPanel
-                          tailoredData={tailoredData}
-                          parsedText={parsedText}
-                          user={userRecord}
-                          resumeId={selectedResumeId}
-                          userLinks={userLinks}
-                        />
-                      </div>
+                      {/* ── Export ── */}
+                      <ExportPanel
+                        tailoredData={tailoredData}
+                        parsedText={parsedText}
+                        user={userRecord}
+                        resumeId={selectedResumeId}
+                        userLinks={userLinks}
+                      />
                     </div>
                   )}
                 </div>

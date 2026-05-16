@@ -1,4 +1,6 @@
 dumped code will be here, mainly for like future references
+
+
 import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from '@clerk/clerk-react'
 import UploadTest from './components/UploadTest'
 

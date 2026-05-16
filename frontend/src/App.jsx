@@ -19,8 +19,14 @@ function ProtectedRoute({ children, role }) {
   // Still fetching the profile on first load
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen text-[#6e6e73] text-sm">
-        Loading…
+      <div className="flex flex-col items-center justify-center min-h-screen gap-3 bg-[var(--bg)]">
+        <div className="w-10 h-10 rounded-xl bg-[var(--accent-soft)] flex items-center justify-center">
+          <svg className="w-5 h-5 animate-spin text-[var(--accent)]" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeOpacity="0.2" />
+            <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </div>
+        <p className="text-sm text-[var(--text-secondary)]">Loading your workspace…</p>
       </div>
     );
   }

@@ -42,10 +42,7 @@ const panelStyles = `
 
   .ep-tab { transition: color 0.15s, border-color 0.15s; }
 `;
-
-// ─────────────────────────────────────────────────────────────────────────────
 // COPY-PASTE TEXT GENERATOR
-// ─────────────────────────────────────────────────────────────────────────────
 export function generateCopyText(tailoredData) {
   const lines = [];
 
@@ -83,31 +80,14 @@ export function generateCopyText(tailoredData) {
   return lines.join('\n');
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// EXPORT PANEL COMPONENT
-//
-// Props:
-//   tailoredData  — object from /api/resume/tailor  (tailoredResume field)
-//   parsedText    — raw resume text, used by TailoredPDF
-//   user          — user object { firstName, ... }
-//   resumeId      — MongoDB _id string of the resume; REQUIRED for LaTeX route
-//
-// Parent usage example:
-//   <ExportPanel
-//     tailoredData={tailoredResume}
-//     parsedText={parsedText}
-//     user={user}
-//     resumeId={selectedResumeId}
-//   />
-// ─────────────────────────────────────────────────────────────────────────────
 export default function ExportPanel({ tailoredData, parsedText, user, resumeId, userLinks }) {
   const [activeOption, setActiveOption] = useState(null); // null | 'copy' | 'pdf' | 'latex'
   const [copied,       setCopied]       = useState(false);
   const [latexCopied,  setLatexCopied]  = useState(false);
   const [latexTab,     setLatexTab]     = useState('code'); // 'code' | 'instructions'
 
-  // ── LaTeX AI generation state ─────────────────────────────────────────────
-  const [latexCode,    setLatexCode]    = useState('');
+  // LaTeX AI generation state
+  const [latexCode,    setLatexCode]    = useState(''); // raw compile-ready source
   const [latexLoading, setLatexLoading] = useState(false);
   const [latexError,   setLatexError]   = useState('');
 
@@ -161,15 +141,16 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
     generate();
   }, [activeOption]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Retry: reset state then re-open the panel ─────────────────────────────
+  // Retry: reset state then re-open the panel
   const handleRetryLatex = () => {
     setLatexCode('');
     setLatexError('');
+    setLatexLoading(false);
     setActiveOption(null);
     setTimeout(() => setActiveOption('latex'), 50);
   };
 
-  // ── Copy handlers ────────────────────────────────────────────────────────
+  // Copy handlers
   const handleCopyText = async () => {
     const text = generateCopyText(tailoredData);
     try {
@@ -201,7 +182,7 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
     setTimeout(() => setLatexCopied(false), 2500);
   };
 
-  // ── Option definitions ────────────────────────────────────────────────────
+  // Option definitions
   const OPTIONS = [
     {
       key:        'copy',
@@ -232,13 +213,13 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
       badge:      'Best Quality',
       badgeColor: 'bg-[#b86e00]/10 text-[#b86e00] border-[#b86e00]/20',
       border:     'border-[#b86e00]',
-      desc:       "AI writes a complete LaTeX resume using Jake's template — every section populated from your resume. Paste into Overleaf for a pixel-perfect, ATS-proven PDF.",
+      desc:       "Generates a complete LaTeX resume using Jake's template — every section populated from your tailored content. Paste into Overleaf for a pixel-perfect, ATS-proven PDF.",
       pro:        'Highest quality, fully populated',
       con:        'Requires an Overleaf account',
     },
   ];
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // Render
   return (
     <>
       <style>{panelStyles}</style>
@@ -399,8 +380,8 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
                       <span className="ep-dot w-2 h-2 rounded-full bg-[#b86e00]" />
                       <span className="ep-dot w-2 h-2 rounded-full bg-[#b86e00]" />
                     </div>
-                    <p className="text-xs text-[#6e6e73]">AI is writing your LaTeX resume…</p>
-                    <p className="text-[0.6rem] text-[#a1a1a6]">This takes about 10–15 seconds</p>
+                    <p className="text-xs text-[#6e6e73]">Building your LaTeX resume…</p>
+                    <p className="text-[0.6rem] text-[#a1a1a6]">Usually takes a few seconds</p>
                   </div>
                 )}
 
@@ -425,10 +406,13 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
                     <div className="flex items-center gap-2 px-4 py-2 bg-[#34c759]/[0.06] border-b border-[#34c759]/20">
                       <span className="text-xs">✅</span>
                       <p className="text-[0.65rem] text-[#248a3d] font-medium">
-                        AI-generated — complete resume with all your data populated
+                        LaTeX ready — complete resume with all your data populated
                       </p>
                     </div>
-                    <pre className="ep-code-block p-4 text-[#1d1d1f] overflow-x-auto max-h-96 bg-[#fafafa] text-[10.5px] leading-relaxed">
+                    <p className="px-4 py-2 text-[0.65rem] text-[#6e6e73] border-b border-[#e8e8ed]">
+                      Copy this code exactly into Overleaf (Ctrl+A in the editor, then paste).
+                    </p>
+                    <pre className="ep-code-block p-4 text-[#1d1d1f] overflow-x-auto max-h-96 bg-[#fafafa] text-[10.5px] leading-relaxed whitespace-pre-wrap">
                       <code>{latexCode}</code>
                     </pre>
                   </>

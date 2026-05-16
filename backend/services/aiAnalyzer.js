@@ -1,11 +1,15 @@
 // aiAnalyzer.js
 import Groq from "groq-sdk";
 import "dotenv/config";
+import { enforceLimits, prepareResumeExport, buildLatexDocument } from "./resumeFormat.js";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
+/** Tailoring / analysis model (LaTeX is template-based, not LLM-generated). */
+const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+
 // ─────────────────────────────────────────────────────────────────────────────
-// GENERAL ANALYSIS — your original, unchanged
+// GENERAL ANALYSIS
 // ─────────────────────────────────────────────────────────────────────────────
 export async function analyzeResume(text) {
   const prompt = `
@@ -45,7 +49,7 @@ ${text}
 `;
 
   const completion = await groq.chat.completions.create({
-    model: "llama-3.3-70b-versatile",
+    model: GROQ_MODEL,
     temperature: 0.1,
     messages: [{ role: "user", content: prompt }],
   });
@@ -55,10 +59,7 @@ ${text}
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TARGETED ANALYSIS — NEW
-// Same brutal recruiter persona, cross-referenced against a real JD.
-// Returns the standard fields PLUS matchScore, keywordMatchRate,
-// missingSkills, and experienceGap.
+// TARGETED ANALYSIS
 // ─────────────────────────────────────────────────────────────────────────────
 export async function analyzeResumeTargeted(
   resumeText,
@@ -94,29 +95,29 @@ PART 2 — JD match analysis:
 Step 1: Extract EVERY required or strongly preferred skill, technology, tool, and qualification from the Job Description.
 Step 2: For each one, check if it appears (by name or clear equivalent) anywhere in the resume.
 Step 3: Calculate:
-  - keywordMatchRate = (matched skills ÷ total JD skills) × 100, rounded to nearest integer
-  - matchScore = holistic 0–100 fit score. Weight: keyword overlap 40%, project relevance 35%, seniority alignment 25%.
+  - keywordMatchRate = (matched skills / total JD skills) x 100, rounded to nearest integer
+  - matchScore = holistic 0-100 fit score. Weight: keyword overlap 40%, project relevance 35%, seniority alignment 25%.
     Apply these bands:
-    - Resume missing most required skills / wrong seniority level: 10–35
-    - Resume has some relevant skills but notable gaps: 36–59
-    - Resume covers most required skills with minor gaps: 60–79
-    - Strong match, nearly all skills present, correct seniority: 80–100
+    - Resume missing most required skills / wrong seniority level: 10-35
+    - Resume has some relevant skills but notable gaps: 36-59
+    - Resume covers most required skills with minor gaps: 60-79
+    - Strong match, nearly all skills present, correct seniority: 80-100
   - missingSkills = skills/technologies EXPLICITLY required or strongly preferred in the JD that are ABSENT from the resume. Max 8 items. Be specific (e.g. "Kubernetes", not "DevOps tools").
-  - experienceGap = 1–2 blunt sentences referencing SPECIFIC projects from the resume and whether their complexity matches the seniority level of the target role.
+  - experienceGap = 1-2 blunt sentences referencing SPECIFIC projects from the resume and whether their complexity matches the seniority level of the target role.
 
 RULES:
 - Do NOT hallucinate or invent credentials. Only analyse what is in the resume.
 - strengths and improvements must be role-specific, not generic advice.
 - summary must reference the target role by name if provided.
-- missingSkills must only list things the JD explicitly requires — do not guess.
+- missingSkills must only list things the JD explicitly requires.
 
 Return ONLY valid JSON, no markdown, no explanation:
 {
-  "semanticScore": <number 0–30>,
-  "matchScore": <number 0–100>,
-  "keywordMatchRate": <number 0–100>,
+  "semanticScore": <number 0-30>,
+  "matchScore": <number 0-100>,
+  "keywordMatchRate": <number 0-100>,
   "missingSkills": ["skill1", "skill2"],
-  "experienceGap": "1–2 blunt sentences about seniority/complexity alignment.",
+  "experienceGap": "1-2 blunt sentences about seniority/complexity alignment.",
   "strengths": ["role-specific strength 1", "strength 2", "strength 3"],
   "improvements": ["actionable fix that directly improves match score 1", "fix 2", "fix 3"],
   "summary": "One brutally honest sentence about fit for this specific role."
@@ -130,7 +131,7 @@ ${resumeText}
 `;
 
   const completion = await groq.chat.completions.create({
-    model: "llama-3.3-70b-versatile",
+    model: GROQ_MODEL,
     temperature: 0.1,
     messages: [{ role: "user", content: prompt }],
   });
@@ -140,64 +141,175 @@ ${resumeText}
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TAILOR RESUME — your original, unchanged
+// TAILOR RESUME
 // ─────────────────────────────────────────────────────────────────────────────
 export async function tailorResume(resumeText, jobDescription) {
   const prompt = `
 You are an expert Executive Resume Writer and Data Extractor.
-Your goal is to parse the BASE RESUME into a fully structured JSON format AND simultaneously rewrite specific sections to align with the TARGET JOB DESCRIPTION.
+Your output will be rendered onto a SINGLE A4 page PDF. Space is EXTREMELY limited.
+Parse the BASE RESUME into structured JSON AND rewrite/trim sections for the TARGET JOB DESCRIPTION.
 
-RULES:
-1. EXTRACT ALL ORIGINAL DATA: Extract the candidate's name, contact details (email, phone, linkedin, github, portfolio, location), education, awards, and any other sections verbatim from the BASE RESUME. Do NOT lose any factual information.
-2. DO NOT INVENT: Do not invent fake jobs, degrees, metrics, or contact info. Only enhance what exists in the text.
-3. TAILOR THE SUMMARY: Rewrite the Professional Summary using keywords from the Job Description.
-4. TAILOR THE SKILLS: Return an array of top relevant skills prioritising those found in the JD.
-5. TAILOR THE EXPERIENCE/PROJECTS: Rewrite the project/experience bullets using the STAR method, emphasising JD-relevant skills.
+READ EVERY RULE BEFORE OUTPUTTING. VIOLATING ANY RULE RUINS THE LAYOUT.
 
-Return ONLY valid JSON, no markdown, matching this exact structure:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CONTENT RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+RULE 1 — EXTRACT ALL DATA VERBATIM
+Extract name, contact details (email, phone, linkedin, github, portfolio, location),
+education, awards, achievements, DSA stats, certifications, extracurricular activities,
+and spoken languages exactly as they appear. Do NOT lose any of these non-experience sections.
+
+RULE 2 — DO NOT INVENT
+Never invent jobs, degrees, metrics, skills, or contact info. Only enhance what exists.
+If a skill is not explicitly named in the resume, do NOT add it. This is non-negotiable.
+Example: resume lists "React.js" but not "Next.js" → do NOT add "Next.js".
+Example: resume lists "MongoDB" but not "PostgreSQL" → do NOT add "PostgreSQL".
+
+RULE 3 — SKILLS ANTI-HALLUCINATION (CRITICAL)
+Only include skills/technologies EXPLICITLY NAMED in the resume text.
+Reorder skills to front-load JD keywords, but never invent new ones.
+
+RULE 4 — TAILOR SUMMARY (2 SENTENCES, ≤40 WORDS TOTAL)
+Write exactly 2 tight sentences. Use JD keywords. No filler phrases like "highly motivated"
+or "detail-oriented". Lead with your strongest credential, end with your value to this role.
+Count your words. If over 40, trim.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROJECT & EXPERIENCE SELECTION RULES — CRITICAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+RULE 5 — UNIFIED tailoredExperience (projects + internships together)
+The "tailoredExperience" array holds BOTH projects AND internship/work experience entries.
+Do NOT lose internships. An internship at a real company (Walmart, J.P. Morgan) is MORE
+valuable to an employer than a side project. Always include internships.
+
+RULE 6 — SELECT TOP ENTRIES (hard limit: up to 4 total)
+Step 1: Score every project AND internship entry against the JD:
+        skill overlap + domain match + complexity depth + internship bonus (+5 for real company).
+Step 2: Sort highest to lowest.
+Step 3: Take the TOP 4. If the resume has ≤4 entries total, take all of them.
+        Entry #5 and beyond MUST NOT appear in tailoredExperience.
+
+RULE 7 — EXACTLY 2 BULLETS PER ENTRY (hard limit)
+Each entry in tailoredExperience MUST have EXACTLY 2 bullets — not 1, not 3.
+Choose the 2 strongest bullets: one with a measurable outcome, one naming a JD-relevant tech.
+
+RULE 8 — BULLET WORD LIMIT (hard limit: ≤20 words per bullet)
+Count the words. If a bullet exceeds 20 words, rewrite it to fit in 20 words.
+Every bullet MUST be a COMPLETE SENTENCE or COMPLETE CLAUSE — never cut mid-phrase.
+Every bullet must start with a strong past-tense action verb.
+
+GOOD examples (complete, ≤20 words):
+  "Architected real-time dashboard using Kafka to process live stock data with sub-200ms latency."  (15 words ✓)
+  "Optimized MongoDB aggregation pipelines for personalized feeds, achieving sub-100ms response times."  (11 words ✓)
+  "Engineered NLP keyword matcher and role-based scoring, improving parse accuracy by 40%."  (12 words ✓)
+
+BAD examples (cut mid-phrase — these break the layout and confuse readers):
+  "Developed a full-stack MERN application using the Groq LPU Inference engine to analyze resumes for"  ← INCOMPLETE
+  "Architected a scalable full-stack Twitter/Threads clone using the MERN Stack, ensuring complex user relationships and"  ← INCOMPLETE
+
+If a bullet is incomplete or cut mid-phrase, that is a CRITICAL ERROR. Rewrite it.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FORMATTING RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+RULE 9  — GPA: plain number only: "9.05/10". Strip all "CGPA:" / "GPA:" prefixes.
+
+RULE 10 — EDUCATION DATES: date range only (e.g. "Aug 2023 – Present").
+
+RULE 11 — DSA PROFICIENCY: scan for LeetCode/CodeChef/Codeforces/HackerRank/GFG stats.
+Extract ALL lines as plain strings. Return [] if none found.
+Example: ["Solved 450 problems on LeetCode; global ranking 224,015.", "Solved ~760 problems on CodeChef.", "Solved ~50 problems on GFG."]
+
+RULE 12 — CERTIFICATIONS: extract ALL certs even without a URL. "url" defaults to "". Return [] if none.
+
+RULE 13 — ACHIEVEMENTS (category-based): named subcategories with bullets → "achievements".
+MAX 4 BULLETS TOTAL across all categories. Return [] if none found.
+
+RULE 14 — AWARDS (individual named recognitions) → "awards".
+Extract ALL awards found in the resume — do NOT limit to 2. Return [] if none.
+Each award: { "title": "...", "org": "...", "desc": "...", "date": "..." }
+"desc" should be the key metric or outcome (e.g. "Ranked 1050 / 82,794 (Top 1.3%) for ML model accuracy").
+
+RULE 15 — EXTRACURRICULAR: role titles + bullets → "extracurricular". Return [] if none.
+
+RULE 16 — LANGUAGES SPOKEN: comma-separated string. Return "" if none.
+
+RULE 17 — EMAIL & PHONE: copy EXACTLY as written, including country code ("+91", "+1").
+
+RULE 18 — TAGLINE: if the resume has a professional tagline/headline line below the name,
+copy it verbatim (full text, no truncation with "..."). Return "" if none.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BEFORE OUTPUTTING — MANDATORY SELF-CHECK:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+□ tailoredExperience includes ALL internships from the resume
+□ tailoredExperience has at most 4 entries total
+□ EACH entry has EXACTLY 2 bullets
+□ EACH bullet is a complete sentence/clause — not cut mid-phrase
+□ EACH bullet is ≤20 words — count them
+□ tailoredSummary is exactly 2 sentences, ≤40 words total
+□ awards array contains ALL awards from the resume (not just 2)
+□ dsaProficiency contains ALL DSA platform stats found (LeetCode, CodeChef, GFG, etc.)
+□ tailoredSkills contains ONLY skills explicitly named in the resume — no invented skills
+□ tailoredSummary uses no filler like "highly motivated", "detail-oriented", "passionate"
+If any check fails, fix it before outputting.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT — return ONLY this JSON, no markdown, no explanation:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
   "basics": {
-    "name": "Candidate Name",
+    "name": "Candidate Full Name",
     "email": "email@example.com",
-    "phone": "Phone Number",
-    "linkedin": "linkedin username or url",
-    "github": "github username or url",
-    "portfolio": "portfolio url",
-    "location": "City, Country",
-    "tagline": "Brief professional tagline if present"
+    "phone": "+91 9550145568",
+    "linkedin": "linkedin username or full url",
+    "github": "github username or full url",
+    "portfolio": "portfolio url or empty string",
+    "location": "City, State/Country",
+    "tagline": "Full tagline verbatim, no truncation"
   },
-  "tailoredSummary": "2–3 sentence optimised professional summary incorporating JD keywords.",
+  "tailoredSummary": "Exactly 2 complete sentences, ≤40 words total, no filler.",
   "tailoredSkills": [
-    { "label": "Category Name (e.g. Languages, Frameworks, Target Skills)", "value": "Comma separated skills" }
+    { "label": "Category Name", "value": "Only explicitly listed skills from resume, JD-relevant ones first" }
   ],
   "tailoredExperience": [
     {
       "title": "Role or Project Name",
-      "meta": "Company Name / Dates / Location (combine these as found in resume)",
-      "bullets": ["Optimised bullet 1", "Optimised bullet 2"],
-      "tech": "Comma separated technologies used in this specific project/role"
+      "meta": "Company or Location | Date Range",
+      "bullets": ["Complete bullet 1 — ≤20 words, strong verb + result", "Complete bullet 2 — ≤20 words, strong verb + result"],
+      "tech": "Comma separated technologies"
     }
   ],
   "education": [
     {
-      "institution": "University/College Name",
+      "institution": "University Name",
       "degree": "Degree Name",
-      "dates": "Start - End Date",
-      "gpa": "GPA or Grade if present",
-      "extra": ["Relevant coursework", "Honors", "Other details"]
+      "dates": "Aug 2023 – Present",
+      "gpa": "9.05/10",
+      "extra": []
     }
   ],
   "awards": [
+    { "title": "Award Title", "org": "Awarding Org", "desc": "Key metric or outcome", "date": "Month Year" }
+  ],
+  "achievements": [
     {
-      "title": "Award/Achievement Title",
-      "date": "Date if present",
-      "org": "Issuing Organization if present",
-      "desc": "Short description if present"
+      "category": "Category Name",
+      "bullets": ["Complete bullet ≤20 words"]
     }
-  ]
+  ],
+  "extracurricular": [],
+  "dsaProficiency": ["Full stat line 1", "Full stat line 2", "Full stat line 3"],
+  "certifications": [
+    { "title": "Cert Title", "org": "Issuing Org", "dates": "Month Year", "url": "" }
+  ],
+  "languages": "English, Telugu, Hindi"
 }
 
-If any field is missing from the resume, leave it as an empty string, null, or empty array as appropriate. Do NOT omit the key.
+Missing fields: use "", null, or [] as appropriate. Do NOT omit any key.
 
 TARGET JOB DESCRIPTION:
 ${jobDescription}
@@ -207,125 +319,33 @@ ${resumeText}
 `;
 
   const completion = await groq.chat.completions.create({
-    model: "llama-3.3-70b-versatile",
-    temperature: 0.2, // Slightly lower for more deterministic extraction
+    model: GROQ_MODEL,
+    temperature: 0.2,
     messages: [{ role: "user", content: prompt }],
   });
 
-  return completion.choices?.[0]?.message?.content;
+  const raw = completion.choices?.[0]?.message?.content ?? "";
+
+  // Parse JSON
+  let parsed;
+  try {
+    const clean = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+    parsed = JSON.parse(clean);
+  } catch {
+    return raw; // return raw string if parse fails; caller handles it
+  }
+
+  // Hard-enforce limits even if the LLM ignored instructions
+  return JSON.stringify(
+    enforceLimits(parsed, jobDescription)
+  );
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GENERATE LATEX WITH AI
-// Merges the candidate's full raw resume with AI-tailored suggestions
-// and outputs a single, complete, Overleaf-ready .tex file.
-// Replace generateLatexWithAI in aiAnalyzer.js with this.
+// GENERATE LATEX (deterministic Jake-style template)
 // ─────────────────────────────────────────────────────────────────────────────
-
-export async function generateLatexWithAI(resumeText, tailoredData) {
-  const tailoredJSON = JSON.stringify(tailoredData, null, 2);
-
-  const prompt = `
-You are a LaTeX expert. Your job is to merge a candidate's existing resume with AI-improved content and produce a single, complete, compile-ready LaTeX file.
-
-You are given two inputs:
-1. FULL RESUME TEXT — the complete text extracted from the candidate's uploaded PDF. This is the ground truth. Every fact (name, contact info, education, companies, dates, project names, awards, achievements, links) comes from here.
-2. AI TAILORED CONTENT — JSON containing an improved summary, improved skill list, and improved bullets for experience/projects. These are replacements for the relevant parts only.
-
-YOUR TASK:
-Produce a LaTeX resume that:
-- Takes ALL structural facts from the FULL RESUME TEXT (name, phone, email, LinkedIn, GitHub, portfolio, education with GPA and coursework, company names, job titles, dates, project names, tech stacks, awards, achievements, rankings, LeetCode stats, certifications — everything)
-- Replaces the professional summary with tailoredSummary from the JSON
-- Replaces the skills section with tailoredSkills from the JSON
-- For each experience/project entry, finds the matching entry in tailoredExperience by name and replaces its bullets. If no match is found, keep the original bullets from the resume text.
-- Keeps every section that exists in the original resume. If the resume has awards, include awards. If it has achievements, include them. If it has links, include them.
-- Does NOT invent any new facts, companies, projects, or credentials.
-
-LATEX REQUIREMENTS:
-- Use this exact preamble (do not add or remove anything):
-
-\\documentclass[letterpaper,11pt]{article}
-\\usepackage{latexsym}
-\\usepackage[empty]{fullpage}
-\\usepackage{titlesec}
-\\usepackage{marvosym}
-\\usepackage[usenames,dvipsnames]{color}
-\\usepackage{verbatim}
-\\usepackage{enumitem}
-\\usepackage[hidelinks]{hyperref}
-\\usepackage{fancyhdr}
-\\usepackage[english]{babel}
-\\usepackage{tabularx}
-\\pagestyle{fancy}
-\\fancyhf{}
-\\fancyfoot{}
-\\renewcommand{\\headrulewidth}{0pt}
-\\renewcommand{\\footrulewidth}{0pt}
-\\addtolength{\\oddsidemargin}{-0.5in}
-\\addtolength{\\evensidemargin}{-0.5in}
-\\addtolength{\\textwidth}{1in}
-\\addtolength{\\topmargin}{-.5in}
-\\addtolength{\\textheight}{1.0in}
-\\urlstyle{same}
-\\raggedbottom
-\\raggedright
-\\setlength{\\tabcolsep}{0in}
-\\titleformat{\\section}{\\vspace{-4pt}\\scshape\\raggedright\\large}{}{0em}{}[\\color{black}\\titlerule \\vspace{-5pt}]
-\\newcommand{\\resumeItem}[1]{\\item\\small{#1 \\vspace{-2pt}}}
-\\newcommand{\\resumeSubheading}[4]{
-  \\vspace{-2pt}\\item
-    \\begin{tabular*}{0.97\\textwidth}[t]{l@{\\extracolsep{\\fill}}r}
-      \\textbf{#1} & #2 \\\\
-      \\textit{\\small#3} & \\textit{\\small #4} \\\\
-    \\end{tabular*}\\vspace{-7pt}
-}
-\\newcommand{\\resumeProjectHeading}[2]{
-  \\item
-    \\begin{tabular*}{0.97\\textwidth}{l@{\\extracolsep{\\fill}}r}
-      \\small#1 & #2 \\\\
-    \\end{tabular*}\\vspace{-7pt}
-}
-\\newcommand{\\resumeSubItem}[1]{\\resumeItem{#1}\\vspace{-4pt}}
-\\renewcommand\\labelitemii{$\\vcenter{\\hbox{\\tiny$\\bullet$}}$}
-\\newcommand{\\resumeSubHeadingListStart}{\\begin{itemize}[leftmargin=0.15in, label={}]}
-\\newcommand{\\resumeSubHeadingListEnd}{\\end{itemize}}
-\\newcommand{\\resumeItemListStart}{\\begin{itemize}}
-\\newcommand{\\resumeItemListEnd}{\\end{itemize}\\vspace{-5pt}}
-
-- NEVER include \\input{glyphtounicode} or \\pdfgentounicode — these cause compile failures.
-- Heading: centre the name as \\textbf{\\Huge \\scshape NAME}, then one line of contacts separated by $|$. Wrap every URL with \\href{}.
-- Sections: use \\section{} for each section heading.
-- Experience entries: \\resumeSubheading{Company}{Location}{Title}{Dates} then \\resumeItemListStart ... \\resumeItemListEnd
-- Project entries: \\resumeProjectHeading{\\textbf{Name} $|$ \\emph{\\small{Stack}}}{Dates} then \\resumeItemListStart ... \\resumeItemListEnd
-- Skills: \\resumeSubHeadingListStart with one \\item per category: \\textbf{Category:} item, item, item
-- Awards / Achievements: \\resumeSubHeadingListStart with one \\resumeItem per award/achievement
-- Escape special characters in all user data: & → \\&, % → \\%, $ → \\$, # → \\#, _ → \\_, { → \\{, } → \\}
-- Use -- for date ranges.
-- Output ONLY the raw LaTeX. No markdown code fences, no explanation text before \\documentclass.
-
-═══════════════════════════════
-FULL RESUME TEXT:
-═══════════════════════════════
-${resumeText}
-
-═══════════════════════════════
-AI TAILORED CONTENT (JSON):
-═══════════════════════════════
-${tailoredJSON}
-`;
-
-  const completion = await groq.chat.completions.create({
-    model:       'llama-3.3-70b-versatile',
-    temperature: 0.1,
-    max_tokens:  4096,
-    messages:    [{ role: 'user', content: prompt }],
-  });
-
-  const raw = completion.choices?.[0]?.message?.content ?? '';
-
-  // Strip any accidental markdown fences
-  return raw
-    .replace(/^```(?:latex|tex)?\s*/i, '')
-    .replace(/\s*```\s*$/, '')
-    .trim();
+export async function generateLatexWithAI(resumeText, tailoredData, user = null) {
+  const prepared = prepareResumeExport(tailoredData, { resumeText, user });
+  return buildLatexDocument(prepared);
 }

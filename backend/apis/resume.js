@@ -5,6 +5,7 @@ import { Resume } from "../models/Resume.js";
 import User from "../models/User.js";
 import { calculateProgrammaticScore, calculateFinalScore } from "../services/scorer.js";
 import { analyzeResume, analyzeResumeTargeted, tailorResume, generateLatexWithAI } from "../services/aiAnalyzer.js";
+import { prepareResumeExport } from "../services/resumeFormat.js";
 import { extractJSON } from "../utils/jsonExtractor.js";
 import { verifyToken } from "../middleware/auth.js";
 import { parseResume } from "../services/resumeParser.js";
@@ -50,9 +51,7 @@ resumeRouter.post(
 
       pdfParser.on("pdfParser_dataReady", async () => {
         try {
-          // rawText keeps structure for PDF section detection
-          const rawText = pdfParser.getRawTextContent();
-          // extractedText is normalised for scoring, AI analysis and DB storage
+          const rawText       = pdfParser.getRawTextContent();
           const extractedText = rawText.replace(/\s+/g, " ").trim();
           parseResume(extractedText);
 
@@ -69,7 +68,7 @@ resumeRouter.post(
           const finalScore   = calculateFinalScore(programmaticScore, analysisData.semanticScore || 0);
 
           const newResume = await Resume.create({
-            userId: req.user.id, parsedText: extractedText, rawText: rawText, atsScore: finalScore, fileUrl, analysisMode,
+            userId: req.user.id, parsedText: extractedText, rawText, atsScore: finalScore, fileUrl, analysisMode,
             ...(analysisMode === "targeted" && { jobDescription, company: company || undefined, roleName: roleName || undefined }),
             feedback: {
               strengths: analysisData.strengths || [], improvements: analysisData.improvements || [], summary: analysisData.summary || "",
@@ -130,12 +129,11 @@ resumeRouter.get("/all", verifyToken("recruiter", "admin"), async (req, res) => 
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 4. TAILOR RESUME
-//    Returns parsedText alongside tailoredResume so TailoredPDF can build
-//    a fully dynamic PDF from the actual uploaded resume — not hardcoded data.
 // ─────────────────────────────────────────────────────────────────────────────
 resumeRouter.post("/tailor", verifyToken("student"), async (req, res) => {
   try {
-    const { resumeId, jobDescription } = req.body;
+    const { resumeId, jobDescription, userLinks } = req.body;
+
     if (!resumeId || !jobDescription)
       return res.status(400).json({ error: "Missing resume ID or job description" });
 
@@ -143,12 +141,33 @@ resumeRouter.post("/tailor", verifyToken("student"), async (req, res) => {
     if (!baseResume) return res.status(404).json({ error: "Resume not found" });
 
     const aiResponse   = await tailorResume(baseResume.parsedText, jobDescription);
-    const tailoredData = extractJSON(aiResponse);
+    let tailoredData   = extractJSON(aiResponse);
+
+    if (!tailoredData)
+      return res.status(500).json({ error: "AI returned invalid data. Please try again." });
+
+    const dbUser = await User.findById(req.user.id).select("firstName lastName email mobile");
+    const resumeText = baseResume.rawText || baseResume.parsedText;
+    tailoredData = prepareResumeExport(tailoredData, {
+      jobDescription,
+      user: dbUser,
+      resumeText,
+    });
+
+    // ── Merge userLinks into basics so TailoredPDF always has correct URLs ──
+    // Priority: user-supplied link > AI-extracted value > empty string
+    if (userLinks) {
+      tailoredData.basics = tailoredData.basics || {};
+      if (userLinks.linkedin)               tailoredData.basics.linkedin               = userLinks.linkedin;
+      if (userLinks.github)                 tailoredData.basics.github                 = userLinks.github;
+      if (userLinks.portfolio)              tailoredData.basics.portfolio              = userLinks.portfolio;
+      if (userLinks.competitiveProgramming) tailoredData.basics.competitiveProgramming = userLinks.competitiveProgramming;
+    }
 
     return res.status(200).json({
       message:        "Resume tailored successfully",
       tailoredResume: tailoredData,
-      parsedText:     baseResume.rawText || baseResume.parsedText,  // rawText preserves structure for PDF
+      parsedText:     baseResume.rawText || baseResume.parsedText,
     });
   } catch (err) {
     console.error("Tailoring Error:", err);
@@ -159,8 +178,6 @@ resumeRouter.post("/tailor", verifyToken("student"), async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 5. GENERATE LATEX
-//    Accepts { resumeId, tailoredData } — looks up the stored resume text,
-//    then asks the AI to produce a complete Overleaf-ready .tex file.
 // ─────────────────────────────────────────────────────────────────────────────
 resumeRouter.post("/generate-latex", verifyToken("student"), async (req, res) => {
   try {
@@ -172,15 +189,13 @@ resumeRouter.post("/generate-latex", verifyToken("student"), async (req, res) =>
     const baseResume = await Resume.findOne({ _id: resumeId, userId: req.user.id });
     if (!baseResume) return res.status(404).json({ error: "Resume not found." });
 
-    // Prefer rawText (preserves original structure); fall back to parsedText
     const resumeText = baseResume.rawText || baseResume.parsedText;
-
-    const latex = await generateLatexWithAI(resumeText, tailoredData);
+    const dbUser     = await User.findById(req.user.id).select("firstName lastName email mobile");
+    const latex      = await generateLatexWithAI(resumeText, tailoredData, dbUser);
 
     if (!latex || latex.trim().length < 100)
       return res.status(500).json({ error: "AI returned an empty or invalid LaTeX response. Please try again." });
 
-    // Strip accidental markdown fences the model may add despite instructions
     const clean = latex
       .replace(/^```(?:latex|tex)?\s*/i, "")
       .replace(/\s*```\s*$/, "")

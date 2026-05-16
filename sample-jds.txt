@@ -124,3 +124,43 @@ ABOUT JPMORGAN CHASE
 JPMorgan Chase is a leading global financial services firm with over 55,000 technologists worldwide and a $15 billion annual technology budget. The firm serves millions of consumers and many of the world's most prominent corporate, institutional, and government clients under the J.P. Morgan and Chase brands.
 
 Base salary range: $128,000 – $195,000 USD depending on location, experience, and skills.
+
+---
+Full Stack Software Engineer
+Company: CloudStream Systems
+
+Location: Remote / Bangalore, India
+
+Type: Full-Time
+
+Role Overview
+We are looking for a motivated Full Stack Developer to join our engineering team. You will be responsible for building scalable web applications, managing cloud infrastructure, and collaborating with designers to create seamless user experiences.
+
+Key Responsibilities
+Develop and Maintain: Build robust frontend components using React.js and high-performance backend services using Node.js and Express.
+
+Database Management: Design and optimize schemas for PostgreSQL and manage unstructured data in MongoDB.
+
+API Integration: Create and consume RESTful APIs and integrate third-party services (Stripe, Twilio, SendGrid).
+
+Cloud Infrastructure: Deploy and monitor applications using AWS (EC2, S3, Lambda) and Docker containers.
+
+Collaboration: Participate in code reviews, sprint planning, and architectural discussions to ensure high code quality.
+
+Required Skills & Qualifications
+Frontend: Expert knowledge of JavaScript (ES6+), HTML5, CSS3, and modern frameworks like React or Next.js.
+
+Backend: Strong experience with Node.js, TypeScript, and building scalable microservices.
+
+DevOps: Familiarity with CI/CD pipelines, GitHub Actions, and cloud deployment.
+
+Tools: Proficient in Git, Jira, and Agile methodologies.
+
+Soft Skills: Strong problem-solving abilities and a "team-first" mindset.
+
+Preferred Experience
+Bachelor’s degree in Computer Science or a related field.
+
+Contributions to Open Source projects or a strong GitHub portfolio.
+
+Experience with unit testing frameworks like Jest or Mocha.
