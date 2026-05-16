@@ -1,7 +1,7 @@
 // aiAnalyzer.js
 import Groq from "groq-sdk";
 import "dotenv/config";
-import { enforceLimits, prepareResumeExport, buildLatexDocument } from "./resumeFormat.js";
+import { prepareResumeExport } from "./resumeFormat.js";
 
 const groq      = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
@@ -482,9 +482,128 @@ DO NOT omit any key from the schema.
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GENERATE LATEX  (deterministic Jake-style template — no LLM involved)
+// GENERATE LATEX  (AI prompt → Jake's Resume LaTeX)
 // ─────────────────────────────────────────────────────────────────────────────
 export async function generateLatexWithAI(resumeText, tailoredData, user = null) {
   const prepared = prepareResumeExport(tailoredData, { resumeText, user });
-  return buildLatexDocument(prepared);
+
+  const dataJson = JSON.stringify(prepared, null, 2);
+
+  const systemPrompt = `
+You are an expert LaTeX typesetter. Your ONLY job is to output a single, complete, compile-ready LaTeX document using Jake's Resume template style.
+
+════════════════════════════════════════════════════════════════
+MANDATORY TEMPLATE PREAMBLE — copy this EXACTLY, do not alter:
+════════════════════════════════════════════════════════════════
+\\documentclass[letterpaper,11pt]{article}
+
+\\usepackage{latexsym}
+\\usepackage[empty]{fullpage}
+\\usepackage{titlesec}
+\\usepackage{marvosym}
+\\usepackage[usenames,dvipsnames]{color}
+\\usepackage{verbatim}
+\\usepackage{enumitem}
+\\usepackage[hidelinks]{hyperref}
+\\usepackage{fancyhdr}
+\\usepackage[english]{babel}
+\\usepackage{tabularx}
+\\input{glyphtounicode}
+
+\\pagestyle{fancy}
+\\fancyhf{}
+\\fancyfoot{}
+\\renewcommand{\\headrulewidth}{0pt}
+\\renewcommand{\\footrulewidth}{0pt}
+
+\\addtolength{\\oddsidemargin}{-0.5in}
+\\addtolength{\\evensidemargin}{-0.5in}
+\\addtolength{\\textwidth}{1in}
+\\addtolength{\\topmargin}{-.5in}
+\\addtolength{\\textheight}{1.0in}
+
+\\urlstyle{same}
+\\raggedbottom
+\\raggedright
+\\setlength{\\tabcolsep}{0in}
+
+\\titleformat{\\section}{
+  \\vspace{-4pt}\\scshape\\raggedright\\large
+}{}{0em}{}[\\color{black}\\titlerule \\vspace{-5pt}]
+
+\\pdfgentounicode=1
+
+\\newcommand{\\resumeItem}[1]{
+  \\item\\small{{#1 \\vspace{-2pt}}}
 }
+
+\\newcommand{\\resumeSubheading}[4]{
+  \\vspace{-2pt}\\item
+    \\begin{tabular*}{0.97\\textwidth}[t]{l@{\\extracolsep{\\fill}}r}
+      \\textbf{#1} & #2 \\\\
+      \\textit{\\small#3} & \\textit{\\small #4} \\\\
+    \\end{tabular*}\\vspace{-7pt}
+}
+
+\\newcommand{\\resumeProjectHeading}[2]{
+    \\item
+    \\begin{tabular*}{0.97\\textwidth}{l@{\\extracolsep{\\fill}}r}
+      \\small#1 & #2 \\\\
+    \\end{tabular*}\\vspace{-7pt}
+}
+
+\\newcommand{\\resumeSubItem}[1]{\\resumeItem{#1}\\vspace{-4pt}}
+\\renewcommand\\labelitemii{$\\vcenter{\\hbox{\\tiny$\\bullet$}}$}
+
+\\newcommand{\\resumeSubHeadingListStart}{\\begin{itemize}[leftmargin=0.15in, label={}]}
+\\newcommand{\\resumeSubHeadingListEnd}{\\end{itemize}}
+\\newcommand{\\resumeItemListStart}{\\begin{itemize}}
+\\newcommand{\\resumeItemListEnd}{\\end{itemize}\\vspace{-5pt}}
+
+════════════════════════════════════════════════════════════════
+CONTENT RULES — follow every rule, no exceptions:
+════════════════════════════════════════════════════════════════
+1. Start with \\begin{document} after the preamble.
+2. Header: center-aligned name in \\Huge\\scshape, then a single line of contact links separated by $|$.
+   - Use \\href{mailto:EMAIL}{EMAIL} for email.
+   - Use \\href{URL}{label} for LinkedIn, GitHub, Portfolio, LeetCode.
+3. Include ALL of these sections (if data exists):
+   Professional Summary | Technical Skills | Experience & Projects |
+   Education | Awards & Achievements | DSA Proficiency | Certifications | Extracurricular
+4. Section headers: \\section{Section Name}
+5. Experience & Projects: use \\resumeSubheading for internship/company roles; \\resumeProjectHeading for solo projects.
+   - Every entry must have \\resumeItemListStart … \\resumeItemListEnd with 2–3 bullet \\resumeItem{} lines.
+6. Technical Skills: use a \\begin{itemize}[leftmargin=0.15in, label={}] block with one \\item per category.
+7. Education: use \\resumeSubheading. Include GPA and any extra lines via \\resumeItemListStart.
+8. LaTeX special characters MUST be escaped: & → \\&, % → \\%, $ → \\$, # → \\#, _ → \\_, { → \\{, } → \\}.
+   Backslash itself → \\textbackslash{}.
+9. End with \\end{document}.
+10. Output ONLY the raw LaTeX source. No markdown fences, no explanation, no commentary.
+
+`.trim();
+
+  const userPrompt = `
+Here is the structured resume JSON. Use every field — do not skip any section that has data.
+
+${dataJson}
+
+Original resume text (for additional context only — do not copy raw text, use the JSON above):
+${resumeText ? resumeText.slice(0, 3000) : ""}
+
+Now output the complete LaTeX document.
+`.trim();
+
+  const raw = await callGroq(
+    [
+      { role: "system", content: systemPrompt },
+      { role: "user",   content: userPrompt   },
+    ],
+    { temperature: 0.1, jsonMode: false, maxRetries: 2 }
+  );
+
+  // Strip any accidental markdown fences the model may wrap around the output
+  return raw
+    .replace(/^```(?:latex|tex)?\s*/i, "")
+    .replace(/\s*```\s*$/, "")
+    .trim();
+}

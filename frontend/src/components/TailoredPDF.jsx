@@ -58,7 +58,7 @@ const s = StyleSheet.create({
   // ── Header ────────────────────────────────────────────────────────────────
   header: { width: '100%', marginBottom: 3 },
   name: {
-    fontSize:     16,
+    fontSize:     14,
     fontFamily:   F.bold,
     letterSpacing: 0.4,
     color:        C.ink,

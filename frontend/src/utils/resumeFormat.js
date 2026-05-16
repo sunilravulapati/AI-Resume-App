@@ -40,56 +40,34 @@ export function resolveDisplayName(basicsName = '', resumeText = '', user = null
 
 /**
  * Enforce content limits for PDF rendering so the resume fits on a single page.
- *
- * v2 FIXES — mirrors backend/services/resumeFormat.js enforceLimits():
- *
- *  BULLET TRUNCATION (root cause of "analyze resumes for" mid-sentence cuts):
- *    bullets: 25 words (was 22). The LLM prompt targets ≤15 words, but the
- *    LLM frequently outputs 16–22 word bullets, trimWords(b, 22) was silently
- *    cutting them mid-clause. Raising to 25 gives a true safety ceiling.
- *
- *  MISSING SECTIONS:
- *    awards: up to 4 (was 2) — all 4 of Sunil's awards should appear
- *    achievements bullets: up to 4 (was 2)
- *    certifications: up to 3 (was 2)
- *    dsaProficiency: up to 3 lines (was 2) — LeetCode + CodeChef + GFG
- *    tailoredExperience: up to 4 (was 3) — includes internships
- *
- *  TECH STACK TRUNCATION:
- *    tech: 12 words (was 10) — "MERN Stack, JWT, Recharts, Express, Node.js, React, MongoDB"
- *    was being cut at 10 words, dropping the last items.
- *
- *  AWARD TITLE/DESC:
- *    award title: 14 words (was 12) — "Third Place Finish - CSI AVENSIS 2K25" is 7 words, fine
- *    award desc:  20 words (was 15) — descriptions with metrics need more room
+ * * FIX: We maintain the expanded word counts (horizontal space) to avoid mid-sentence
+ * truncation, but strictly reduce array lengths (vertical space) to prevent the
+ * renderer from squishing text or overflowing the single page.
  */
 export function enforceLimitsForPdf(data) {
   if (!data || typeof data !== 'object') return data;
   const out = { ...data, basics: { ...(data.basics || {}) } };
 
-  // FIX: Allow up to 4 experience entries (was 3) so internships survive
+  // MAX 3 experiences to ensure it fits on one page vertically
   if (Array.isArray(out.tailoredExperience)) {
-    out.tailoredExperience = out.tailoredExperience.slice(0, 4).map((entry) => ({
+    out.tailoredExperience = out.tailoredExperience.slice(0, 3).map((entry) => ({
       ...entry,
       title:   trimWords(entry.title   || '', 12),
-      // FIX: tech 12 words (was 10) — prevents mid-list tech stack truncation
       tech:    trimWords(entry.tech    || '', 12),
       meta:    trimWords(entry.meta    || '', 14),
-      // FIX: bullets 25 words (was 22) — prevents mid-sentence cuts
-      bullets: (entry.bullets || []).slice(0, 2).map((b) => trimWords(b, 25)),
+      bullets: (entry.bullets || []).slice(0, 2).map((b) => trimWords(b, 16)),
     }));
   }
 
   if (out.tailoredSummary) {
-    out.tailoredSummary = trimWords(out.tailoredSummary, 55);
+    out.tailoredSummary = trimWords(out.tailoredSummary, 32);
   }
 
-  // FIX: Allow up to 6 skill rows (was 5) — Programming, Frameworks, Databases,
-  // Cloud, Tools, Soft Skills are all valuable for a student resume
+  // MAX 5 skill categories to save vertical space
   if (Array.isArray(out.tailoredSkills)) {
-    out.tailoredSkills = out.tailoredSkills.slice(0, 6).map((row) => ({
+    out.tailoredSkills = out.tailoredSkills.slice(0, 5).map((row) => ({
       label: trimWords(row.label || '', 4),
-      value: trimWords(row.value || '', 22),
+      value: trimWords(row.value || '', 14),
     }));
   }
 
@@ -102,34 +80,50 @@ export function enforceLimitsForPdf(data) {
     }));
   }
 
-  // FIX: awards up to 4 (was 2) — all student awards should render
+  // MAX 3 awards (4 pushes standard templates to 2 pages or causes squishing)
   if (Array.isArray(out.awards)) {
-    out.awards = out.awards.slice(0, 4).map((a) => ({
+    out.awards = out.awards.slice(0, 2).map((a) => ({
       ...a,
       title: trimWords(a.title || '', 14),
       desc:  a.desc ? trimWords(a.desc, 20) : '',
     }));
   }
 
-  // FIX: achievements bullets up to 4 (was 2)
-  if (Array.isArray(out.achievements)) {
-    const bullets = out.achievements
-      .flatMap((a) => a.bullets || [])
-      .slice(0, 4)
-      .map((b) => trimWords(b, 25));
-    out.achievements = bullets.length ? [{ category: 'Achievements', bullets }] : [];
+  // Smart Merge: achievements and DSA
+  // We limit to either 2 achievement bullets OR 3 DSA lines to prevent 
+  // multiple small sections from eating up vertical heading space.
+  const achBullets = (out.achievements || []).flatMap((a) => a.bullets || []).slice(0, 2);
+  const dsaLines = (out.dsaProficiency || []).slice(0, 1)
+
+  const dsaInAchievements = achBullets.some((b) =>
+    /leetcode|codechef|codeforces|gfg|geeksforgeeks|hackerrank|dsa/i.test(b)
+  );
+
+  if (dsaLines.length > 0 && dsaInAchievements) {
+    out.achievements = [];
+    out.dsaProficiency = dsaLines;
+  } else if (achBullets.length) {
+    out.achievements = [{ category: 'Additional Achievements', bullets: achBullets }];
+    out.dsaProficiency = [];
+  } else if (dsaLines.length) {
+    out.dsaProficiency = dsaLines;
+    out.achievements = [];
+  } else {
+    out.achievements = [];
+    out.dsaProficiency = [];
   }
 
-  // FIX: certifications up to 3 (was 2)
-  if (Array.isArray(out.certifications)) out.certifications = out.certifications.slice(0, 3);
-
-  // FIX: dsaProficiency up to 3 lines (was 2), 25 words (was 22)
-  if (Array.isArray(out.dsaProficiency)) {
-    out.dsaProficiency = out.dsaProficiency.slice(0, 3).map((l) => trimWords(l, 25));
+  // MAX 2 certifications
+  if (Array.isArray(out.certifications)) {
+    out.certifications = out.certifications.slice(0, 2).map((c) => ({
+      ...c,
+      title: trimWords(c.title || '', 12),
+    }));
   }
 
+  // MAX 1 extracurricular activity
   if (Array.isArray(out.extracurricular)) {
-    out.extracurricular = out.extracurricular.slice(0, 2).map((item) => ({
+    out.extracurricular = out.extracurricular.slice(0, 1).map((item) => ({
       ...item,
       title:   trimWords(item.title || '', 8),
       bullets: (item.bullets || []).slice(0, 1).map((b) => trimWords(b, 25)),
