@@ -64,7 +64,7 @@ const globalStyles = `
   .d5 { animation-delay: 0.42s; }
   .d6 { animation-delay: 0.52s; }
 
-  /* ── Hero ── */
+  /* ── Hero Badge ── */
   .hero-badge {
     display: inline-flex;
     align-items: center;
@@ -85,11 +85,12 @@ const globalStyles = `
     border-radius: 50%;
     background: #22C55E;
     animation: float 2s ease-in-out infinite;
+    flex-shrink: 0;
   }
 
   .hero-title {
     font-family: 'Instrument Serif', serif;
-    font-size: clamp(3.6rem, 9vw, 7.5rem);
+    font-size: clamp(3rem, 9vw, 7.5rem);
     line-height: 0.95;
     letter-spacing: -0.02em;
     color: #0F0F0D;
@@ -121,6 +122,7 @@ const globalStyles = `
     text-decoration: none;
     border: 2px solid #0F0F0D;
     transition: background 0.2s, color 0.2s, transform 0.15s;
+    white-space: nowrap;
   }
   .btn-primary:hover {
     background: #1A5CFF;
@@ -141,6 +143,7 @@ const globalStyles = `
     text-decoration: none;
     border: 1.5px solid rgba(15,15,13,0.25);
     transition: border-color 0.2s, background 0.2s, transform 0.15s;
+    white-space: nowrap;
   }
   .btn-ghost:hover {
     border-color: #0F0F0D;
@@ -166,6 +169,38 @@ const globalStyles = `
     background: radial-gradient(circle, rgba(26,92,255,0.3) 0%, transparent 70%);
     pointer-events: none;
   }
+
+  /* FIX: Score columns layout — use flex with explicit dividers, no grid column bleed */
+  .score-cols {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+  }
+  .score-col {
+    flex: 1;
+    min-width: 0;
+  }
+  .score-col-divider {
+    width: 1px;
+    background: rgba(250,250,248,0.08);
+    margin: 0 20px;
+    flex-shrink: 0;
+    align-self: stretch;
+  }
+
+  /* Responsive score widget: stack on mobile */
+  @media (max-width: 600px) {
+    .score-cols {
+      flex-direction: column;
+      gap: 0;
+    }
+    .score-col-divider {
+      width: 100%;
+      height: 1px;
+      margin: 16px 0;
+    }
+  }
+
   .score-num {
     font-family: 'Instrument Serif', serif;
     font-size: 4.5rem;
@@ -237,7 +272,7 @@ const globalStyles = `
   }
   .section-title {
     font-family: 'Instrument Serif', serif;
-    font-size: clamp(2.4rem, 5vw, 3.8rem);
+    font-size: clamp(2rem, 5vw, 3.8rem);
     line-height: 1.05;
     letter-spacing: -0.02em;
     color: #0F0F0D;
@@ -250,7 +285,7 @@ const globalStyles = `
   /* ── Numbered Steps ── */
   .steps-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1px;
     background: rgba(15,15,13,0.1);
     border: 1px solid rgba(15,15,13,0.1);
@@ -285,6 +320,11 @@ const globalStyles = `
   }
 
   /* ── Mode cards ── */
+  .mode-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
   .mode-card {
     border-radius: 24px;
     padding: 40px;
@@ -300,6 +340,15 @@ const globalStyles = `
   .mode-card.general { background: #fff; }
   .mode-card.targeted { background: #0F0F0D; color: #FAFAF8; border-color: #0F0F0D; }
 
+  /* FIX: mode-tag row — align-items: center, gap, wrap naturally */
+  .mode-tag-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
   .mode-tag {
     display: inline-flex; align-items: center; gap: 6px;
     font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
@@ -307,11 +356,27 @@ const globalStyles = `
     padding: 5px 12px;
     border-radius: 99px;
     border: 1px solid;
-    margin-bottom: 24px;
   }
   .mode-tag.general { color: #1A5CFF; border-color: rgba(26,92,255,0.25); background: rgba(26,92,255,0.06); }
   .mode-tag.targeted { color: #86EFAC; border-color: rgba(134,239,172,0.25); background: rgba(134,239,172,0.08); }
 
+  .new-badge {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: #1A5CFF;
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 99px;
+    line-height: 1.4;
+    flex-shrink: 0;
+  }
+
+  .check-list {
+    margin: 0;
+    padding: 0;
+  }
   .check-list li {
     list-style: none;
     display: flex;
@@ -333,6 +398,11 @@ const globalStyles = `
   .check-icon.green { background: rgba(134,239,172,0.15); color: #86EFAC; }
 
   /* ── Export cards ── */
+  .export-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
   .export-card {
     background: #fff;
     border: 1px solid rgba(15,15,13,0.08);
@@ -353,8 +423,21 @@ const globalStyles = `
     font-size: 24px;
     margin-bottom: 20px;
   }
+  .export-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
 
   /* ── Feature grid ── */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
   .feature-card {
     background: #fff;
     border: 1px solid rgba(15,15,13,0.08);
@@ -373,6 +456,11 @@ const globalStyles = `
   }
 
   /* ── Split CTA ── */
+  .split-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
   .split-card {
     border-radius: 28px;
     padding: 52px 48px;
@@ -408,6 +496,11 @@ const globalStyles = `
   }
 
   /* ── Differentiator cards ── */
+  .diff-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+  }
   .diff-card {
     background: #fff;
     border: 1px solid rgba(15,15,13,0.08);
@@ -445,7 +538,7 @@ const globalStyles = `
   }
   .cta-title {
     font-family: 'Instrument Serif', serif;
-    font-size: clamp(2.6rem, 6vw, 5rem);
+    font-size: clamp(2.2rem, 6vw, 5rem);
     line-height: 1.02;
     letter-spacing: -0.02em;
     color: #FAFAF8;
@@ -461,6 +554,12 @@ const globalStyles = `
     background: radial-gradient(ellipse, rgba(26,92,255,0.2) 0%, transparent 70%);
     pointer-events: none;
   }
+  .cta-btns {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
 
   /* ── Overleaf Banner ── */
   .overleaf-banner {
@@ -472,6 +571,11 @@ const globalStyles = `
     gap: 20px;
     align-items: flex-start;
     margin-top: 32px;
+    flex-wrap: wrap;
+  }
+  .overleaf-banner-text {
+    flex: 1;
+    min-width: 200px;
   }
 
   /* ── Recruiter label ── */
@@ -489,11 +593,76 @@ const globalStyles = `
     margin-bottom: 32px;
   }
 
-  /* ── Responsive ── */
-  @media (max-width: 768px) {
-    .hero-title { font-size: 3rem; }
+  /* ── Section label divider row ── */
+  .section-label-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 40px;
+    flex-wrap: nowrap;
+  }
+  .section-label-divider {
+    height: 1px;
+    flex: 1;
+    background: rgba(15,15,13,0.1);
+    min-width: 20px;
+  }
+
+  /* ── Hero CTA buttons row ── */
+  .hero-btns {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 64px;
+  }
+
+  /* ── Page section containers ── */
+  .page-section {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 100px 32px;
+  }
+  .page-section-bg {
+    padding: 100px 32px;
+  }
+  .page-section-bg > .inner {
+    max-width: 1160px;
+    margin: 0 auto;
+  }
+
+  /* ── Responsive overrides ── */
+  @media (max-width: 900px) {
+    .page-section { padding: 72px 24px; }
+    .page-section-bg { padding: 72px 24px; }
     .split-card { padding: 36px 28px; }
     .cta-section { padding: 60px 28px; }
+    .mode-card { padding: 32px 28px; }
+  }
+
+  @media (max-width: 640px) {
+    .page-section { padding: 56px 16px; }
+    .page-section-bg { padding: 56px 16px; }
+    .hero-btns { flex-direction: column; align-items: flex-start; }
+    .btn-primary, .btn-ghost { width: 100%; justify-content: center; }
+    .split-card { padding: 28px 20px; }
+    .cta-section { padding: 48px 20px; border-radius: 20px; }
+    .cta-btns { flex-direction: column; align-items: center; }
+    .cta-btns a { width: 100%; max-width: 320px; justify-content: center; }
+    .steps-grid { grid-template-columns: 1fr; }
+    .score-widget { padding: 20px; }
+    .overleaf-banner { flex-direction: column; }
+    .overleaf-banner a { align-self: flex-start; }
+    .mode-card { padding: 28px 20px; }
+    .export-card { padding: 24px 20px; }
+    .feature-card { padding: 24px 20px; }
+    .diff-card { padding: 28px 20px; }
+    .section-label-row { flex-wrap: wrap; }
+    .section-label-divider { display: none; }
+  }
+
+  @media (max-width: 480px) {
+    .score-num { font-size: 3.5rem; }
+    .hero-title { font-size: 2.6rem; }
   }
 `;
 
@@ -589,7 +758,7 @@ export default function Home() {
         {/* ═══════════════════════════════════════════════
             HERO
         ═══════════════════════════════════════════════ */}
-        <section style={{ maxWidth: 1160, margin: "0 auto", padding: "80px 32px 100px" }}>
+        <section className="page-section" style={{ paddingBottom: 100 }}>
           <div style={{ maxWidth: 760 }}>
 
             <div className="hero-badge a-up d1">
@@ -607,7 +776,7 @@ export default function Home() {
               Upload your resume. Get a general ATS score — or match it against a specific job description for a role fit score, keyword gap analysis, and a tailored rewrite.
             </p>
 
-            <div className="a-up d4" style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 64 }}>
+            <div className="hero-btns a-up d4">
               <NavLink to="/register" className="btn-primary">
                 I'm a student / job seeker →
               </NavLink>
@@ -621,10 +790,12 @@ export default function Home() {
           {/* ── Score card widget ── */}
           <div className="a-up d5" style={{ maxWidth: 680 }}>
             <div className="score-widget">
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1px 1fr 1px 1fr", gap: 0, alignItems: "start" }}>
+
+              {/* FIX: Use flex-based columns with explicit divider elements */}
+              <div className="score-cols">
 
                 {/* General Score */}
-                <div style={{ paddingRight: 28 }}>
+                <div className="score-col" style={{ paddingRight: 4 }}>
                   <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(250,250,248,0.4)", marginBottom: 8 }}>General Score</p>
                   <div className="score-num" style={{ color: "#FAFAF8" }}>85</div>
                   <p style={{ fontSize: 10, color: "rgba(250,250,248,0.4)", marginTop: 4 }}>out of 100</p>
@@ -633,10 +804,11 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div style={{ background: "rgba(250,250,248,0.08)", width: 1, height: "100%", margin: "0 24px" }} />
+                {/* Divider — explicit flex child, not a grid cell bleeding into content */}
+                <div className="score-col-divider" />
 
                 {/* Role Match */}
-                <div style={{ padding: "0 4px" }}>
+                <div className="score-col" style={{ padding: "0 4px" }}>
                   <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(250,250,248,0.4)", marginBottom: 8 }}>Role match</p>
                   <div className="score-num" style={{ color: "#86EFAC", animationDelay: "1s" }}>72</div>
                   <p style={{ fontSize: 10, color: "rgba(250,250,248,0.4)", marginTop: 4 }}>out of 100</p>
@@ -645,11 +817,12 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div style={{ background: "rgba(250,250,248,0.08)", width: 1, height: "100%", margin: "0 24px" }} />
+                {/* Divider */}
+                <div className="score-col-divider" />
 
-                {/* Tailored for */}
-                <div style={{ paddingLeft: 4 }}>
-                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(250,250,248,0.4)", marginBottom: 16 }}>Tailored for</p>
+                {/* Tailored for — FIX: full column, no divider bleeding in */}
+                <div className="score-col" style={{ paddingLeft: 4 }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(250,250,248,0.4)", marginBottom: 12 }}>Tailored for</p>
                   <div style={{ background: "rgba(134,239,172,0.12)", border: "1px solid rgba(134,239,172,0.2)", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
                     <p style={{ fontSize: 11, fontWeight: 700, color: "#86EFAC", marginBottom: 2 }}>Senior SWE @ JPMC</p>
                     <p style={{ fontSize: 10, color: "rgba(250,250,248,0.4)" }}>Role match enabled</p>
@@ -698,7 +871,7 @@ export default function Home() {
         {/* ═══════════════════════════════════════════════
             HOW IT WORKS
         ═══════════════════════════════════════════════ */}
-        <section style={{ maxWidth: 1160, margin: "0 auto", padding: "100px 32px" }}>
+        <section className="page-section">
           <p className="section-eyebrow">Process</p>
           <h2 className="section-title" style={{ marginBottom: 56, maxWidth: 500 }}>Three steps to a better resume</h2>
 
@@ -719,26 +892,29 @@ export default function Home() {
         {/* ═══════════════════════════════════════════════
             TWO ANALYSIS MODES
         ═══════════════════════════════════════════════ */}
-        <section style={{ background: "#F0EFE8", padding: "100px 32px" }}>
-          <div style={{ maxWidth: 1160, margin: "0 auto" }}>
+        <section className="page-section-bg" style={{ background: "#F0EFE8" }}>
+          <div className="inner">
             <p className="section-eyebrow">Two analysis modes</p>
             <h2 className="section-title" style={{ marginBottom: 12 }}>General or <em>Targeted</em> — you choose</h2>
             <p style={{ color: "#6B6B62", fontSize: 14, maxWidth: 440, marginBottom: 56, lineHeight: 1.7 }}>
               Run a General scan to get your baseline ATS score. Then use Targeted mode for every specific role you apply to.
             </p>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
+            <div className="mode-cards-grid">
 
               {/* General */}
               <div className="mode-card general">
-                <div className="mode-tag general">
-                  <span>⚡</span> General analysis
+                {/* FIX: single tag, no sibling badge needed here */}
+                <div className="mode-tag-row">
+                  <span className="mode-tag general">
+                    <span>⚡</span> General analysis
+                  </span>
                 </div>
                 <h3 style={{ fontSize: 22, fontFamily: "'Instrument Serif', serif", marginBottom: 12, lineHeight: 1.2 }}>Best-practices baseline scan</h3>
                 <p style={{ fontSize: 13, color: "#6B6B62", lineHeight: 1.7, marginBottom: 28 }}>
                   No JD needed. Checks formatting, impact language, metrics usage, action verbs, and ATS hygiene. Get a 0–100 score in seconds.
                 </p>
-                <ul className="check-list" style={{ margin: 0, padding: 0 }}>
+                <ul className="check-list">
                   {["ATS score (0–100)", "Top 3 strengths", "Top 3 fixable issues", "Brutally honest AI summary"].map((item, i) => (
                     <li key={i}>
                       <span className="check-icon blue">✓</span>
@@ -752,17 +928,18 @@ export default function Home() {
               <div className="mode-card targeted">
                 <div style={{ position: "absolute", top: -40, right: -40, width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle, rgba(26,92,255,0.3) 0%, transparent 70%)", pointerEvents: "none" }} />
                 <div style={{ position: "relative" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24 }}>
-                    <div className="mode-tag targeted">
+                  {/* FIX: tag + NEW badge in a proper flex row — both baseline-aligned */}
+                  <div className="mode-tag-row">
+                    <span className="mode-tag targeted">
                       <span>🎯</span> Match my resume
-                    </div>
-                    <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", background: "#1A5CFF", color: "#fff", padding: "3px 8px", borderRadius: 99 }}>New</span>
+                    </span>
+                    <span className="new-badge">New</span>
                   </div>
                   <h3 style={{ fontSize: 22, fontFamily: "'Instrument Serif', serif", marginBottom: 12, lineHeight: 1.2, color: "#FAFAF8" }}>Deep JD match analysis</h3>
                   <p style={{ fontSize: 13, color: "rgba(250,250,248,0.55)", lineHeight: 1.7, marginBottom: 28 }}>
                     Paste a job description. The AI extracts every required skill, cross-references your resume, and scores how well you fit the role.
                   </p>
-                  <ul className="check-list" style={{ margin: 0, padding: 0 }}>
+                  <ul className="check-list">
                     {["Role Match Score (0–100)", "Keyword Match Rate (%)", "Missing critical skills — listed explicitly", "Experience gap vs. seniority level", "Role-specific strengths & improvements"].map((item, i) => (
                       <li key={i}>
                         <span className="check-icon green">✓</span>
@@ -780,22 +957,22 @@ export default function Home() {
         {/* ═══════════════════════════════════════════════
             EXPORT OPTIONS
         ═══════════════════════════════════════════════ */}
-        <section style={{ maxWidth: 1160, margin: "0 auto", padding: "100px 32px" }}>
+        <section className="page-section">
           <p className="section-eyebrow">Three ways to export</p>
           <h2 className="section-title" style={{ marginBottom: 12 }}>Use your tailored resume <em>anywhere</em></h2>
           <p style={{ color: "#6B6B62", fontSize: 14, maxWidth: 440, marginBottom: 56, lineHeight: 1.7 }}>
             After the AI rewrites your resume, choose how you want it. Every format is designed for a different workflow.
           </p>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
+          <div className="export-grid">
             {exportOptions.map((f, i) => (
               <div className="export-card" key={i}>
                 <div className="export-icon-wrap" style={{ background: f.iconBg }}>
                   <span style={{ fontSize: 22 }}>{f.icon}</span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <div className="export-header">
                   <h3 style={{ fontSize: 15, fontWeight: 700, color: "#0F0F0D" }}>{f.title}</h3>
-                  <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: f.badgeColor, background: f.badgeBg, border: `1px solid ${f.badgeColor}30`, padding: "3px 8px", borderRadius: 99 }}>{f.badge}</span>
+                  <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: f.badgeColor, background: f.badgeBg, border: `1px solid ${f.badgeColor}30`, padding: "3px 8px", borderRadius: 99, flexShrink: 0 }}>{f.badge}</span>
                 </div>
                 <p style={{ fontSize: 13, color: "#6B6B62", lineHeight: 1.7 }}>{f.desc}</p>
               </div>
@@ -804,13 +981,13 @@ export default function Home() {
 
           <div className="overleaf-banner">
             <span style={{ fontSize: 28, flexShrink: 0 }}>🧪</span>
-            <div style={{ flex: 1 }}>
+            <div className="overleaf-banner-text">
               <p style={{ fontWeight: 700, fontSize: 14, color: "#0F0F0D", marginBottom: 4 }}>Why LaTeX / Overleaf?</p>
               <p style={{ fontSize: 12, color: "#6B6B62", lineHeight: 1.7 }}>
                 LaTeX produces typographically perfect output that looks identical on every device. ATS scanners parse LaTeX-generated PDFs more reliably than Word or Google Docs exports. We generate Jake's Resume template — the most popular ATS-proven template on Overleaf — pre-filled with your tailored content.
               </p>
             </div>
-            <a href="https://www.overleaf.com" target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0, fontSize: 12, fontWeight: 700, color: "#B45309", border: "1px solid rgba(180,83,9,0.25)", background: "rgba(180,83,9,0.06)", padding: "8px 16px", borderRadius: 99, textDecoration: "none", transition: "background 0.2s", whiteSpace: "nowrap", display: "inline-block" }}>
+            <a href="https://www.overleaf.com" target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0, fontSize: 12, fontWeight: 700, color: "#B45309", border: "1px solid rgba(180,83,9,0.25)", background: "rgba(180,83,9,0.06)", padding: "8px 16px", borderRadius: 99, textDecoration: "none", whiteSpace: "nowrap", display: "inline-block" }}>
               Learn about Overleaf →
             </a>
           </div>
@@ -819,16 +996,16 @@ export default function Home() {
         {/* ═══════════════════════════════════════════════
             FEATURES GRID
         ═══════════════════════════════════════════════ */}
-        <section style={{ background: "#F0EFE8", padding: "100px 32px" }}>
-          <div style={{ maxWidth: 1160, margin: "0 auto" }}>
+        <section className="page-section-bg" style={{ background: "#F0EFE8" }}>
+          <div className="inner">
 
             {/* Students */}
             <div style={{ marginBottom: 72 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 40 }}>
+              <div className="section-label-row">
                 <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#1A5CFF", background: "rgba(26,92,255,0.08)", border: "1px solid rgba(26,92,255,0.2)", padding: "5px 14px", borderRadius: 99, whiteSpace: "nowrap" }}>For students & job seekers</span>
-                <div style={{ height: 1, flex: 1, background: "rgba(15,15,13,0.1)" }} />
+                <div className="section-label-divider" />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
+              <div className="feature-grid">
                 {studentFeatures.map((f, i) => (
                   <div className="feature-card" key={i}>
                     <span className="feature-icon">{f.icon}</span>
@@ -841,11 +1018,11 @@ export default function Home() {
 
             {/* Recruiters */}
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 40 }}>
-                <span className="recruiter-badge">For recruiters & hiring managers</span>
-                <div style={{ height: 1, flex: 1, background: "rgba(15,15,13,0.1)" }} />
+              <div className="section-label-row">
+                <span className="recruiter-badge" style={{ marginBottom: 0 }}>For recruiters & hiring managers</span>
+                <div className="section-label-divider" />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
+              <div className="feature-grid">
                 {recruiterFeatures.map((f, i) => (
                   <div className="feature-card" key={i}>
                     <span className="feature-icon">{f.icon}</span>
@@ -862,11 +1039,11 @@ export default function Home() {
         {/* ═══════════════════════════════════════════════
             SPLIT VALUE PROP
         ═══════════════════════════════════════════════ */}
-        <section style={{ maxWidth: 1160, margin: "0 auto", padding: "100px 32px" }}>
+        <section className="page-section">
           <p className="section-eyebrow" style={{ textAlign: "center" }}>Two sides. One platform.</p>
           <h2 className="section-title" style={{ textAlign: "center", marginBottom: 56 }}>Built for both sides of the table</h2>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
+          <div className="split-grid">
 
             {/* Student */}
             <div className="split-card light">
@@ -913,12 +1090,12 @@ export default function Home() {
         {/* ═══════════════════════════════════════════════
             DIFFERENTIATORS
         ═══════════════════════════════════════════════ */}
-        <section style={{ background: "#F0EFE8", padding: "100px 32px" }}>
-          <div style={{ maxWidth: 1160, margin: "0 auto" }}>
+        <section className="page-section-bg" style={{ background: "#F0EFE8" }}>
+          <div className="inner">
             <p className="section-eyebrow">Why not just use ChatGPT?</p>
             <h2 className="section-title" style={{ marginBottom: 56 }}>The differences <em>that matter</em></h2>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
+            <div className="diff-grid">
               {differentiators.map((d, i) => (
                 <div className="diff-card" key={i}>
                   <div className="diff-accent-line" style={{ background: d.accent }} />
@@ -934,7 +1111,7 @@ export default function Home() {
         {/* ═══════════════════════════════════════════════
             FINAL CTA
         ═══════════════════════════════════════════════ */}
-        <section style={{ maxWidth: 1160, margin: "0 auto", padding: "80px 32px 100px" }}>
+        <section className="page-section" style={{ paddingBottom: 100 }}>
           <div className="cta-section">
             <div className="cta-glow" />
             <div style={{ position: "relative" }}>
@@ -952,7 +1129,7 @@ export default function Home() {
                 Join the platform where students get hired and recruiters find talent — powered by a scoring engine that never lies.
               </p>
 
-              <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+              <div className="cta-btns">
                 <NavLink to="/register" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#FAFAF8", color: "#0F0F0D", fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700, letterSpacing: "0.02em", padding: "14px 28px", borderRadius: 99, textDecoration: "none", transition: "background 0.2s, transform 0.15s" }}>
                   Create free account →
                 </NavLink>

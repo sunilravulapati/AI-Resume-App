@@ -4,11 +4,6 @@ import TailoredPDF from './TailoredPDF';
 
 // ─── styles ──────────────────────────────────────────────────────────────────
 const panelStyles = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
-
-  .ep-root { font-family: 'DM Sans', sans-serif; }
-  .ep-display { font-family: 'DM Serif Display', serif; }
-
   @keyframes ep-fade-up {
     from { opacity: 0; transform: translateY(8px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -24,20 +19,20 @@ const panelStyles = `
   .ep-dot:nth-child(3) { animation-delay: 0.4s; }
 
   .ep-option {
-    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s, background-color 0.15s;
     cursor: pointer;
   }
   .ep-option:hover { transform: translateY(-2px); }
-  .ep-option.ep-selected { box-shadow: 0 0 0 2px currentColor; }
+  .ep-option.ep-selected { box-shadow: 0 0 0 2px var(--color-accent); border-color: var(--color-accent) !important; background-color: var(--bg-elevated) !important; }
 
   .ep-code-block {
     font-family: 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1.6;
     tab-size: 2;
   }
 
-  .ep-copy-btn { transition: background 0.15s, transform 0.1s; }
+  .ep-copy-btn { transition: background 0.15s, transform 0.1s, border-color 0.15s, color 0.15s; }
   .ep-copy-btn:active { transform: scale(0.96); }
 
   .ep-tab { transition: color 0.15s, border-color 0.15s; }
@@ -189,8 +184,7 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
       icon:       '📋',
       title:      'Copy & Paste',
       badge:      'Instant',
-      badgeColor: 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/20',
-      border:     'border-[#0066cc]',
+      badgeColor: 'bg-[var(--color-accent-soft)] text-[var(--color-accent)] border-[var(--color-accent)]/20',
       desc:       'Copy all AI suggestions as plain text. Paste directly into your existing resume editor — Word, Notion, Google Docs, anywhere.',
       pro:        'Works with any editor',
       con:        'You manually format it',
@@ -200,8 +194,7 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
       icon:       '⬇️',
       title:      'Download PDF',
       badge:      'Quick',
-      badgeColor: 'bg-[#248a3d]/10 text-[#248a3d] border-[#248a3d]/20',
-      border:     'border-[#248a3d]',
+      badgeColor: 'bg-[var(--success-soft)] text-[var(--success)] border-[var(--success)]/20',
       desc:       'Download a pre-built PDF resume with AI content applied. Ready to submit immediately — no editor needed.',
       pro:        'One-click, submit-ready',
       con:        'Formatting may vary by resume',
@@ -211,8 +204,7 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
       icon:       '🧪',
       title:      'Overleaf / LaTeX',
       badge:      'Best Quality',
-      badgeColor: 'bg-[#b86e00]/10 text-[#b86e00] border-[#b86e00]/20',
-      border:     'border-[#b86e00]',
+      badgeColor: 'bg-[var(--warning-soft)] text-[var(--warning)] border-[var(--warning)]/20',
       desc:       "Generates a complete LaTeX resume using Jake's template — every section populated from your tailored content. Paste into Overleaf for a pixel-perfect, ATS-proven PDF.",
       pro:        'Highest quality, fully populated',
       con:        'Requires an Overleaf account',
@@ -223,37 +215,39 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
   return (
     <>
       <style>{panelStyles}</style>
-      <div className="ep-root pt-6 border-t border-[#e8e8ed] mt-6 space-y-5">
+      <div className="pt-8 border-t border-[var(--border)] mt-8 space-y-6">
 
         {/* Header */}
         <div>
-          <p className="text-[0.65rem] font-bold text-[#a1a1a6] uppercase tracking-widest mb-1">Export Your Resume</p>
-          <p className="text-xs text-[#6e6e73]">Choose how you want to use these AI suggestions.</p>
+          <p className="text-xs font-bold text-[var(--color-accent)] uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+            <span className="text-base">🚀</span> Export Your Resume
+          </p>
+          <p className="text-sm font-medium text-[var(--text-secondary)]">Choose how you want to use these AI suggestions.</p>
         </div>
 
         {/* Three option cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {OPTIONS.map(opt => (
             <button
               key={opt.key}
               onClick={() => setActiveOption(activeOption === opt.key ? null : opt.key)}
-              className={`ep-option text-left p-4 rounded-2xl border-2 transition-all
+              className={`ep-option text-left p-5 rounded-2xl border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]
                 ${activeOption === opt.key
-                  ? `${opt.border} bg-white shadow-lg`
-                  : 'border-[#e8e8ed] bg-[#f5f5f7] hover:border-[#d2d2d7] hover:bg-white'
+                  ? `ep-selected border-[var(--color-accent)] bg-[var(--bg-elevated)] shadow-md`
+                  : 'border-[var(--border)] bg-[var(--bg-muted)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-elevated)] shadow-sm'
                 }`}
             >
-              <div className="flex items-start justify-between mb-2">
-                <span className="text-xl">{opt.icon}</span>
-                <span className={`text-[0.55rem] font-bold uppercase tracking-wider border px-1.5 py-0.5 rounded-full ${opt.badgeColor}`}>
+              <div className="flex items-start justify-between mb-3">
+                <span className="text-2xl">{opt.icon}</span>
+                <span className={`text-[0.6rem] font-bold uppercase tracking-widest border px-2 py-0.5 rounded-full ${opt.badgeColor}`}>
                   {opt.badge}
                 </span>
               </div>
-              <p className="font-bold text-[#1d1d1f] text-xs mb-1">{opt.title}</p>
-              <p className="text-[0.65rem] text-[#6e6e73] leading-relaxed">{opt.desc}</p>
-              <div className="mt-3 space-y-1">
-                <p className="text-[0.6rem] text-[#248a3d]">✓ {opt.pro}</p>
-                <p className="text-[0.6rem] text-[#a1a1a6]">↳ {opt.con}</p>
+              <p className="font-bold text-[var(--text)] text-sm mb-1.5">{opt.title}</p>
+              <p className="text-xs font-medium text-[var(--text-secondary)] leading-relaxed">{opt.desc}</p>
+              <div className="mt-4 space-y-1.5 pt-3 border-t border-[var(--border)]/50">
+                <p className="text-xs font-bold text-[var(--success)]">✓ {opt.pro}</p>
+                <p className="text-[0.65rem] font-medium text-[var(--text-muted)]">↳ {opt.con}</p>
               </div>
             </button>
           ))}
@@ -261,24 +255,24 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
 
         {/* ── COPY PANEL ── */}
         {activeOption === 'copy' && (
-          <div className="ep-fade-up bg-white border border-[#e8e8ed] rounded-2xl overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[#e8e8ed] bg-[#f5f5f7]">
+          <div className="ep-fade-up bg-[var(--bg-elevated)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)] bg-[var(--bg-muted)]">
               <div className="flex items-center gap-2">
-                <span className="text-sm">📋</span>
-                <p className="text-xs font-bold text-[#1d1d1f]">AI Suggestions — Plain Text</p>
+                <span className="text-base">📋</span>
+                <p className="text-sm font-bold text-[var(--text)]">AI Suggestions — Plain Text</p>
               </div>
               <button
                 onClick={handleCopyText}
-                className={`ep-copy-btn text-xs font-bold px-3 py-1.5 rounded-full border transition-all
+                className={`ep-copy-btn text-xs font-bold px-4 py-2 rounded-xl border-2 transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]
                   ${copied
-                    ? 'bg-[#34c759]/10 text-[#248a3d] border-[#34c759]/30'
-                    : 'bg-white text-[#0066cc] border-[#0066cc]/30 hover:bg-[#0066cc]/5'
+                    ? 'bg-[var(--success-soft)] text-[var(--success)] border-[var(--success)]/30'
+                    : 'bg-white text-[var(--color-accent)] border-[var(--color-accent-soft)] hover:border-[var(--color-accent)] hover:bg-[var(--color-brand-50)]'
                   }`}
               >
                 {copied ? '✓ Copied!' : 'Copy All'}
               </button>
             </div>
-            <pre className="ep-code-block p-4 text-[#1d1d1f] overflow-x-auto whitespace-pre-wrap max-h-80 text-[11px]">
+            <pre className="ep-code-block p-5 text-[var(--text)] overflow-x-auto whitespace-pre-wrap max-h-96">
               {generateCopyText(tailoredData)}
             </pre>
           </div>
@@ -286,18 +280,18 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
 
         {/* ── PDF PANEL ── */}
         {activeOption === 'pdf' && (
-          <div className="ep-fade-up bg-white border border-[#e8e8ed] rounded-2xl overflow-hidden shadow-sm">
-            <div className="px-5 py-4 border-b border-[#e8e8ed] bg-[#f5f5f7]">
-              <p className="text-xs font-bold text-[#1d1d1f] mb-0.5">⬇️ Download ATS-Ready PDF</p>
-              <p className="text-[0.65rem] text-[#6e6e73]">
+          <div className="ep-fade-up bg-[var(--bg-elevated)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-sm">
+            <div className="px-5 py-4 border-b border-[var(--border)] bg-[var(--bg-muted)]">
+              <p className="text-sm font-bold text-[var(--text)] mb-1">⬇️ Download ATS-Ready PDF</p>
+              <p className="text-xs font-medium text-[var(--text-secondary)]">
                 PDF is built from your uploaded resume with AI-tailored content applied on top.
                 Formatting quality depends on how structured your original resume was.
               </p>
             </div>
-            <div className="p-5 space-y-4">
-              <div className="flex items-start gap-2.5 bg-[#ff9f0a]/[0.06] border border-[#ff9f0a]/25 rounded-xl px-3.5 py-3">
-                <span className="text-sm shrink-0 mt-0.5">⚠️</span>
-                <p className="text-[0.65rem] text-[#b86e00] leading-relaxed">
+            <div className="p-6 space-y-5">
+              <div className="flex items-start gap-3 bg-[var(--warning-soft)] border border-[var(--warning)]/20 rounded-xl px-4 py-3.5">
+                <span className="text-base shrink-0">⚠️</span>
+                <p className="text-xs font-medium text-[var(--warning)] leading-relaxed">
                   <span className="font-bold">Note:</span> The PDF renderer parses your original resume text to rebuild the layout.
                   Complex formatting (columns, icons, tables) may not transfer perfectly.
                   If the result looks off, use the LaTeX option for best quality.
@@ -306,11 +300,11 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
               <PDFDownloadLink
                 document={<TailoredPDF tailoredData={tailoredData} parsedText={parsedText} user={user} userLinks={userLinks} />}
                 fileName={`Tailored_Resume_${user?.firstName || 'Resume'}.pdf`}
-                className="flex items-center justify-center gap-2 w-full bg-[#248a3d] text-white font-bold text-sm py-3 px-6 rounded-full hover:bg-[#1a6b2e] transition-colors shadow-md shadow-[#248a3d]/20"
+                className="flex items-center justify-center gap-2.5 w-full bg-[var(--success)] text-white font-bold text-sm py-3.5 px-6 rounded-2xl hover:bg-[#1a6b2e] transition-colors shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--success)] focus-visible:ring-offset-2"
               >
                 {({ loading }) =>
                   loading
-                    ? <><span className="animate-spin">⏳</span> Building PDF…</>
+                    ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Building PDF…</>
                     : <><span>⬇️</span> Download PDF</>
                 }
               </PDFDownloadLink>
@@ -320,10 +314,10 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
 
         {/* ── LATEX PANEL ── */}
         {activeOption === 'latex' && (
-          <div className="ep-fade-up bg-white border border-[#e8e8ed] rounded-2xl overflow-hidden shadow-sm">
+          <div className="ep-fade-up bg-[var(--bg-elevated)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-sm">
 
             {/* Tab bar */}
-            <div className="flex items-center border-b border-[#e8e8ed] bg-[#f5f5f7] px-4">
+            <div className="flex items-center border-b border-[var(--border)] bg-[var(--bg-muted)] px-5">
               {[
                 { key: 'code',         label: '{ } LaTeX Code' },
                 { key: 'instructions', label: '📖 How to Use'  },
@@ -331,10 +325,10 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
                 <button
                   key={tab.key}
                   onClick={() => setLatexTab(tab.key)}
-                  className={`ep-tab text-xs font-semibold py-3 mr-4 border-b-2 -mb-px transition-all
+                  className={`ep-tab text-xs font-bold py-4 mr-6 border-b-2 -mb-px transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]
                     ${latexTab === tab.key
-                      ? 'text-[#b86e00] border-[#b86e00]'
-                      : 'text-[#a1a1a6] border-transparent hover:text-[#6e6e73]'
+                      ? 'text-[var(--color-accent)] border-[var(--color-accent)]'
+                      : 'text-[var(--text-secondary)] border-transparent hover:text-[var(--text)]'
                     }`}
                 >
                   {tab.label}
@@ -343,11 +337,11 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
 
               {/* Copy / Retry buttons — only on code tab */}
               {latexTab === 'code' && (
-                <div className="ml-auto flex items-center gap-2 my-2">
+                <div className="ml-auto flex items-center gap-3 my-2">
                   {latexError && (
                     <button
                       onClick={handleRetryLatex}
-                      className="ep-copy-btn text-xs font-bold px-3 py-1.5 rounded-full border border-[#cc2f26]/30 text-[#cc2f26] bg-white hover:bg-[#cc2f26]/5"
+                      className="ep-copy-btn text-xs font-bold px-4 py-2 rounded-xl border-2 border-[var(--danger)]/30 text-[var(--danger)] bg-white hover:bg-[var(--danger-soft)] shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger)]"
                     >
                       ↺ Retry
                     </button>
@@ -355,10 +349,10 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
                   {latexCode && !latexLoading && (
                     <button
                       onClick={handleCopyLatex}
-                      className={`ep-copy-btn text-xs font-bold px-3 py-1.5 rounded-full border transition-all
+                      className={`ep-copy-btn text-xs font-bold px-4 py-2 rounded-xl border-2 transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]
                         ${latexCopied
-                          ? 'bg-[#34c759]/10 text-[#248a3d] border-[#34c759]/30'
-                          : 'bg-white text-[#b86e00] border-[#b86e00]/30 hover:bg-[#b86e00]/5'
+                          ? 'bg-[var(--success-soft)] text-[var(--success)] border-[var(--success)]/30'
+                          : 'bg-white text-[var(--color-accent)] border-[var(--color-accent-soft)] hover:border-[var(--color-accent)] hover:bg-[var(--color-brand-50)]'
                         }`}
                     >
                       {latexCopied ? '✓ Copied!' : 'Copy Code'}
@@ -374,26 +368,22 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
 
                 {/* Loading state */}
                 {latexLoading && (
-                  <div className="flex flex-col items-center justify-center gap-3 py-16 bg-[#fafafa]">
-                    <div className="flex gap-1.5">
-                      <span className="ep-dot w-2 h-2 rounded-full bg-[#b86e00]" />
-                      <span className="ep-dot w-2 h-2 rounded-full bg-[#b86e00]" />
-                      <span className="ep-dot w-2 h-2 rounded-full bg-[#b86e00]" />
-                    </div>
-                    <p className="text-xs text-[#6e6e73]">Building your LaTeX resume…</p>
-                    <p className="text-[0.6rem] text-[#a1a1a6]">Usually takes a few seconds</p>
+                  <div className="flex flex-col items-center justify-center gap-3 py-20 bg-[var(--bg)]">
+                    <span className="w-8 h-8 border-4 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin"></span>
+                    <p className="text-sm font-bold text-[var(--text)] mt-2">Building your LaTeX resume…</p>
+                    <p className="text-xs font-medium text-[var(--text-secondary)]">Usually takes a few seconds</p>
                   </div>
                 )}
 
                 {/* Error state */}
                 {!latexLoading && latexError && (
-                  <div className="flex flex-col items-center justify-center gap-3 py-14 px-6 bg-[#fafafa]">
-                    <span className="text-2xl">⚠️</span>
-                    <p className="text-xs font-bold text-[#cc2f26] text-center">Generation failed</p>
-                    <p className="text-[0.65rem] text-[#6e6e73] text-center max-w-xs">{latexError}</p>
+                  <div className="flex flex-col items-center justify-center gap-3 py-16 px-6 bg-[var(--bg)]">
+                    <span className="text-3xl">⚠️</span>
+                    <p className="text-sm font-bold text-[var(--danger)] text-center">Generation failed</p>
+                    <p className="text-xs font-medium text-[var(--text-secondary)] text-center max-w-sm leading-relaxed">{latexError}</p>
                     <button
                       onClick={handleRetryLatex}
-                      className="mt-1 text-xs font-bold px-4 py-2 rounded-full bg-[#b86e00]/10 text-[#b86e00] hover:bg-[#b86e00]/20 transition-colors"
+                      className="mt-2 text-xs font-bold px-5 py-2.5 rounded-xl bg-[var(--danger-soft)] text-[var(--danger)] hover:bg-[var(--danger)]/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger)]"
                     >
                       ↺ Try again
                     </button>
@@ -403,16 +393,16 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
                 {/* Success state */}
                 {!latexLoading && !latexError && latexCode && (
                   <>
-                    <div className="flex items-center gap-2 px-4 py-2 bg-[#34c759]/[0.06] border-b border-[#34c759]/20">
-                      <span className="text-xs">✅</span>
-                      <p className="text-[0.65rem] text-[#248a3d] font-medium">
+                    <div className="flex items-center gap-3 px-5 py-3 bg-[var(--success-soft)] border-b border-[var(--success)]/20">
+                      <span className="text-sm">✅</span>
+                      <p className="text-xs text-[var(--success)] font-bold">
                         LaTeX ready — complete resume with all your data populated
                       </p>
                     </div>
-                    <p className="px-4 py-2 text-[0.65rem] text-[#6e6e73] border-b border-[#e8e8ed]">
+                    <p className="px-5 py-3 text-xs font-medium text-[var(--text-secondary)] border-b border-[var(--border)]">
                       Copy this code exactly into Overleaf (Ctrl+A in the editor, then paste).
                     </p>
-                    <pre className="ep-code-block p-4 text-[#1d1d1f] overflow-x-auto max-h-96 bg-[#fafafa] text-[10.5px] leading-relaxed whitespace-pre-wrap">
+                    <pre className="ep-code-block p-5 text-[var(--text)] overflow-x-auto max-h-96 bg-[var(--bg-muted)] text-[11px] leading-relaxed whitespace-pre-wrap">
                       <code>{latexCode}</code>
                     </pre>
                   </>
@@ -422,48 +412,48 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
 
             {/* ── Instructions tab ── */}
             {latexTab === 'instructions' && (
-              <div className="p-5 space-y-4">
+              <div className="p-6 space-y-5 bg-[var(--bg)]">
                 {[
                   {
-                    n: '1', color: 'bg-[#0066cc]/10 text-[#0066cc]',
+                    n: '1', color: 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]',
                     title: 'Copy the LaTeX code',
                     desc:  'Switch to the "LaTeX Code" tab and click "Copy Code" to copy the entire template.',
                   },
                   {
-                    n: '2', color: 'bg-[#248a3d]/10 text-[#248a3d]',
+                    n: '2', color: 'bg-[var(--success-soft)] text-[var(--success)]',
                     title: 'Open Overleaf',
                     desc:  'Go to overleaf.com → "New Project" → "Blank Project". Give it any name.',
                     link:  { href: 'https://www.overleaf.com/project/new', label: 'Open Overleaf →' },
                   },
                   {
-                    n: '3', color: 'bg-[#b86e00]/10 text-[#b86e00]',
+                    n: '3', color: 'bg-[var(--warning-soft)] text-[var(--warning)]',
                     title: 'Paste and replace',
                     desc:  'Select all the default content in the editor (Ctrl+A) and paste your copied code.',
                   },
                   {
-                    n: '4', color: 'bg-[#cc2f26]/10 text-[#cc2f26]',
+                    n: '4', color: 'bg-[var(--danger-soft)] text-[var(--danger)]',
                     title: 'Review and recompile',
                     desc:  'The AI has filled in all sections. Scan for anything to tweak, then hit the green "Recompile" button.',
                   },
                   {
-                    n: '5', color: 'bg-[#0066cc]/10 text-[#0066cc]',
+                    n: '5', color: 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]',
                     title: 'Download your PDF',
                     desc:  "Hit 'Download PDF' in Overleaf. It's ATS-proven and recruiter-ready.",
                   },
                 ].map(step => (
-                  <div key={step.n} className="flex items-start gap-3">
-                    <span className={`${step.color} w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 mt-0.5`}>
+                  <div key={step.n} className="flex items-start gap-4">
+                    <span className={`${step.color} w-8 h-8 rounded-xl flex items-center justify-center text-sm font-black shrink-0 mt-0.5`}>
                       {step.n}
                     </span>
                     <div>
-                      <p className="text-xs font-bold text-[#1d1d1f]">{step.title}</p>
-                      <p className="text-xs text-[#6e6e73] leading-relaxed mt-0.5">{step.desc}</p>
+                      <p className="text-sm font-bold text-[var(--text)]">{step.title}</p>
+                      <p className="text-xs font-medium text-[var(--text-secondary)] leading-relaxed mt-1">{step.desc}</p>
                       {step.link && (
                         <a
                           href={step.link.href}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs font-bold text-[#0066cc] hover:underline mt-1 inline-block"
+                          className="text-xs font-bold text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] hover:underline mt-1.5 inline-block transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] rounded"
                         >
                           {step.link.label}
                         </a>
@@ -472,9 +462,9 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
                   </div>
                 ))}
 
-                <div className="flex items-start gap-2.5 bg-[#34c759]/[0.06] border border-[#34c759]/20 rounded-xl px-3.5 py-3 mt-4">
-                  <span className="text-sm shrink-0">💡</span>
-                  <p className="text-[0.65rem] text-[#248a3d] leading-relaxed">
+                <div className="flex items-start gap-3 bg-[var(--success-soft)] border border-[var(--success)]/20 rounded-2xl px-5 py-4 mt-6">
+                  <span className="text-base shrink-0 mt-0.5">💡</span>
+                  <p className="text-xs font-medium text-[var(--success)] leading-relaxed">
                     <span className="font-bold">Why LaTeX?</span> LaTeX produces typographically perfect output that looks the same on every machine.
                     ATS scanners parse LaTeX-generated PDFs more reliably than Word or Google Docs exports.
                     Jake's resume template is the most popular ATS-friendly LaTeX template on Overleaf.

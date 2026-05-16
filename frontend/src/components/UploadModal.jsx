@@ -1,119 +1,37 @@
 import { useState, useRef } from "react";
 import axios from "axios";
 
-// ─── styles (same font + token system as Home.jsx) ──────────────────────────
-const modalStyles = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
-
-  .um-root * { box-sizing: border-box; }
-  .um-root { font-family: 'DM Sans', sans-serif; }
-  .um-display { font-family: 'DM Serif Display', serif; }
-
-  @keyframes um-overlay-in {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-  }
-  @keyframes um-card-in {
-    from { opacity: 0; transform: scale(0.96) translateY(14px); }
-    to   { opacity: 1; transform: scale(1)    translateY(0); }
-  }
-  .um-overlay { animation: um-overlay-in 0.18s ease both; }
-  .um-card    { animation: um-card-in 0.24s cubic-bezier(0.34,1.4,0.64,1) both; }
-
-  @keyframes um-fade-up {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  .um-fade-up { animation: um-fade-up 0.3s ease both; }
-
-  /* mode toggle pills */
-  .um-pill {
-    cursor: pointer;
-    transition: background 0.18s, color 0.18s, box-shadow 0.18s;
-  }
-  .um-pill-general  { background:#0066cc; color:#fff; box-shadow:0 4px 14px rgba(0,102,204,.28); }
-  .um-pill-targeted { background:#248a3d; color:#fff; box-shadow:0 4px 14px rgba(36,138,61,.28); }
-  .um-pill-idle     { background:transparent; color:#6e6e73; }
-
-  /* drop zone */
-  .um-drop {
-    border: 2px dashed #d2d2d7;
-    transition: border-color 0.18s, background 0.18s;
-    cursor: pointer;
-  }
-  .um-drop:hover  { border-color:#0066cc; background:#0066cc08; }
-  .um-drop-over   { border-color:#0066cc !important; background:#0066cc08 !important; }
-  .um-drop-filled { border-color:#34c759 !important; background:#34c75908 !important; }
-
-  /* JD panel slide */
-  .um-jd-panel {
-    display: grid;
-    transition: grid-template-rows 0.32s cubic-bezier(0.4,0,0.2,1),
-                opacity 0.22s ease;
-  }
-  .um-jd-panel-open   { grid-template-rows: 1fr; opacity: 1; }
-  .um-jd-panel-closed { grid-template-rows: 0fr; opacity: 0; }
-  .um-jd-inner { overflow: hidden; }
-
-  /* progress bar */
-  .um-bar-fill {
-    transition: width 0.45s ease;
-    background: linear-gradient(90deg, #0066cc, #004499);
-  }
-  .um-bar-fill-done { background: linear-gradient(90deg, #34c759, #248a3d); }
-
-  /* shimmer skeleton */
-  .um-shimmer {
-    background: linear-gradient(90deg, #f5f5f7 25%, #ebebf0 50%, #f5f5f7 75%);
-    background-size: 200% 100%;
-    animation: um-shimmer 1.3s infinite;
-  }
-  @keyframes um-shimmer {
-    0%   { background-position:  200% 0; }
-    100% { background-position: -200% 0; }
-  }
-
-  /* SVG score ring */
-  .um-ring circle:last-child {
-    transition: stroke-dasharray 1s cubic-bezier(0.4,0,0.2,1);
-  }
-
-  textarea:focus, input:focus { outline: none; }
-  .um-field:focus { box-shadow: 0 0 0 3px rgba(0,102,204,.14); }
-  .um-field-g:focus { box-shadow: 0 0 0 3px rgba(52,199,89,.14); }
-`;
-
 // ─── helpers ────────────────────────────────────────────────────────────────
 function badge(score) {
-  if (score >= 75) return { cls:"border-[#34c759]/30 bg-[#34c759]/[0.06]", text:"text-[#248a3d]", bar:"#34c759", icon:"✅", label:"Strong Match" };
-  if (score >= 50) return { cls:"border-[#ff9f0a]/30 bg-[#ff9f0a]/[0.06]", text:"text-[#b86e00]", bar:"#ff9f0a", icon:"⚠️", label:"Average" };
-  return               { cls:"border-[#ff3b30]/30 bg-[#ff3b30]/[0.06]", text:"text-[#cc2f26]", bar:"#ff3b30", icon:"❌", label:"Needs Work" };
+  if (score >= 75) return { cls:"border-[var(--success-soft)] bg-[var(--success-soft)] text-[var(--success)]", bar:"var(--success)", icon:"✓", label:"Strong Match" };
+  if (score >= 50) return { cls:"border-[var(--warning-soft)] bg-[var(--warning-soft)] text-[var(--warning)]", bar:"var(--warning)", icon:"!", label:"Average" };
+  return               { cls:"border-[var(--danger-soft)] bg-[var(--danger-soft)] text-[var(--danger)]", bar:"var(--danger)", icon:"✕", label:"Needs Work" };
 }
 
 function ScoreRing({ score, color }) {
-  const S = 64, r = 27, circ = 2 * Math.PI * r;
+  const S = 72, r = 32, circ = 2 * Math.PI * r;
   const fill = (score / 100) * circ;
   return (
-    <svg className="um-ring" width={S} height={S} style={{ transform:"rotate(-90deg)" }}>
-      <circle cx={S/2} cy={S/2} r={r} fill="none" stroke="#e8e8ed" strokeWidth={8}/>
+    <svg className="transform -rotate-90 transition-all duration-1000 ease-out" width={S} height={S}>
+      <circle cx={S/2} cy={S/2} r={r} fill="none" stroke="var(--bg-muted)" strokeWidth={8}/>
       <circle cx={S/2} cy={S/2} r={r} fill="none" stroke={color} strokeWidth={8}
-        strokeDasharray={`${fill} ${circ - fill}`} strokeLinecap="round"/>
+        strokeDasharray={`${fill} ${circ - fill}`} strokeLinecap="round" className="transition-all duration-1000 ease-out"/>
     </svg>
   );
 }
 
 function Skeleton() {
   return (
-    <div className="space-y-3 pt-1">
-      <div className="flex gap-3 items-center">
-        <div className="w-14 h-14 rounded-full um-shimmer shrink-0"/>
-        <div className="flex-1 space-y-2">
-          <div className="h-3 rounded um-shimmer w-3/4"/>
-          <div className="h-3 rounded um-shimmer w-1/2"/>
+    <div className="space-y-4 pt-2">
+      <div className="flex gap-4 items-center">
+        <div className="w-14 h-14 rounded-full bg-[var(--bg-muted)] animate-pulse shrink-0"/>
+        <div className="flex-1 space-y-3">
+          <div className="h-3 rounded-full bg-[var(--bg-muted)] animate-pulse w-3/4"/>
+          <div className="h-3 rounded-full bg-[var(--bg-muted)] animate-pulse w-1/2"/>
         </div>
       </div>
       {[92,78,85].map((w,i)=>(
-        <div key={i} className="h-2.5 rounded um-shimmer" style={{width:`${w}%`,animationDelay:`${i*0.1}s`}}/>
+        <div key={i} className="h-2.5 rounded-full bg-[var(--bg-muted)] animate-pulse" style={{width:`${w}%`,animationDelay:`${i*0.1}s`}}/>
       ))}
     </div>
   );
@@ -126,51 +44,56 @@ function ResultView({ result, file, onReset, onClose }) {
   const mb = hasMatch ? badge(result.matchScore) : null;
 
   return (
-    <div className="um-root um-overlay fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-      <style>{modalStyles}</style>
-      <div className="um-card bg-white rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-md flex items-end sm:items-center justify-center sm:p-6 animate-fade-in">
+      <div className="bg-[var(--bg-elevated)] w-full max-w-2xl sm:rounded-3xl rounded-t-3xl shadow-glass flex flex-col max-h-[90vh] sm:max-h-[85vh] animate-slide-up sm:animate-fade-up">
+        
+        {/* Mobile handle */}
+        <div className="w-12 h-1.5 bg-[var(--border-strong)] rounded-full mx-auto mt-3 mb-1 sm:hidden opacity-50" />
 
         {/* sticky header */}
-        <div className="px-7 pt-6 pb-4 border-b border-[#e8e8ed] shrink-0">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="um-display text-2xl text-[#1d1d1f]">Analysis Complete</h2>
-              <p className="text-[0.7rem] text-[#a1a1a6] mt-0.5 truncate max-w-[300px]">{file?.name}</p>
-            </div>
-            <button onClick={onClose}
-              className="w-8 h-8 rounded-full bg-[#f5f5f7] flex items-center justify-center text-[#6e6e73] hover:bg-[#e8e8ed] transition-colors text-sm shrink-0">
-              ✕
-            </button>
+        <div className="px-8 pt-6 pb-5 border-b border-[var(--border)] shrink-0 flex items-start justify-between">
+          <div>
+            <h2 className="font-display text-2xl font-bold text-[var(--text)]">Analysis Complete</h2>
+            <p className="text-sm text-[var(--text-secondary)] mt-1 truncate max-w-[300px]">{file?.name}</p>
           </div>
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-full bg-[var(--bg-muted)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--border)] hover:text-[var(--text)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]">
+            ✕
+          </button>
         </div>
 
-        <div className="overflow-y-auto px-7 py-6 space-y-5 um-fade-up">
+        <div className="overflow-y-auto px-8 py-7 space-y-6">
 
           {/* ── Score cards ── */}
-          <div className={`grid ${hasMatch ? "grid-cols-2" : "grid-cols-1"} gap-4`}>
-
-            <div className={`rounded-2xl border p-5 flex items-center gap-4 ${gb.cls}`}>
-              <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
+          <div className={`grid ${hasMatch ? "grid-cols-2" : "grid-cols-1"} gap-5`}>
+            <div className={`rounded-2xl border p-5 flex items-center gap-5 ${gb.cls}`}>
+              <div className="relative w-[72px] h-[72px] flex items-center justify-center shrink-0">
                 <ScoreRing score={result.atsScore} color={gb.bar}/>
-                <span className={`absolute text-sm font-black ${gb.text}`}>{result.atsScore}</span>
+                <span className="absolute text-lg font-black">{result.atsScore}</span>
               </div>
               <div>
-                <p className="text-[0.6rem] font-bold text-[#a1a1a6] uppercase tracking-widest mb-0.5">General Score</p>
-                <p className={`text-sm font-bold ${gb.text}`}>{gb.icon} {gb.label}</p>
-                <p className="text-[0.65rem] text-[#a1a1a6] mt-0.5">Best practices · formatting · impact</p>
+                <p className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1">General Score</p>
+                <p className="text-base font-bold flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full flex items-center justify-center bg-white text-sm shadow-sm">{gb.icon}</span> 
+                  {gb.label}
+                </p>
+                <p className="text-xs mt-1 opacity-80">Formatting & best practices</p>
               </div>
             </div>
 
             {hasMatch && (
-              <div className={`rounded-2xl border p-5 flex items-center gap-4 ${mb.cls}`}>
-                <div className="relative w-16 h-16 flex items-center justify-center shrink-0">
+              <div className={`rounded-2xl border p-5 flex items-center gap-5 ${mb.cls}`}>
+                <div className="relative w-[72px] h-[72px] flex items-center justify-center shrink-0">
                   <ScoreRing score={result.matchScore} color={mb.bar}/>
-                  <span className={`absolute text-sm font-black ${mb.text}`}>{result.matchScore}</span>
+                  <span className="absolute text-lg font-black">{result.matchScore}</span>
                 </div>
                 <div>
-                  <p className="text-[0.6rem] font-bold text-[#a1a1a6] uppercase tracking-widest mb-0.5">Role Match Score</p>
-                  <p className={`text-sm font-bold ${mb.text}`}>{mb.icon} {mb.label}</p>
-                  <p className="text-[0.65rem] text-[#a1a1a6] mt-0.5 truncate max-w-[120px]">{result.roleName || "Target role"} fit</p>
+                  <p className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1">Role Match</p>
+                  <p className="text-base font-bold flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center bg-white text-sm shadow-sm">{mb.icon}</span> 
+                    {mb.label}
+                  </p>
+                  <p className="text-xs mt-1 opacity-80 truncate max-w-[140px]">{result.roleName || "Target role"} fit</p>
                 </div>
               </div>
             )}
@@ -178,85 +101,75 @@ function ResultView({ result, file, onReset, onClose }) {
 
           {/* ── Keyword match bar (targeted only) ── */}
           {result.keywordMatchRate != null && (
-            <div className="bg-[#f5f5f7] rounded-2xl p-5">
-              <div className="flex justify-between items-center mb-2">
-                <p className="text-xs font-bold text-[#1d1d1f]">Keyword Match Rate</p>
-                <span className="text-xs font-black text-[#0066cc]">{result.keywordMatchRate}%</span>
+            <div className="bg-[var(--bg-muted)] rounded-2xl p-6">
+              <div className="flex justify-between items-center mb-3">
+                <p className="text-sm font-bold text-[var(--text)]">Keyword Match Rate</p>
+                <span className="text-lg font-black text-[var(--color-accent)]">{result.keywordMatchRate}%</span>
               </div>
-              <div className="w-full bg-[#e8e8ed] rounded-full h-2 overflow-hidden">
-                <div className="h-full rounded-full bg-[#0066cc]"
-                  style={{width:`${result.keywordMatchRate}%`, transition:"width 1s ease"}}/>
+              <div className="w-full bg-[var(--border)] rounded-full h-2.5 overflow-hidden">
+                <div className="h-full rounded-full bg-[var(--color-accent)] transition-all duration-1000 ease-out"
+                  style={{width:`${result.keywordMatchRate}%`}}/>
               </div>
             </div>
           )}
 
           {/* ── Missing skills (targeted only) ── */}
           {result.missingSkills?.length > 0 && (
-            <div className="bg-[#ff3b30]/[0.04] border border-[#ff3b30]/20 rounded-2xl p-5">
-              <h4 className="text-[0.65rem] font-bold text-[#cc2f26] uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                <span>🚨</span> Missing Critical Skills
+            <div className="bg-[var(--danger-soft)] border border-[var(--danger)]/20 rounded-2xl p-6">
+              <h4 className="text-xs font-bold text-[var(--danger)] uppercase tracking-wider mb-3 flex items-center gap-2">
+                <span className="text-base">🚨</span> Missing Critical Skills
               </h4>
               <div className="flex flex-wrap gap-2">
                 {result.missingSkills.map((s,i)=>(
-                  <span key={i} className="text-xs bg-[#ff3b30]/10 text-[#cc2f26] border border-[#ff3b30]/20 px-2.5 py-1 rounded-full font-medium">{s}</span>
+                  <span key={i} className="text-xs bg-white text-[var(--danger)] border border-[var(--danger)]/20 px-3 py-1.5 rounded-full font-semibold shadow-sm">{s}</span>
                 ))}
               </div>
             </div>
           )}
 
-          {/* ── Experience gap (targeted only) ── */}
-          {result.experienceGap && (
-            <div className="bg-[#ff9f0a]/[0.05] border border-[#ff9f0a]/25 rounded-2xl p-5">
-              <h4 className="text-[0.65rem] font-bold text-[#b86e00] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <span>📊</span> Experience Gap
-              </h4>
-              <p className="text-sm text-[#1d1d1f] leading-relaxed">{result.experienceGap}</p>
-            </div>
-          )}
-
           {/* ── AI Summary ── */}
-          <div className="bg-white border-l-4 border-[#0066cc] pl-5 pr-5 py-4 rounded-r-2xl shadow-sm border border-[#e8e8ed]">
-            <h4 className="text-[0.65rem] font-bold text-[#0066cc] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <span>🤖</span> AI Assessment
+          <div className="bg-white border-l-4 border-[var(--color-accent)] pl-6 pr-5 py-5 rounded-r-2xl shadow-sm border border-[var(--border)] border-l-[var(--color-accent)]">
+            <h4 className="text-xs font-bold text-[var(--color-accent)] uppercase tracking-wider mb-2.5 flex items-center gap-2">
+              <span className="text-base">🤖</span> AI Assessment
             </h4>
-            <p className="text-sm text-[#1d1d1f] leading-relaxed">{result.summary}</p>
+            <p className="text-sm text-[var(--text)] leading-relaxed font-medium">{result.summary}</p>
           </div>
 
           {/* ── Strengths + Improvements ── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-[#34c759]/[0.05] border border-[#34c759]/20 rounded-2xl p-5">
-              <h4 className="text-[0.65rem] font-bold text-[#248a3d] uppercase tracking-wider mb-3">🟢 Key Strengths</h4>
-              <ul className="space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="bg-[var(--success-soft)] border border-[var(--success)]/20 rounded-2xl p-6">
+              <h4 className="text-xs font-bold text-[var(--success)] uppercase tracking-wider mb-4 flex items-center gap-1.5">🟢 Key Strengths</h4>
+              <ul className="space-y-3">
                 {result.strengths?.map((s,i)=>(
-                  <li key={i} className="flex items-start gap-2 text-xs text-[#1d1d1f] leading-relaxed">
-                    <span className="text-[#34c759] shrink-0 mt-0.5">✓</span>{s}
+                  <li key={i} className="flex items-start gap-2.5 text-sm text-[var(--text)] leading-relaxed font-medium">
+                    <span className="text-[var(--success)] shrink-0 mt-0.5">✓</span>{s}
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="bg-[#ff3b30]/[0.04] border border-[#ff3b30]/20 rounded-2xl p-5">
-              <h4 className="text-[0.65rem] font-bold text-[#cc2f26] uppercase tracking-wider mb-3">🔴 Areas to Fix</h4>
-              <ul className="space-y-2">
+            <div className="bg-[var(--danger-soft)] border border-[var(--danger)]/20 rounded-2xl p-6">
+              <h4 className="text-xs font-bold text-[var(--danger)] uppercase tracking-wider mb-4 flex items-center gap-1.5">🔴 Areas to Fix</h4>
+              <ul className="space-y-3">
                 {result.improvements?.map((s,i)=>(
-                  <li key={i} className="flex items-start gap-2 text-xs text-[#1d1d1f] leading-relaxed">
-                    <span className="text-[#ff3b30] shrink-0 mt-0.5">⚠</span>{s}
+                  <li key={i} className="flex items-start gap-2.5 text-sm text-[var(--text)] leading-relaxed font-medium">
+                    <span className="text-[var(--danger)] shrink-0 mt-0.5">⚠</span>{s}
                   </li>
                 ))}
               </ul>
             </div>
           </div>
-
-          {/* ── Actions ── */}
-          <div className="flex gap-3 pt-1">
-            <button onClick={onReset}
-              className="flex-1 border border-[#d2d2d7] text-[#1d1d1f] font-medium px-5 py-3 rounded-full hover:bg-[#f5f5f7] transition-colors text-sm">
-              ← Analyze Another
-            </button>
-            <button onClick={onClose}
-              className="flex-1 bg-[#0066cc] text-white font-semibold px-5 py-3 rounded-full hover:bg-[#004499] transition-colors text-sm shadow-md shadow-[#0066cc]/20">
-              View Dashboard →
-            </button>
-          </div>
+        </div>
+        
+        {/* ── Actions ── */}
+        <div className="px-8 py-5 flex gap-4 border-t border-[var(--border)] bg-[var(--bg-elevated)] shrink-0 sm:rounded-b-3xl">
+          <button onClick={onReset}
+            className="flex-1 border-2 border-[var(--border-strong)] text-[var(--text)] font-bold px-6 py-3.5 rounded-xl hover:bg-[var(--bg-muted)] hover:border-[var(--text-secondary)] transition-colors text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]">
+            Analyze Another
+          </button>
+          <button onClick={onClose}
+            className="flex-1 bg-[var(--text)] text-white font-bold px-6 py-3.5 rounded-xl hover:bg-[var(--text-secondary)] transition-colors text-sm shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2">
+            View Dashboard →
+          </button>
         </div>
       </div>
     </div>
@@ -280,7 +193,6 @@ export default function UploadModal({ onClose, onSuccess }) {
 
   const fileRef = useRef();
 
-  // ── file handling ──────────────────────────────────────────────────────
   const acceptFile = (f) => {
     if (f?.type === "application/pdf") { setFile(f); setError(""); }
     else setError("Please upload a PDF file.");
@@ -290,7 +202,6 @@ export default function UploadModal({ onClose, onSuccess }) {
     acceptFile(e.dataTransfer.files[0]);
   };
 
-  // ── submit ─────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!file) return setError("Please select a resume PDF.");
     if (mode === "targeted" && !jd.trim()) return setError("Please paste the job description.");
@@ -308,7 +219,6 @@ export default function UploadModal({ onClose, onSuccess }) {
       if (roleName.trim()) fd.append("roleName", roleName);
     }
 
-    // Staged progress labels
     const stages = [
       [28, "Extracting text & keywords…"],
       [50, "Running programmatic ATS score…"],
@@ -347,53 +257,51 @@ export default function UploadModal({ onClose, onSuccess }) {
     setResult(null); setUploading(false); setProgress(0); setError(""); setMode("general");
   };
 
-  // ── result screen ──────────────────────────────────────────────────────
   if (result) {
     return <ResultView result={result} file={file} onReset={reset} onClose={onClose}/>;
   }
 
-  // ── drop zone state classes ────────────────────────────────────────────
-  const dropCls = [
-    "um-drop rounded-2xl p-6 text-center select-none",
-    dragging ? "um-drop-over" : "",
-    file     ? "um-drop-filled" : "",
-  ].join(" ");
+  const dropCls = `
+    rounded-2xl p-8 text-center select-none border-2 border-dashed transition-all duration-300 cursor-pointer
+    ${dragging ? "border-[var(--color-accent)] bg-[var(--color-brand-50)]" : "border-[var(--border-strong)] hover:border-[var(--color-accent)] hover:bg-[var(--bg-muted)]"}
+    ${file ? "border-[var(--success)] bg-[var(--success-soft)]" : ""}
+  `;
 
-  // ── render ─────────────────────────────────────────────────────────────
   return (
-    <div className="um-root um-overlay fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-      <style>{modalStyles}</style>
-
-      <div className="um-card bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-md flex items-end sm:items-center justify-center sm:p-6 animate-fade-in" role="dialog" aria-modal="true">
+      <div className="bg-[var(--bg-elevated)] w-full max-w-xl sm:rounded-3xl rounded-t-3xl shadow-glass flex flex-col max-h-[90vh] sm:max-h-[85vh] animate-slide-up sm:animate-fade-up">
+        
+        {/* Mobile handle */}
+        <div className="w-12 h-1.5 bg-[var(--border-strong)] rounded-full mx-auto mt-3 mb-1 sm:hidden opacity-50" />
 
         {/* ── header ── */}
-        <div className="px-7 pt-7 pb-5 border-b border-[#e8e8ed]">
+        <div className="px-8 pt-5 pb-5 border-b border-[var(--border)] shrink-0">
           <div className="flex items-start justify-between mb-5">
             <div>
-              <h2 className="um-display text-2xl text-[#1d1d1f] leading-tight">Analyze Resume</h2>
-              <p className="text-[0.7rem] text-[#a1a1a6] mt-0.5">Choose your analysis path below</p>
+              <h2 className="font-display text-2xl font-bold text-[var(--text)] leading-tight">Analyze Resume</h2>
+              <p className="text-sm text-[var(--text-secondary)] mt-1 font-medium">Choose your analysis path below</p>
             </div>
             <button onClick={onClose}
-              className="w-8 h-8 rounded-full bg-[#f5f5f7] flex items-center justify-center text-[#6e6e73] hover:bg-[#e8e8ed] transition-colors text-sm shrink-0">
+              className="w-8 h-8 rounded-full bg-[var(--bg-muted)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--border)] hover:text-[var(--text)] transition-colors text-sm shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]">
               ✕
             </button>
           </div>
 
           {/* mode toggle */}
-          <div className="flex gap-2 p-1 bg-[#f5f5f7] rounded-full">
+          <div className="flex gap-2 p-1.5 bg-[var(--bg-muted)] rounded-2xl border border-[var(--border)]">
             <button
               onClick={() => { setMode("general"); setError(""); }}
-              className={`um-pill flex-1 text-xs font-semibold px-4 py-2 rounded-full ${mode === "general" ? "um-pill-general" : "um-pill-idle"}`}>
+              className={`flex-1 text-sm font-bold px-4 py-2.5 rounded-xl transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${mode === "general" ? "bg-[var(--text)] text-[var(--bg-elevated)] shadow-sm" : "text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--border)]"}`}>
               ⚡ General Analysis
             </button>
             <button
               onClick={() => { setMode("targeted"); setError(""); }}
-              className={`um-pill flex-1 text-xs font-semibold px-4 py-2 rounded-full ${mode === "targeted" ? "um-pill-targeted" : "um-pill-idle"}`}>
+              className={`flex-1 text-sm font-bold px-4 py-2.5 rounded-xl transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${mode === "targeted" ? "bg-[var(--text)] text-[var(--bg-elevated)] shadow-sm" : "text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--border)]"}`}>
               🎯 Match My Resume
             </button>
           </div>
-
-          <p className="text-[0.7rem] text-[#6e6e73] mt-3 leading-relaxed">
+          
+          <p className="text-xs text-[var(--text-secondary)] mt-3 leading-relaxed font-medium">
             {mode === "general"
               ? "Quick scan for formatting, impact language, metrics & ATS best practices. No JD needed."
               : "Deep analysis against a specific Job Description — reveals keyword gaps, role fit score & seniority alignment."}
@@ -401,7 +309,7 @@ export default function UploadModal({ onClose, onSuccess }) {
         </div>
 
         {/* ── body ── */}
-        <div className="px-7 py-6 space-y-5 overflow-y-auto max-h-[58vh]">
+        <div className="px-8 py-6 space-y-6 overflow-y-auto">
 
           {/* drop zone */}
           <div
@@ -415,116 +323,105 @@ export default function UploadModal({ onClose, onSuccess }) {
               onChange={(e) => acceptFile(e.target.files[0])}/>
 
             {file ? (
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">📄</span>
-                <div className="text-left flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[#248a3d] truncate">{file.name}</p>
-                  <p className="text-xs text-[#a1a1a6]">{(file.size/1024).toFixed(0)} KB · PDF</p>
+              <div className="flex items-center gap-4 text-left">
+                <span className="text-3xl bg-white w-12 h-12 flex items-center justify-center rounded-xl shadow-sm border border-[var(--success)]/20">📄</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-base font-bold text-[var(--success)] truncate">{file.name}</p>
+                  <p className="text-sm text-[var(--success)]/70 font-medium">{(file.size/1024).toFixed(0)} KB · PDF Document</p>
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); setFile(null); }}
-                  className="w-6 h-6 rounded-full bg-[#ff3b30]/10 text-[#ff3b30] text-xs flex items-center justify-center hover:bg-[#ff3b30]/20 transition-colors shrink-0">
+                  className="w-8 h-8 rounded-full bg-white border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--danger)] hover:border-[var(--danger)] flex items-center justify-center transition-all shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger)]">
                   ✕
                 </button>
               </div>
             ) : (
-              <>
-                <div className="text-3xl mb-2">☁️</div>
-                <p className="text-sm font-semibold text-[#1d1d1f]">Drop your PDF here</p>
-                <p className="text-xs text-[#a1a1a6] mt-1">or click to browse · PDF only</p>
-              </>
+              <div className="py-2">
+                <div className="w-14 h-14 bg-white rounded-2xl shadow-sm border border-[var(--border)] flex items-center justify-center text-2xl mx-auto mb-4 group-hover:scale-110 transition-transform">☁️</div>
+                <p className="text-base font-bold text-[var(--text)] mb-1">Click to upload or drag and drop</p>
+                <p className="text-sm text-[var(--text-secondary)] font-medium">PDF files only (max 5MB)</p>
+              </div>
             )}
           </div>
 
           {/* JD panel — slides open when mode === "targeted" */}
-          <div className={`um-jd-panel ${mode === "targeted" ? "um-jd-panel-open" : "um-jd-panel-closed"}`}>
-            <div className="um-jd-inner">
-              <div className="space-y-3 pt-1">
-
-                {/* Company + Role row */}
-                <div className="grid grid-cols-2 gap-3">
+          <div className={`grid transition-all duration-300 ease-in-out ${mode === "targeted" ? "grid-rows-[1fr] opacity-100 mt-6" : "grid-rows-[0fr] opacity-0 m-0"}`}>
+            <div className="overflow-hidden">
+              <div className="space-y-4 pt-1">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[0.65rem] font-semibold text-[#a1a1a6] uppercase tracking-wider block mb-1.5">
-                      Company <span className="normal-case font-normal">(optional)</span>
+                    <label className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider block mb-2">
+                      Company <span className="normal-case opacity-70 font-medium">(optional)</span>
                     </label>
                     <input
                       type="text" value={company} onChange={(e) => setCompany(e.target.value)}
                       placeholder="e.g. Google"
-                      className="um-field w-full text-sm border border-[#e8e8ed] rounded-xl px-3.5 py-2.5 text-[#1d1d1f] placeholder-[#c7c7cc] transition-shadow"/>
+                      className="w-full text-sm border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-4 focus:ring-[var(--color-accent-soft)] transition-all font-medium bg-[var(--bg)]"/>
                   </div>
                   <div>
-                    <label className="text-[0.65rem] font-semibold text-[#a1a1a6] uppercase tracking-wider block mb-1.5">
-                      Role Title <span className="normal-case font-normal">(optional)</span>
+                    <label className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider block mb-2">
+                      Role Title <span className="normal-case opacity-70 font-medium">(optional)</span>
                     </label>
                     <input
                       type="text" value={roleName} onChange={(e) => setRoleName(e.target.value)}
                       placeholder="e.g. Senior SWE"
-                      className="um-field w-full text-sm border border-[#e8e8ed] rounded-xl px-3.5 py-2.5 text-[#1d1d1f] placeholder-[#c7c7cc] transition-shadow"/>
+                      className="w-full text-sm border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-4 focus:ring-[var(--color-accent-soft)] transition-all font-medium bg-[var(--bg)]"/>
                   </div>
                 </div>
 
-                {/* JD textarea */}
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-[0.65rem] font-semibold text-[#a1a1a6] uppercase tracking-wider">
-                      Job Description <span className="text-[#ff3b30]">*</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
+                      Job Description <span className="text-[var(--danger)]">*</span>
                     </label>
-                    <span className="text-[0.6rem] text-[#c7c7cc]">{jd.length} chars</span>
+                    <span className="text-xs font-bold text-[var(--text-muted)]">{jd.length} chars</span>
                   </div>
                   <textarea
                     value={jd} onChange={(e) => setJd(e.target.value)}
-                    rows={6} placeholder={"Paste the full job description here…\n\nTip: include the tech stack, requirements & responsibilities for the most accurate analysis."}
-                    className="um-field-g w-full text-sm border border-[#e8e8ed] rounded-xl px-3.5 py-3 text-[#1d1d1f] placeholder-[#c7c7cc] transition-shadow resize-none leading-relaxed"/>
+                    rows={5} placeholder={"Paste the full job description here...\nInclude tech stack, requirements & responsibilities."}
+                    className="w-full text-sm border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-4 focus:ring-[var(--color-accent-soft)] transition-all font-medium bg-[var(--bg)] resize-y leading-relaxed"/>
                 </div>
-
-                {/* what you unlock tags */}
-                <div className="flex flex-wrap gap-1.5">
-                  {["Keyword Match %", "Missing Skills", "Experience Gap", "Role Fit Score"].map(tag => (
-                    <span key={tag} className="text-[0.6rem] font-semibold bg-[#248a3d]/[0.07] text-[#248a3d] border border-[#248a3d]/20 px-2 py-0.5 rounded-full">
-                      ✓ {tag}
-                    </span>
-                  ))}
-                </div>
-
               </div>
             </div>
           </div>
 
           {/* error */}
           {error && (
-            <div className="bg-[#ff3b30]/[0.06] border border-[#ff3b30]/20 rounded-xl px-4 py-3">
-              <p className="text-xs text-[#cc2f26] font-medium">{error}</p>
+            <div className="bg-[var(--danger-soft)] border border-[var(--danger)]/20 rounded-xl px-5 py-4 animate-fade-up">
+              <p className="text-sm text-[var(--danger)] font-bold flex items-center gap-2"><span>⚠️</span> {error}</p>
             </div>
           )}
 
           {/* progress */}
           {uploading && (
-            <div className="space-y-2.5 um-fade-up">
-              <div className="flex justify-between">
-                <p className="text-xs text-[#6e6e73] font-medium">{progLabel}</p>
-                <p className="text-xs font-bold text-[#0066cc]">{progress}%</p>
+            <div className="space-y-3 animate-fade-up p-5 border border-[var(--border-strong)] rounded-2xl bg-[var(--bg-muted)]">
+              <div className="flex justify-between items-center">
+                <p className="text-sm text-[var(--text)] font-bold flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin"></span>
+                  {progLabel}
+                </p>
+                <p className="text-sm font-black text-[var(--color-accent)]">{progress}%</p>
               </div>
-              <div className="w-full bg-[#e8e8ed] rounded-full h-1.5 overflow-hidden">
-                <div className={`h-full rounded-full um-bar-fill ${progress === 100 ? "um-bar-fill-done" : ""}`}
+              <div className="w-full bg-[var(--border)] rounded-full h-2 overflow-hidden">
+                <div className={`h-full rounded-full transition-all duration-500 ease-out ${progress === 100 ? "bg-[var(--success)]" : "bg-[var(--color-accent)]"}`}
                   style={{ width:`${progress}%` }}/>
               </div>
-              {progress < 100 && <Skeleton/>}
             </div>
           )}
         </div>
 
         {/* ── footer ── */}
         {!uploading && (
-          <div className="px-7 pb-7 pt-1 flex gap-3 border-t border-[#e8e8ed]">
+          <div className="px-8 pb-8 pt-5 flex gap-4 border-t border-[var(--border)] bg-[var(--bg-elevated)] shrink-0 sm:rounded-b-3xl">
             <button onClick={onClose}
-              className="border border-[#d2d2d7] text-[#1d1d1f] font-medium px-5 py-3 rounded-full hover:bg-[#f5f5f7] transition-colors text-sm">
+              className="border-2 border-[var(--border-strong)] text-[var(--text)] font-bold px-6 py-3.5 rounded-xl hover:bg-[var(--bg-muted)] hover:border-[var(--text-secondary)] transition-colors text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]">
               Cancel
             </button>
             <button onClick={handleSubmit} disabled={!file}
-              className={`flex-1 font-semibold px-5 py-3 rounded-full transition-all text-sm shadow-md disabled:opacity-40 disabled:cursor-not-allowed
+              className={`flex-1 font-bold px-6 py-3.5 rounded-xl transition-all text-sm shadow-md disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
                 ${mode === "general"
-                  ? "bg-[#0066cc] text-white hover:bg-[#004499] shadow-[#0066cc]/20"
-                  : "bg-[#248a3d] text-white hover:bg-[#1a6b2e] shadow-[#248a3d]/20"}`}>
+                  ? "bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] focus-visible:ring-[var(--color-accent)]"
+                  : "bg-[var(--text)] text-white hover:bg-[var(--text-secondary)] focus-visible:ring-[var(--text)]"}`}>
               {mode === "general" ? "⚡ Analyze Resume" : "🎯 Match to Job"}
             </button>
           </div>
@@ -532,4 +429,4 @@ export default function UploadModal({ onClose, onSuccess }) {
       </div>
     </div>
   );
-}
+}
