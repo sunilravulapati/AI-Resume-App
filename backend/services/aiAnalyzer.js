@@ -3,58 +3,187 @@ import Groq from "groq-sdk";
 import "dotenv/config";
 import { enforceLimits, prepareResumeExport, buildLatexDocument } from "./resumeFormat.js";
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
-/** Tailoring / analysis model (LaTeX is template-based, not LLM-generated). */
+const groq      = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SHARED INFRASTRUCTURE
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Strip markdown code fences, then parse JSON.
+ * Falls back to pulling the outermost {...} block via regex.
+ */
+function parseJSONRobust(raw) {
+  const cleaned = raw
+    .replace(/^```(?:json)?\s*/im, "")
+    .replace(/\s*```\s*$/m, "")
+    .trim();
+
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (match) {
+      try { return JSON.parse(match[0]); } catch { /* fall through */ }
+    }
+    throw new Error(`Could not parse JSON from model response:\n${raw.slice(0, 400)}`);
+  }
+}
+
+/**
+ * If parseJSONRobust fails, make a second "repair" call asking the model
+ * to return clean JSON from the malformed string.
+ */
+async function repairJSON(malformedRaw) {
+  const raw = await callGroq(
+    [
+      {
+        role: "system",
+        content:
+          "You are a JSON repair specialist. The user will give you malformed JSON. " +
+          "Return ONLY the corrected, valid JSON object — no markdown, no explanation.",
+      },
+      { role: "user", content: `Fix this JSON:\n\n${malformedRaw}` },
+    ],
+    { temperature: 0, jsonMode: true }
+  );
+  return parseJSONRobust(raw);
+}
+
+/**
+ * Central Groq API caller.
+ * - Enables JSON mode (response_format) to reduce hallucinated prose.
+ * - Retries automatically on 429 rate-limit with exponential back-off.
+ */
+async function callGroq(
+  messages,
+  { temperature = 0.1, maxRetries = 2, jsonMode = true } = {}
+) {
+  const body = {
+    model: GROQ_MODEL,
+    temperature,
+    messages,
+    ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
+  };
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const completion = await groq.chat.completions.create(body);
+      return completion.choices?.[0]?.message?.content ?? "";
+    } catch (err) {
+      const isRateLimit =
+        err?.status === 429 || err?.error?.code === "rate_limit_exceeded";
+      if (isRateLimit && attempt < maxRetries) {
+        await new Promise(r => setTimeout(r, 1500 * Math.pow(2, attempt)));
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
+/** Validate that a required argument is a non-empty string. */
+function requireText(value, label) {
+  if (!value || typeof value !== "string" || !value.trim()) {
+    throw new Error(`[aiAnalyzer] ${label} must be a non-empty string.`);
+  }
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCORING RUBRIC  (shared between both analysis functions)
+// ─────────────────────────────────────────────────────────────────────────────
+const SCORING_RUBRIC = `
+══ SCORING RUBRIC ══════════════════════════════════════════════════
+Score all three dimensions independently. Sum them for semanticScore.
+
+DIMENSION 1 — Complexity  (0–15)
+Measures the technical depth of projects and work experience.
+  2–4   : Tutorial clone, to-do app, basic CRUD with no real architecture
+  5–8   : Multi-feature app; some thought put in but no real depth
+  9–12  : Real backend work — auth flows, job queues, caching, multiple DBs, APIs
+  13–15 : Distributed systems, ML pipelines, notable scale, open-source contribution
+
+DIMENSION 2 — Professionalism  (0–5)
+Measures the quality and precision of written language.
+  0–1 : Vague filler ("worked on", "helped with", "was involved in")
+  2–3 : Action verbs present but few/no metrics; passive or fluffy phrasing
+  4–5 : Every bullet starts with a strong past-tense verb; quantified results throughout
+
+DIMENSION 3 — Skill–Project Fit  (0–10)
+Measures whether listed skills are backed up by evidence in projects/roles.
+  0–3 : Laundry-list of skills with no project evidence
+  4–6 : Some skills demonstrably used, others dangling
+  7–10: Every key skill is clearly exercised in at least one described project or role
+
+CALIBRATION ANCHORS (use these to normalise your scoring):
+  • "Built a to-do app with React and Node.js." → Complexity 3
+  • "Developed a REST API with JWT auth and Redis caching." → Complexity 9
+  • "Architected a Kafka-based event pipeline serving 50K req/s." → Complexity 14
+  • "Worked on the backend." → Professionalism 0
+  • "Reduced API latency by 40% by introducing a Redis cache layer." → Professionalism 5
+════════════════════════════════════════════════════════════════════
+`.trim();
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GENERAL ANALYSIS
 // ─────────────────────────────────────────────────────────────────────────────
 export async function analyzeResume(text) {
-  const prompt = `
+  requireText(text, "Resume text");
+
+  const systemPrompt = `
 You are a HARSH Tier-1 Silicon Valley Technical Recruiter evaluating a student or early-career resume.
+Your job is to give an unfiltered, calibrated assessment — not encouragement.
 
-BE BRUTAL AND REALISTIC. Apply these strict scoring bands:
-- Most student resumes (basic CRUD projects, no internships): score 8–14 out of 30
-- Decent student resume (1 internship OR strong projects with metrics): score 15–20 out of 30
-- Strong resume (2+ internships, measurable impact, system depth): score 21–25 out of 30
-- Exceptional (FAANG internship, published work, or exceptional systems): score 26–30 out of 30
+${SCORING_RUBRIC}
 
-Score on these three dimensions (add them for semanticScore):
-1. Complexity (0–15): Are projects deep backend/systems, or basic CRUD/tutorial clones?
-   - Tutorial clone / to-do app / basic CRUD: 2–4
-   - Multi-feature app, no depth: 5–8
-   - Real backend depth (auth, queues, caching, DBs): 9–12
-   - Distributed systems, ML pipelines, notable scale: 13–15
-2. Professionalism (0–5): Is language precise and result-oriented? Are there metrics?
-   - Vague ("worked on", "helped with"): 0–1
-   - Some action verbs, few metrics: 2–3
-   - Strong STAR-method bullets with quantified results: 4–5
-3. Skill-Project Fit (0–10): Are listed skills actually demonstrated in projects?
-   - Skills listed but no evidence in projects: 0–3
-   - Partial evidence: 4–6
-   - Every key skill clearly used in a described project: 7–10
+OVERALL BAND GUIDANCE:
+  8–14  : Typical student resume — basic CRUD projects, no real internships
+  15–20 : Decent — at least 1 internship OR strong projects with real metrics
+  21–25 : Strong — 2+ internships, measurable impact, genuine system depth
+  26–30 : Exceptional — FAANG-level internship, published work, or outstanding systems
 
-Return ONLY valid JSON, no markdown, no explanation:
+OUTPUT FORMAT:
+Return ONLY a single valid JSON object. No markdown, no prose outside the JSON.
 {
-  "semanticScore": <number 0–30>,
-  "strengths": ["specific point 1", "specific point 2", "specific point 3"],
-  "improvements": ["specific actionable improvement 1", "specific actionable improvement 2", "specific actionable improvement 3"],
-  "summary": "One brutally honest sentence summarising this resume's level."
+  "scores": {
+    "complexity":      <integer 0–15>,
+    "professionalism": <integer 0–5>,
+    "skillProjectFit": <integer 0–10>
+  },
+  "semanticScore": <integer — MUST equal complexity + professionalism + skillProjectFit>,
+  "strengths": [
+    "<concrete observation about THIS resume — not generic praise>",
+    "<concrete observation>",
+    "<concrete observation>"
+  ],
+  "improvements": [
+    "<specific, actionable improvement with an example of how to fix it>",
+    "<specific, actionable improvement>",
+    "<specific, actionable improvement>"
+  ],
+  "summary": "<One brutally honest sentence. Reference actual content from the resume.>"
 }
 
-Resume:
-${text}
-`;
+RULES:
+- strengths and improvements must be specific to this resume — never generic advice.
+- semanticScore MUST equal the sum of the three sub-scores. Double-check before outputting.
+- Do not invent or assume credentials not present in the resume.
+`.trim();
 
-  const completion = await groq.chat.completions.create({
-    model: GROQ_MODEL,
-    temperature: 0.1,
-    messages: [{ role: "user", content: prompt }],
-  });
+  const userPrompt = `Evaluate this resume:\n\n${text}`;
 
-  return completion.choices?.[0]?.message?.content;
+  const raw = await callGroq(
+    [
+      { role: "system", content: systemPrompt },
+      { role: "user",   content: userPrompt   },
+    ],
+    { temperature: 0.1 }
+  );
+
+  return raw;
 }
 
 
@@ -64,79 +193,99 @@ ${text}
 export async function analyzeResumeTargeted(
   resumeText,
   jobDescription,
-  company = "",
+  company  = "",
   roleName = ""
 ) {
-  const companyLine = company  ? `Target Company : ${company}\n`  : "";
-  const roleLine    = roleName ? `Target Role    : ${roleName}\n` : "";
+  requireText(resumeText,     "Resume text");
+  requireText(jobDescription, "Job description");
 
-  const prompt = `
-You are a HARSH Tier-1 Silicon Valley Technical Recruiter doing a targeted resume-to-JD fit analysis.
-${companyLine}${roleLine}
-Your job has TWO parts:
+  const contextLine = [
+    company  ? `Target Company : ${company}`  : "",
+    roleName ? `Target Role    : ${roleName}` : "",
+  ].filter(Boolean).join("\n");
 
-PART 1 — General quality score (same brutal rubric as always):
-Score on these three dimensions (add them for semanticScore, max 30):
-1. Complexity (0–15): Are projects deep backend/systems, or basic CRUD/tutorial clones?
-   - Tutorial clone / to-do app / basic CRUD: 2–4
-   - Multi-feature app, no depth: 5–8
-   - Real backend depth (auth, queues, caching, DBs): 9–12
-   - Distributed systems, ML pipelines, notable scale: 13–15
-2. Professionalism (0–5): Is language precise and result-oriented? Are there metrics?
-   - Vague ("worked on", "helped with"): 0–1
-   - Some action verbs, few metrics: 2–3
-   - Strong STAR-method bullets with quantified results: 4–5
-3. Skill-Project Fit (0–10): Are listed skills actually demonstrated in projects?
-   - Skills listed but no evidence in projects: 0–3
-   - Partial evidence: 4–6
-   - Every key skill clearly used in a described project: 7–10
+  const systemPrompt = `
+You are a HARSH Tier-1 Silicon Valley Technical Recruiter performing a targeted resume-to-JD fit analysis.
+${contextLine ? `\n${contextLine}\n` : ""}
+Your task has two independent parts. Complete BOTH before producing output.
 
-PART 2 — JD match analysis:
-Step 1: Extract EVERY required or strongly preferred skill, technology, tool, and qualification from the Job Description.
-Step 2: For each one, check if it appears (by name or clear equivalent) anywhere in the resume.
-Step 3: Calculate:
-  - keywordMatchRate = (matched skills / total JD skills) x 100, rounded to nearest integer
-  - matchScore = holistic 0-100 fit score. Weight: keyword overlap 40%, project relevance 35%, seniority alignment 25%.
-    Apply these bands:
-    - Resume missing most required skills / wrong seniority level: 10-35
-    - Resume has some relevant skills but notable gaps: 36-59
-    - Resume covers most required skills with minor gaps: 60-79
-    - Strong match, nearly all skills present, correct seniority: 80-100
-  - missingSkills = skills/technologies EXPLICITLY required or strongly preferred in the JD that are ABSENT from the resume. Max 8 items. Be specific (e.g. "Kubernetes", not "DevOps tools").
-  - experienceGap = 1-2 blunt sentences referencing SPECIFIC projects from the resume and whether their complexity matches the seniority level of the target role.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 1 — GENERAL QUALITY SCORE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${SCORING_RUBRIC}
 
-RULES:
-- Do NOT hallucinate or invent credentials. Only analyse what is in the resume.
-- strengths and improvements must be role-specific, not generic advice.
-- summary must reference the target role by name if provided.
-- missingSkills must only list things the JD explicitly requires.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 2 — JD MATCH ANALYSIS  (follow every step in order)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Step A — EXTRACT JD SKILLS
+  List EVERY distinct required or strongly preferred skill, technology, tool, framework,
+  language, platform, or qualification from the Job Description.
+  Store this as "jdSkillsFound". Count the total — call it T.
 
-Return ONLY valid JSON, no markdown, no explanation:
+Step B — MATCH AGAINST RESUME
+  For each item in jdSkillsFound, check whether it appears by name (or an unambiguous
+  equivalent, e.g. "Postgres" === "PostgreSQL") anywhere in the resume.
+  Collect matched items in "matchedSkills". Count the matched items — call it M.
+
+Step C — CALCULATE METRICS
+  keywordMatchRate = round((M / T) × 100)   [integer 0–100]
+
+  matchScore = holistic fit score (0–100).
+    Weight: keyword overlap 40% + project relevance 35% + seniority alignment 25%.
+    Apply these mandatory bands:
+      10–35 : Resume missing most required skills OR clearly wrong seniority level
+      36–59 : Has some relevant skills but notable, disqualifying gaps remain
+      60–79 : Covers most required skills; only minor gaps
+      80–100: Strong match — nearly all skills present, correct seniority
+
+  missingSkills = items from jdSkillsFound that are ABSENT from the resume.
+    Max 8 items. Be specific ("Kubernetes", not "container orchestration").
+
+  experienceGap = 1–2 blunt sentences. Name SPECIFIC projects from the resume
+    and state directly whether their complexity matches the seniority of the target role.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GLOBAL RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Do NOT hallucinate. Only analyse what is explicitly in the resume.
+- strengths and improvements must be role-specific (reference the JD and role).
+- summary must name the target role if provided.
+- missingSkills lists only skills the JD explicitly requires or strongly prefers.
+- semanticScore MUST equal complexity + professionalism + skillProjectFit.
+
+OUTPUT FORMAT — return ONLY this JSON object, no markdown, no prose outside it:
 {
-  "semanticScore": <number 0-30>,
-  "matchScore": <number 0-100>,
-  "keywordMatchRate": <number 0-100>,
-  "missingSkills": ["skill1", "skill2"],
-  "experienceGap": "1-2 blunt sentences about seniority/complexity alignment.",
-  "strengths": ["role-specific strength 1", "strength 2", "strength 3"],
-  "improvements": ["actionable fix that directly improves match score 1", "fix 2", "fix 3"],
-  "summary": "One brutally honest sentence about fit for this specific role."
+  "scores": {
+    "complexity":      <integer 0–15>,
+    "professionalism": <integer 0–5>,
+    "skillProjectFit": <integer 0–10>
+  },
+  "semanticScore":    <integer — must equal sum of sub-scores>,
+  "matchScore":       <integer 0–100>,
+  "keywordMatchRate": <integer 0–100>,
+  "jdSkillsFound":   ["every skill/tool/qualification extracted from the JD"],
+  "matchedSkills":   ["subset of jdSkillsFound that appears in the resume"],
+  "missingSkills":   ["up to 8 specific skills required by JD but absent from resume"],
+  "experienceGap":   "<1–2 blunt sentences naming specific resume projects and seniority fit>",
+  "strengths":       ["role-specific strength 1", "role-specific strength 2", "role-specific strength 3"],
+  "improvements":    ["role-specific improvement 1", "role-specific improvement 2", "role-specific improvement 3"],
+  "summary":         "<One brutally honest sentence referencing the target role by name.>"
 }
+`.trim();
 
-JOB DESCRIPTION:
-${jobDescription}
+  const userPrompt =
+    `JOB DESCRIPTION:\n${jobDescription}\n\n` +
+    `RESUME:\n${resumeText}`;
 
-RESUME:
-${resumeText}
-`;
+  const raw = await callGroq(
+    [
+      { role: "system", content: systemPrompt },
+      { role: "user",   content: userPrompt   },
+    ],
+    { temperature: 0.1 }
+  );
 
-  const completion = await groq.chat.completions.create({
-    model: GROQ_MODEL,
-    temperature: 0.1,
-    messages: [{ role: "user", content: prompt }],
-  });
-
-  return completion.choices?.[0]?.message?.content;
+  return raw;
 }
 
 
@@ -144,206 +293,196 @@ ${resumeText}
 // TAILOR RESUME
 // ─────────────────────────────────────────────────────────────────────────────
 export async function tailorResume(resumeText, jobDescription) {
-  const prompt = `
-You are an expert Executive Resume Writer and Data Extractor.
-Your output will be rendered onto a SINGLE A4 page PDF. Space is EXTREMELY limited.
-Parse the BASE RESUME into structured JSON AND rewrite/trim sections for the TARGET JOB DESCRIPTION.
+  requireText(resumeText,     "Resume text");
+  requireText(jobDescription, "Job description");
 
-READ EVERY RULE BEFORE OUTPUTTING. VIOLATING ANY RULE RUINS THE LAYOUT.
+  const systemPrompt = `
+You are an expert Executive Resume Writer and Structured Data Extractor.
+Your output is rendered directly into a professional PDF resume via a LaTeX template.
+Precision, completeness, and strict adherence to every rule below are mandatory.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PRE-OUTPUT PLANNING  (think through this before writing JSON)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Step 1 — INVENTORY: Identify every project and internship/work entry in the resume.
+Step 2 — SCORE each entry 1–10 against the Job Description for relevance.
+Step 3 — RANK and select the TOP 6 entries (or all entries if the resume has ≤6 total).
+Step 4 — Write bullets for the selected entries using the bullet rules below.
+Step 5 — Run the mandatory self-check. Fix any failure before producing JSON.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CONTENT RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-RULE 1 — EXTRACT ALL DATA VERBATIM
-Extract name, contact details (email, phone, linkedin, github, portfolio, location),
-education, awards, achievements, DSA stats, certifications, extracurricular activities,
-and spoken languages exactly as they appear. Do NOT lose any of these non-experience sections.
+RULE 1 — EXTRACT ALL DATA
+Extract verbatim: name, all contact details (email, phone, linkedin, github, portfolio,
+location, tagline), all education records, all awards, all certifications, all DSA stats,
+all extracurricular entries, and spoken languages. Omitting any section is a failure.
 
 RULE 2 — DO NOT INVENT
-Never invent jobs, degrees, metrics, skills, or contact info. Only enhance what exists.
-If a skill is not explicitly named in the resume, do NOT add it. This is non-negotiable.
-Example: resume lists "React.js" but not "Next.js" → do NOT add "Next.js".
-Example: resume lists "MongoDB" but not "PostgreSQL" → do NOT add "PostgreSQL".
+Never add a job, degree, metric, skill, tool, or contact detail not present in the resume.
+If it is not written in the resume, it does not exist. Embellishment is a critical failure.
 
-RULE 3 — SKILLS ANTI-HALLUCINATION (CRITICAL)
-Only include skills/technologies EXPLICITLY NAMED in the resume text.
-Reorder skills to front-load JD keywords, but never invent new ones.
+RULE 3 — SKILLS: NO HALLUCINATION
+tailoredSkills must contain ONLY technologies and skills EXPLICITLY NAMED in the resume.
+Reorder categories and individual items to front-load JD-matching keywords.
+Do not add, rename, or merge any skill that is not verbatim in the resume.
 
-RULE 4 — TAILOR SUMMARY (2 SENTENCES, ≤40 WORDS TOTAL)
-Write exactly 2 tight sentences. Use JD keywords. No filler phrases like "highly motivated"
-or "detail-oriented". Lead with your strongest credential, end with your value to this role.
-Count your words. If over 40, trim.
+RULE 4 — SUMMARY (exactly 3 sentences, ≤ 60 words total)
+Sentence 1: Lead with the candidate's single strongest credential.
+Sentence 2: Highlight 2–3 JD-relevant technical skills with concrete evidence from resume.
+Sentence 3: State the specific value the candidate brings to this exact role.
+No filler ("passionate about", "team player", "hard worker", "eager to learn").
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PROJECT & EXPERIENCE SELECTION RULES — CRITICAL
+EXPERIENCE & PROJECT RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RULE 5 — UNIFIED tailoredExperience
+tailoredExperience holds ALL selected entries — both internship/work roles AND projects.
+Internships at real companies must always be included and appear before solo projects.
 
-RULE 5 — UNIFIED tailoredExperience (projects + internships together)
-The "tailoredExperience" array holds BOTH projects AND internship/work experience entries.
-Do NOT lose internships. An internship at a real company (Walmart, J.P. Morgan) is MORE
-valuable to an employer than a side project. Always include internships.
+RULE 6 — ENTRY LIMIT: at most 6 entries total in tailoredExperience.
 
-RULE 6 — SELECT TOP ENTRIES (hard limit: up to 4 total)
-Step 1: Score every project AND internship entry against the JD:
-        skill overlap + domain match + complexity depth + internship bonus (+5 for real company).
-Step 2: Sort highest to lowest.
-Step 3: Take the TOP 4. If the resume has ≤4 entries total, take all of them.
-        Entry #5 and beyond MUST NOT appear in tailoredExperience.
+RULE 7 — BULLETS PER ENTRY: exactly 2 or 3 bullets per entry. No more, no fewer.
 
-RULE 7 — EXACTLY 2 BULLETS PER ENTRY (hard limit)
-Each entry in tailoredExperience MUST have EXACTLY 2 bullets — not 1, not 3.
-Choose the 2 strongest bullets: one with a measurable outcome, one naming a JD-relevant tech.
+RULE 8 — BULLET QUALITY  (study the transformation examples carefully)
+Every bullet MUST:
+  ✓ Begin with a strong past-tense action verb (Built, Reduced, Designed, Implemented, Optimised…)
+  ✓ State WHAT was done and WHY it mattered / what measurable result it produced
+  ✓ Be ≤ 30 words — count every word; if over, rewrite until it fits
+  ✓ Be a complete sentence or complete clause — no dangling fragments
+  ✗ Never start with "Worked on", "Helped with", "Was responsible for", "Assisted in"
+  ✗ Never be vague — always name the specific technology, metric, or outcome
 
-RULE 8 — BULLET WORD LIMIT (hard limit: ≤20 words per bullet)
-Count the words. If a bullet exceeds 20 words, rewrite it to fit in 20 words.
-Every bullet MUST be a COMPLETE SENTENCE or COMPLETE CLAUSE — never cut mid-phrase.
-Every bullet must start with a strong past-tense action verb.
+BULLET TRANSFORMATION EXAMPLES — learn the pattern:
+  ✗ WEAK  : "Worked on the backend API for the project."
+  ✓ STRONG: "Architected a RESTful Express.js API, reducing average response time by 35%."
 
-GOOD examples (complete, ≤20 words):
-  "Architected real-time dashboard using Kafka to process live stock data with sub-200ms latency."  (15 words ✓)
-  "Optimized MongoDB aggregation pipelines for personalized feeds, achieving sub-100ms response times."  (11 words ✓)
-  "Engineered NLP keyword matcher and role-based scoring, improving parse accuracy by 40%."  (12 words ✓)
+  ✗ WEAK  : "Helped to improve performance of the website."
+  ✓ STRONG: "Optimised PostgreSQL queries with composite indexes, cutting page load from 4s to 800ms."
 
-BAD examples (cut mid-phrase — these break the layout and confuse readers):
-  "Developed a full-stack MERN application using the Groq LPU Inference engine to analyze resumes for"  ← INCOMPLETE
-  "Architected a scalable full-stack Twitter/Threads clone using the MERN Stack, ensuring complex user relationships and"  ← INCOMPLETE
+  ✗ WEAK  : "Used React to build UI components."
+  ✓ STRONG: "Built 12 reusable React components, reducing feature delivery time by 20%."
 
-If a bullet is incomplete or cut mid-phrase, that is a CRITICAL ERROR. Rewrite it.
+  ✗ WEAK  : "Implemented authentication in the app."
+  ✓ STRONG: "Implemented JWT auth with refresh-token rotation, securing 5,000 active user accounts."
+
+  ✗ TOO LONG (34 words): "Developed and maintained multiple microservices using Node.js and Docker that were responsible for processing user requests and sending notifications via email and SMS."
+  ✓ TRIMMED (22 words) : "Developed 4 Node.js microservices handling user requests and transactional notifications, cutting notification latency by 50%."
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 FORMATTING RULES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-RULE 9  — GPA: plain number only: "9.05/10". Strip all "CGPA:" / "GPA:" prefixes.
-
-RULE 10 — EDUCATION DATES: date range only (e.g. "Aug 2023 – Present").
-
-RULE 11 — DSA PROFICIENCY: scan for LeetCode/CodeChef/Codeforces/HackerRank/GFG stats.
-Extract ALL lines as plain strings. Return [] if none found.
-Example: ["Solved 450 problems on LeetCode; global ranking 224,015.", "Solved ~760 problems on CodeChef.", "Solved ~50 problems on GFG."]
-
-RULE 12 — CERTIFICATIONS: extract ALL certs even without a URL. "url" defaults to "". Return [] if none.
-
-RULE 13 — ACHIEVEMENTS (category-based): named subcategories with bullets → "achievements".
-MAX 4 BULLETS TOTAL across all categories. Return [] if none found.
-
-RULE 14 — AWARDS (individual named recognitions) → "awards".
-Extract ALL awards found in the resume — do NOT limit to 2. Return [] if none.
-Each award: { "title": "...", "org": "...", "desc": "...", "date": "..." }
-"desc" should be the key metric or outcome (e.g. "Ranked 1050 / 82,794 (Top 1.3%) for ML model accuracy").
-
-RULE 15 — EXTRACURRICULAR: role titles + bullets → "extracurricular". Return [] if none.
-
-RULE 16 — LANGUAGES SPOKEN: comma-separated string. Return "" if none.
-
-RULE 17 — EMAIL & PHONE: copy EXACTLY as written, including country code ("+91", "+1").
-
-RULE 18 — TAGLINE: if the resume has a professional tagline/headline line below the name,
-copy it verbatim (full text, no truncation with "..."). Return "" if none.
+RULE 9  — GPA: plain number only — "9.05/10". Strip all "CGPA:" / "GPA:" prefixes.
+RULE 10 — EDUCATION DATES: date range only — "Aug 2023 – Present".
+RULE 11 — DSA PROFICIENCY: extract ALL LeetCode / CodeChef / Codeforces / HackerRank / GFG stat lines verbatim as plain strings.
+RULE 12 — CERTIFICATIONS: extract ALL certifications found in the resume.
+RULE 13 — ACHIEVEMENTS: maximum 6 bullets total across all categories.
+RULE 14 — AWARDS: extract ALL awards found. None may be omitted.
+RULE 15 — EXTRACURRICULAR: include role title + relevant bullets.
+RULE 16 — LANGUAGES SPOKEN: comma-separated string (e.g. "English, Telugu, Hindi").
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-BEFORE OUTPUTTING — MANDATORY SELF-CHECK:
+MANDATORY SELF-CHECK  (fix any failure before outputting)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-□ tailoredExperience includes ALL internships from the resume
-□ tailoredExperience has at most 4 entries total
-□ EACH entry has EXACTLY 2 bullets
-□ EACH bullet is a complete sentence/clause — not cut mid-phrase
-□ EACH bullet is ≤20 words — count them
-□ tailoredSummary is exactly 2 sentences, ≤40 words total
-□ awards array contains ALL awards from the resume (not just 2)
-□ dsaProficiency contains ALL DSA platform stats found (LeetCode, CodeChef, GFG, etc.)
-□ tailoredSkills contains ONLY skills explicitly named in the resume — no invented skills
-□ tailoredSummary uses no filler like "highly motivated", "detail-oriented", "passionate"
-If any check fails, fix it before outputting.
+□ Every internship and every key project is in tailoredExperience
+□ tailoredExperience has AT MOST 6 entries
+□ EVERY entry has exactly 2 or 3 bullets
+□ EVERY bullet starts with a strong past-tense action verb
+□ EVERY bullet is ≤ 30 words — count them
+□ EVERY bullet is a complete sentence or clause — no fragments
+□ tailoredSummary is exactly 3 sentences and ≤ 60 words total — count them
+□ tailoredSkills contains ONLY skills explicitly named in the resume
+□ awards contains ALL awards from the resume — none omitted
+□ education dates are in "Mon YYYY – Mon YYYY" format
+□ GPA has no prefix label
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-OUTPUT — return ONLY this JSON, no markdown, no explanation:
+OUTPUT — return ONLY this JSON object. No markdown, no explanation outside it.
+For any missing field use "" (string), null, or [] (array) as appropriate.
+DO NOT omit any key from the schema.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
   "basics": {
-    "name": "Candidate Full Name",
-    "email": "email@example.com",
-    "phone": "+91 9550145568",
-    "linkedin": "linkedin username or full url",
-    "github": "github username or full url",
+    "name":      "Candidate Full Name",
+    "email":     "email@example.com",
+    "phone":     "+91 1234567890",
+    "linkedin":  "linkedin username or full url",
+    "github":    "github username or full url",
     "portfolio": "portfolio url or empty string",
-    "location": "City, State/Country",
-    "tagline": "Full tagline verbatim, no truncation"
+    "location":  "City, State/Country",
+    "tagline":   "Professional tagline verbatim — no truncation"
   },
-  "tailoredSummary": "Exactly 2 complete sentences, ≤40 words total, no filler.",
+  "tailoredSummary": "Sentence 1. Sentence 2. Sentence 3.",
   "tailoredSkills": [
-    { "label": "Category Name", "value": "Only explicitly listed skills from resume, JD-relevant ones first" }
+    { "label": "Category Name", "value": "Skill A, Skill B, Skill C — JD-relevant first" }
   ],
   "tailoredExperience": [
     {
-      "title": "Role or Project Name",
-      "meta": "Company or Location | Date Range",
-      "bullets": ["Complete bullet 1 — ≤20 words, strong verb + result", "Complete bullet 2 — ≤20 words, strong verb + result"],
-      "tech": "Comma separated technologies"
+      "title":   "Role or Project Name",
+      "meta":    "Company or Location | Date Range",
+      "bullets": ["Strong bullet 1 (≤30 words)", "Strong bullet 2 (≤30 words)"],
+      "tech":    "Comma-separated technologies used"
     }
   ],
   "education": [
     {
       "institution": "University Name",
-      "degree": "Degree Name",
-      "dates": "Aug 2023 – Present",
-      "gpa": "9.05/10",
-      "extra": []
+      "degree":      "Degree Name",
+      "dates":       "Aug 2023 – Present",
+      "gpa":         "9.05/10",
+      "extra":       []
     }
   ],
   "awards": [
-    { "title": "Award Title", "org": "Awarding Org", "desc": "Key metric or outcome", "date": "Month Year" }
+    { "title": "Award Title", "org": "Awarding Organisation", "desc": "Key metric or outcome", "date": "Month YYYY" }
   ],
   "achievements": [
-    {
-      "category": "Category Name",
-      "bullets": ["Complete bullet ≤20 words"]
-    }
+    { "category": "Category Name", "bullets": ["Concise achievement bullet"] }
   ],
-  "extracurricular": [],
-  "dsaProficiency": ["Full stat line 1", "Full stat line 2", "Full stat line 3"],
+  "extracurricular": [
+    { "role": "Role Title", "org": "Organisation", "dates": "Date Range", "bullets": ["Bullet"] }
+  ],
+  "dsaProficiency": ["Full stat line 1", "Full stat line 2"],
   "certifications": [
-    { "title": "Cert Title", "org": "Issuing Org", "dates": "Month Year", "url": "" }
+    { "title": "Cert Title", "org": "Issuing Org", "dates": "Month YYYY", "url": "" }
   ],
   "languages": "English, Telugu, Hindi"
 }
+`.trim();
 
-Missing fields: use "", null, or [] as appropriate. Do NOT omit any key.
+  const userPrompt =
+    `TARGET JOB DESCRIPTION:\n${jobDescription}\n\n` +
+    `BASE RESUME:\n${resumeText}`;
 
-TARGET JOB DESCRIPTION:
-${jobDescription}
+  const raw = await callGroq(
+    [
+      { role: "system", content: systemPrompt },
+      { role: "user",   content: userPrompt   },
+    ],
+    { temperature: 0.15 }
+  );
 
-BASE RESUME:
-${resumeText}
-`;
-
-  const completion = await groq.chat.completions.create({
-    model: GROQ_MODEL,
-    temperature: 0.2,
-    messages: [{ role: "user", content: prompt }],
-  });
-
-  const raw = completion.choices?.[0]?.message?.content ?? "";
-
-  // Parse JSON
+  // Parse JSON — attempt automatic repair on failure
   let parsed;
   try {
-    const clean = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
-    parsed = JSON.parse(clean);
+    parsed = parseJSONRobust(raw);
   } catch {
-    return raw; // return raw string if parse fails; caller handles it
+    try {
+      parsed = await repairJSON(raw);
+    } catch (repairErr) {
+      // Return raw string as last resort so the caller can decide what to do
+      console.error("[aiAnalyzer] tailorResume: JSON parse + repair both failed.", repairErr.message);
+      return raw;
+    }
   }
 
-  // Hard-enforce limits even if the LLM ignored instructions
-  return JSON.stringify(
-    enforceLimits(parsed, jobDescription)
-  );
+  // Hard-enforce structural limits even if the LLM ignored instructions
+  return JSON.stringify(enforceLimits(parsed, jobDescription));
 }
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GENERATE LATEX (deterministic Jake-style template)
+// GENERATE LATEX  (deterministic Jake-style template — no LLM involved)
 // ─────────────────────────────────────────────────────────────────────────────
 export async function generateLatexWithAI(resumeText, tailoredData, user = null) {
   const prepared = prepareResumeExport(tailoredData, { resumeText, user });
