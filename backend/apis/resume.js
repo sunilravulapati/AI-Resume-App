@@ -3,8 +3,9 @@ import multer from "multer";
 import PDFParser from "pdf2json";
 import { Resume } from "../models/Resume.js";
 import User from "../models/User.js";
-import { calculateProgrammaticScore, calculateFinalScore } from "../services/scorer.js";
-import { analyzeResume, analyzeResumeTargeted, tailorResume, generateLatexWithAI } from "../services/aiAnalyzer.js";
+import { calculateProgrammaticScore, calculateFinalScore, structureScore, impactScore, skillAlignmentScore } from "../services/scorer.js";
+import { analyzeResume, analyzeResumeTargeted, tailorResume, generateCoverLetterWithAI, rankCandidatesWithAI } from "../services/aiAnalyzer.js";
+import { generateResumePdf, generateResumeLatex } from "../services/generateResumePdf.js";
 import { prepareResumeExport } from "../services/resumeFormat.js";
 import { extractJSON } from "../utils/jsonExtractor.js";
 import { verifyToken } from "../middleware/auth.js";
@@ -67,13 +68,36 @@ resumeRouter.post(
           const analysisData = extractJSON(aiResponse) || {};
           const finalScore   = calculateFinalScore(programmaticScore, analysisData.semanticScore || 0);
 
+          const rawStruct = structureScore(extractedText);
+          const rawImp    = impactScore(extractedText);
+          const rawSkills = skillAlignmentScore(extractedText);
+          const aiScores  = analysisData.scores || {};
+
           const newResume = await Resume.create({
             userId: req.user.id, parsedText: extractedText, rawText, atsScore: finalScore, fileUrl, analysisMode,
             ...(analysisMode === "targeted" && { jobDescription, company: company || undefined, roleName: roleName || undefined }),
             feedback: {
               strengths: analysisData.strengths || [], improvements: analysisData.improvements || [], summary: analysisData.summary || "",
               ...(analysisMode === "targeted" && { matchScore: analysisData.matchScore ?? undefined, keywordMatchRate: analysisData.keywordMatchRate ?? undefined, missingSkills: analysisData.missingSkills || [], experienceGap: analysisData.experienceGap || undefined }),
+              studentFeedback: {
+                strengths: (analysisData.studentFeedback && analysisData.studentFeedback.strengths) || analysisData.strengths || [],
+                improvements: (analysisData.studentFeedback && analysisData.studentFeedback.improvements) || analysisData.improvements || [],
+                summary: (analysisData.studentFeedback && analysisData.studentFeedback.summary) || analysisData.summary || "",
+              },
+              recruiterFeedback: {
+                greenFlags: (analysisData.recruiterFeedback && analysisData.recruiterFeedback.greenFlags) || [],
+                redFlags: (analysisData.recruiterFeedback && analysisData.recruiterFeedback.redFlags) || [],
+                recruiterSummary: (analysisData.recruiterFeedback && analysisData.recruiterFeedback.recruiterSummary) || "",
+              }
             },
+            subScores: {
+              structure: rawStruct,
+              impact: rawImp,
+              skillAlignment: rawSkills,
+              complexity: aiScores.complexity || 0,
+              professionalism: aiScores.professionalism || 0,
+              skillProjectFit: aiScores.skillProjectFit || 0
+            }
           });
 
           await User.findByIdAndUpdate(req.user.id, { $push: { resumes: newResume._id } });
@@ -82,6 +106,9 @@ resumeRouter.post(
             message: "Analyzed successfully",
             analysis: {
               atsScore: finalScore, strengths: analysisData.strengths || [], improvements: analysisData.improvements || [], summary: analysisData.summary || "",
+              studentFeedback: newResume.feedback.studentFeedback,
+              recruiterFeedback: newResume.feedback.recruiterFeedback,
+              subScores: newResume.subScores,
               ...(analysisMode === "targeted" && { matchScore: analysisData.matchScore ?? null, keywordMatchRate: analysisData.keywordMatchRate ?? null, missingSkills: analysisData.missingSkills || [], experienceGap: analysisData.experienceGap || null, roleName: roleName || null }),
             },
           });
@@ -181,7 +208,7 @@ resumeRouter.post("/tailor", verifyToken("student"), async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 resumeRouter.post("/generate-latex", verifyToken("student"), async (req, res) => {
   try {
-    const { resumeId, tailoredData } = req.body;
+    const { resumeId, tailoredData, template = "classic" } = req.body;
 
     if (!resumeId || !tailoredData)
       return res.status(400).json({ error: "Missing resumeId or tailoredData." });
@@ -191,20 +218,86 @@ resumeRouter.post("/generate-latex", verifyToken("student"), async (req, res) =>
 
     const resumeText = baseResume.rawText || baseResume.parsedText;
     const dbUser     = await User.findById(req.user.id).select("firstName lastName email mobile");
-    const latex      = await generateLatexWithAI(resumeText, tailoredData, dbUser);
 
-    if (!latex || latex.trim().length < 100)
-      return res.status(500).json({ error: "AI returned an empty or invalid LaTeX response. Please try again." });
+    // Prepare + normalize via resumeFormat (merges DB profile if basics blank)
+    const prepared = prepareResumeExport(tailoredData, { resumeText, user: dbUser });
 
-    const clean = latex
-      .replace(/^```(?:latex|tex)?\s*/i, "")
-      .replace(/\s*```\s*$/, "")
-      .trim();
+    // Pipeline: normalize → validate → sanitize → render → debug.tex
+    const compiledLatex = await generateResumeLatex(prepared, template);
 
-    return res.status(200).json({ latex: clean });
+    return res.status(200).json({ latex: compiledLatex.trim() });
   } catch (err) {
     console.error("Generate LaTeX Error:", err);
     return res.status(500).json({ error: "Failed to generate LaTeX.", details: err.message });
+  }
+});
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5.1 GENERATE PDF
+// ─────────────────────────────────────────────────────────────────────────────
+resumeRouter.post("/generate-pdf", verifyToken("student"), async (req, res) => {
+  try {
+    const { resumeId, tailoredData, template = "classic" } = req.body;
+
+    if (!resumeId || !tailoredData)
+      return res.status(400).json({ error: "Missing resumeId or tailoredData." });
+
+    const baseResume = await Resume.findOne({ _id: resumeId, userId: req.user.id });
+    if (!baseResume) return res.status(404).json({ error: "Resume not found." });
+
+    const resumeText = baseResume.rawText || baseResume.parsedText;
+    const dbUser     = await User.findById(req.user.id).select("firstName lastName email mobile");
+
+    const prepared = prepareResumeExport(tailoredData, { resumeText, user: dbUser });
+
+    // Full pipeline: normalize → validate → sanitize → render → compile PDF
+    const { outputPath } = await generateResumePdf(prepared, template);
+
+    // Stream the PDF file back to the client
+    const fs = await import("fs");
+    if (!fs.existsSync(outputPath)) {
+      return res.status(500).json({ error: "PDF compilation failed — file not found." });
+    }
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", 'attachment; filename="resume.pdf"');
+    const stream = fs.createReadStream(outputPath);
+    stream.pipe(res);
+  } catch (err) {
+    console.error("Generate PDF Error:", err);
+    return res.status(500).json({ error: "Failed to generate PDF.", details: err.message });
+  }
+});
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5.5 GENERATE TAILORED COVER LETTER
+// ─────────────────────────────────────────────────────────────────────────────
+resumeRouter.post("/generate-cover-letter", verifyToken("student"), async (req, res) => {
+  try {
+    const { resumeId, tailoredData, company, roleName } = req.body;
+
+    if (!resumeId || !tailoredData)
+      return res.status(400).json({ error: "Missing resumeId or tailoredData." });
+
+    const baseResume = await Resume.findOne({ _id: resumeId, userId: req.user.id });
+    if (!baseResume) return res.status(404).json({ error: "Resume not found." });
+
+    const resumeText = baseResume.rawText || baseResume.parsedText;
+    const jdText = baseResume.jobDescription || "";
+    const targetComp = company || baseResume.company || "Target Company";
+    const targetRole = roleName || baseResume.roleName || "Target Position";
+
+    const coverLetter = await generateCoverLetterWithAI(resumeText, tailoredData, targetComp, targetRole, jdText);
+
+    if (!coverLetter || coverLetter.trim().length < 50)
+      return res.status(500).json({ error: "AI returned an empty or invalid cover letter response. Please try again." });
+
+    return res.status(200).json({ coverLetter });
+  } catch (err) {
+    console.error("Generate Cover Letter Error:", err);
+    return res.status(500).json({ error: "Failed to generate Cover Letter.", details: err.message });
   }
 });
 
@@ -222,5 +315,55 @@ resumeRouter.get("/:id", verifyToken(), async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to fetch resume details" });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 7. RECRUITER: SCREEN CANDIDATES WITH AI (MATCH POOL)
+// ─────────────────────────────────────────────────────────────────────────────
+resumeRouter.post("/match-pool", verifyToken("recruiter", "admin"), async (req, res) => {
+  try {
+    const { jobDescription } = req.body;
+    if (!jobDescription || !jobDescription.trim()) {
+      return res.status(400).json({ error: "Job description is required" });
+    }
+
+    const resumes = await Resume.find().populate("userId", "firstName lastName email mobile username");
+    const aiRankings = await rankCandidatesWithAI(resumes, jobDescription);
+    return res.status(200).json(aiRankings);
+  } catch (err) {
+    console.error("Match Pool Error:", err);
+    return res.status(500).json({ error: "Failed to screen candidate pool", details: err.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 8. RECRUITER: INVITE CANDIDATE (SIMULATED VIA EMAIL)
+// ─────────────────────────────────────────────────────────────────────────────
+resumeRouter.post("/invite-candidate", verifyToken("recruiter", "admin"), async (req, res) => {
+  try {
+    const { resumeId, emailSubject, emailBody } = req.body;
+    if (!resumeId || !emailSubject || !emailBody) {
+      return res.status(400).json({ error: "resumeId, emailSubject, and emailBody are required" });
+    }
+
+    const resume = await Resume.findById(resumeId).populate("userId", "firstName lastName email");
+    if (!resume) return res.status(404).json({ error: "Resume not found" });
+
+    // Print the email invitation to backend logs for debugging/simulation
+    console.log("================ SIMULATED INTERVIEW INVITATION ================");
+    console.log(`TO: ${resume.userId?.firstName} ${resume.userId?.lastName} <${resume.userId?.email}>`);
+    console.log(`SUBJECT: ${emailSubject}`);
+    console.log("------------------ EMAIL BODY ------------------");
+    console.log(emailBody);
+    console.log("================================================================");
+
+    return res.status(200).json({
+      success: true,
+      message: `Simulated invitation successfully sent to ${resume.userId?.email}`
+    });
+  } catch (err) {
+    console.error("Invite Candidate Error:", err);
+    return res.status(500).json({ error: "Failed to send interview invitation", details: err.message });
   }
 });

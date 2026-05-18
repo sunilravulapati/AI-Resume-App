@@ -475,6 +475,83 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
           </div>
         )}
 
+        {/* ── COVER LETTER PANEL ── */}
+        {activeOption === 'cover-letter' && (
+          <div className="ep-fade-up bg-[var(--bg-elevated)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)] bg-[var(--bg-muted)]">
+              <div className="flex items-center gap-2">
+                <span className="text-base">✉️</span>
+                <p className="text-sm font-bold text-[var(--text)]">AI Custom Cover Letter</p>
+              </div>
+              <div className="flex items-center gap-3">
+                {coverLetterError && (
+                  <button
+                    onClick={handleRetryCoverLetter}
+                    className="ep-copy-btn text-xs font-bold px-4 py-2 rounded-xl border-2 border-[var(--danger)]/30 text-[var(--danger)] bg-white hover:bg-[var(--danger-soft)] shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger)]"
+                  >
+                    ↺ Retry
+                  </button>
+                )}
+                {coverLetterText && !coverLetterLoading && (
+                  <button
+                    onClick={handleCopyCoverLetter}
+                    className={`ep-copy-btn text-xs font-bold px-4 py-2 rounded-xl border-2 transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]
+                      ${clCopied
+                        ? 'bg-[var(--success-soft)] text-[var(--success)] border-[var(--success)]/30'
+                        : 'bg-white text-[var(--color-accent)] border-[var(--color-accent-soft)] hover:border-[var(--color-accent)] hover:bg-[var(--color-brand-50)]'
+                      }`}
+                  >
+                    {clCopied ? '✓ Copied!' : 'Copy Cover Letter'}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="relative">
+              {/* Loading state */}
+              {coverLetterLoading && (
+                <div className="flex flex-col items-center justify-center gap-3 py-20 bg-[var(--bg)]">
+                  <span className="w-8 h-8 border-4 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin"></span>
+                  <p className="text-sm font-bold text-[var(--text)] mt-2">Writing your tailored cover letter…</p>
+                  <p className="text-xs font-medium text-[var(--text-secondary)]">Usually takes a few seconds</p>
+                </div>
+              )}
+
+              {/* Error state */}
+              {!coverLetterLoading && coverLetterError && (
+                <div className="flex flex-col items-center justify-center gap-3 py-16 px-6 bg-[var(--bg)]">
+                  <span className="text-3xl">⚠️</span>
+                  <p className="text-sm font-bold text-[var(--danger)] text-center">Generation failed</p>
+                  <p className="text-xs font-medium text-[var(--text-secondary)] text-center max-w-sm leading-relaxed">{coverLetterError}</p>
+                  <button
+                    onClick={handleRetryCoverLetter}
+                    className="mt-2 text-xs font-bold px-5 py-2.5 rounded-xl bg-[var(--danger-soft)] text-[var(--danger)] hover:bg-[var(--danger)]/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger)]"
+                  >
+                    ↺ Try again
+                  </button>
+                </div>
+              )}
+
+              {/* Success state */}
+              {!coverLetterLoading && !coverLetterError && coverLetterText && (
+                <>
+                  <div className="flex items-center gap-3 px-5 py-3 bg-[var(--success-soft)] border-b border-[var(--success)]/20">
+                    <span className="text-sm">✨</span>
+                    <p className="text-xs text-[var(--success)] font-bold">
+                      Your cover letter has been perfectly customized!
+                    </p>
+                  </div>
+                  <div className="p-6 bg-[var(--bg-muted)] overflow-x-auto max-h-[500px]">
+                    <pre className="text-xs text-[var(--text)] leading-relaxed font-sans whitespace-pre-wrap select-all font-medium">
+                      {coverLetterText}
+                    </pre>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
       </div>
     </>
   );

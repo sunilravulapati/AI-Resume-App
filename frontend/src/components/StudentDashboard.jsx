@@ -294,16 +294,91 @@ export default function StudentDashboard() {
                       </div>
                     )}
 
-                    <div className="border-t border-[var(--border)] pt-8">
-                      <p className="text-xs font-bold uppercase tracking-[0.1em] text-[var(--color-accent)] mb-3 flex items-center gap-2"><span className="text-base">🤖</span> AI Summary</p>
-                      <p className="text-sm font-medium text-[var(--text)] leading-relaxed italic">{analysis.summary}</p>
-                    </div>
+                      {/* Interactive Score Breakdown Panel */}
+                      <div className="border-t border-[var(--border)] pt-8">
+                        <p className="text-xs font-bold uppercase tracking-[0.1em] text-[var(--color-accent)] mb-5 flex items-center gap-2">
+                          <span className="text-base">📊</span> Interactive ATS Score Breakdown
+                        </p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                          {(() => {
+                            const defaultSub = { structure: 0, impact: 0, skillAlignment: 0, complexity: 0, professionalism: 0, skillProjectFit: 0 };
+                            const rawSub = analysis.subScores || defaultSub;
+                            const totalSub = rawSub.structure + rawSub.impact + rawSub.skillAlignment + rawSub.complexity + rawSub.professionalism + rawSub.skillProjectFit;
+                            
+                            const ats = analysis.atsScore || 0;
+                            const items = totalSub > 0 ? [
+                              { name: 'Formatting & Layout', score: rawSub.structure, max: 20, desc: 'Checks structure and formatting standards.', color: 'from-[#0066cc] to-[#3399ff]', icon: '📝', type: 'Programmatic' },
+                              { name: 'Impact & Metrics', score: rawSub.impact, max: 20, desc: 'Checks presence of measurable results.', color: 'from-[#34c759] to-[#30d158]', icon: '📈', type: 'Programmatic' },
+                              { name: 'Skill Alignment', score: rawSub.skillAlignment, max: 20, desc: 'Keyword alignment against expected tech terms.', color: 'from-[#ff9f0a] to-[#ffb340]', icon: '🔑', type: 'Programmatic' },
+                              { name: 'Technical Complexity', score: rawSub.complexity, max: 15, desc: 'Depth of roles, infrastructure, and tools.', color: 'from-[#bf5af2] to-[#c56cf0]', icon: '🏗️', type: 'AI Cognitive' },
+                              { name: 'Professional Phrasing', score: rawSub.professionalism, max: 5, desc: 'Usage of active words and formal phrasing.', color: 'from-[#ff375f] to-[#ff6b8b]', icon: '✍️', type: 'AI Cognitive' },
+                              { name: 'Skill-Project Match', score: rawSub.skillProjectFit, max: 10, desc: 'Verification that skills are proven in roles.', color: 'from-[#30d158] to-[#66bb6a]', icon: '🎯', type: 'AI Cognitive' }
+                            ] : [
+                              { name: 'Formatting & Layout', score: Math.round((ats / 100) * 20), max: 20, desc: 'Checks structure and formatting standards.', color: 'from-[#0066cc] to-[#3399ff]', icon: '📝', type: 'Programmatic' },
+                              { name: 'Impact & Metrics', score: Math.round((ats / 100) * 20), max: 20, desc: 'Checks presence of measurable results.', color: 'from-[#34c759] to-[#30d158]', icon: '📈', type: 'Programmatic' },
+                              { name: 'Skill Alignment', score: Math.round((ats / 100) * 20), max: 20, desc: 'Keyword alignment against expected tech terms.', color: 'from-[#ff9f0a] to-[#ffb340]', icon: '🔑', type: 'Programmatic' },
+                              { name: 'Technical Complexity', score: Math.round((ats / 100) * 15), max: 15, desc: 'Depth of roles, infrastructure, and tools.', color: 'from-[#bf5af2] to-[#c56cf0]', icon: '🏗️', type: 'AI Cognitive' },
+                              { name: 'Professional Phrasing', score: Math.round((ats / 100) * 5), max: 5, desc: 'Usage of active words and formal phrasing.', color: 'from-[#ff375f] to-[#ff6b8b]', icon: '✍️', type: 'AI Cognitive' },
+                              { name: 'Skill-Project Match', score: Math.round((ats / 100) * 10), max: 10, desc: 'Verification that skills are proven in roles.', color: 'from-[#30d158] to-[#66bb6a]', icon: '🎯', type: 'AI Cognitive' }
+                            ];
+
+                            return items.map((item, idx) => {
+                              const percent = Math.round((item.score / item.max) * 100);
+                              return (
+                                <div 
+                                  key={idx} 
+                                  className="group relative flex flex-col p-4 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-2xl shadow-sm hover:shadow-md hover:border-[var(--color-accent-soft)] transition-all duration-300 overflow-hidden cursor-help"
+                                >
+                                  {/* Hover overlay for descriptions */}
+                                  <div className="absolute inset-0 bg-[var(--bg-muted)] opacity-0 group-hover:opacity-100 flex flex-col justify-center p-4 transition-all duration-300 translate-y-full group-hover:translate-y-0">
+                                    <span className="text-base mb-1">{item.icon}</span>
+                                    <p className="text-xs font-bold text-[var(--text)] mb-1">{item.name}</p>
+                                    <p className="text-[0.7rem] text-[var(--text-secondary)] leading-relaxed font-medium">{item.desc}</p>
+                                    <div className="mt-3 flex items-center justify-between text-[0.65rem] font-bold text-[var(--text-muted)]">
+                                      <span>Category: {item.type}</span>
+                                      <span>Target: {item.max}pts</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <span className="text-lg">{item.icon}</span>
+                                    <div className="min-w-0 flex-1">
+                                      <h5 className="text-xs font-bold text-[var(--text)] truncate leading-tight">{item.name}</h5>
+                                      <span className="text-[0.6rem] font-bold uppercase tracking-wider text-[var(--text-muted)]">{item.type}</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="mt-auto flex items-center justify-between gap-4">
+                                    <div className="flex-1 bg-[var(--border)] rounded-full h-2 overflow-hidden">
+                                      <div 
+                                        className={`h-full rounded-full bg-gradient-to-r ${item.color} transition-all duration-1000`} 
+                                        style={{ width: `${percent}%` }}
+                                      />
+                                    </div>
+                                    <span className="text-xs font-black text-[var(--text)] tabular-nums shrink-0">
+                                      {item.score}<span className="text-[10px] font-bold text-[var(--text-muted)]">/{item.max}</span>
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </div>
+
+                      <div className="border-t border-[var(--border)] pt-8">
+                        <p className="text-xs font-bold uppercase tracking-[0.1em] text-[var(--color-accent)] mb-3 flex items-center gap-2"><span className="text-base">🤖</span> AI Summary</p>
+                        <p className="text-sm font-medium text-[var(--text)] leading-relaxed italic">
+                          {analysis.studentFeedback?.summary || analysis.summary}
+                        </p>
+                      </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <div className="bg-[var(--success-soft)] border border-[var(--success)]/20 rounded-2xl p-6">
                         <h4 className="font-bold text-[var(--success)] text-xs uppercase tracking-wider mb-4 flex items-center gap-1.5">🟢 Top Strengths</h4>
                         <ul className="space-y-3">
-                          {analysis.strengths.map((s, i) => (
+                          {(analysis.studentFeedback?.strengths || analysis.strengths || []).map((s, i) => (
                             <li key={i} className="text-sm font-medium text-[var(--text)] flex items-start gap-2.5 leading-relaxed">
                               <span className="text-[var(--success)] mt-0.5 shrink-0 font-bold">✓</span>{s}
                             </li>
@@ -313,7 +388,7 @@ export default function StudentDashboard() {
                       <div className="bg-[var(--danger-soft)] border border-[var(--danger)]/20 rounded-2xl p-6">
                         <h4 className="font-bold text-[var(--danger)] text-xs uppercase tracking-wider mb-4 flex items-center gap-1.5">🔴 Improvements</h4>
                         <ul className="space-y-3">
-                          {analysis.improvements.map((imp, i) => (
+                          {(analysis.studentFeedback?.improvements || analysis.improvements || []).map((imp, i) => (
                             <li key={i} className="text-sm font-medium text-[var(--text)] flex items-start gap-2.5 leading-relaxed">
                               <span className="text-[var(--danger)] mt-0.5 shrink-0 font-bold">→</span>{imp}
                             </li>

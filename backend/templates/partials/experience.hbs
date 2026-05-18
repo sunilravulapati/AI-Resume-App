@@ -1,0 +1,13 @@
+{{#if experience.length}}
+\section{Experience}
+{{#each experience}}
+\noindent\textbf{ {{this.title}} } \hfill {{this.dates}} \\
+\textit{\small {{this.company}}{{#if this.location}}, {{this.location}}{{/if}} }{{#if this.tech}} \hfill \textit{\small {{this.tech}} }{{/if}}
+\begin{itemize}
+{{#each this.bullets}}
+  \item \small {{this}}
+{{/each}}
+\end{itemize}
+{{#unless @last}}\vspace{1pt}{{/unless}}
+{{/each}}
+{{/if}}

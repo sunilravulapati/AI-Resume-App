@@ -1,0 +1,35 @@
+{{#if awards.length}}
+\section{Awards \& Achievements}
+\begin{itemize}
+{{#each awards}}
+  \item \small \textbf{ {{this.title}} }{{#if this.date}} \hfill {{this.date}}{{/if}}{{#if this.desc}} --- {{this.desc}}{{/if}}
+{{/each}}
+\end{itemize}
+{{/if}}
+{{#if certifications.length}}
+\section{Certifications}
+\begin{itemize}
+{{#each certifications}}
+  \item \small \textbf{ {{this.title}} }{{#if this.org}} --- {{this.org}}{{/if}}{{#if this.dates}} \hfill {{this.dates}}{{/if}}
+{{/each}}
+\end{itemize}
+{{/if}}
+{{#if dsaProficiency.length}}
+\section{DSA Proficiency}
+\begin{itemize}
+{{#each dsaProficiency}}
+  \item \small {{this}}
+{{/each}}
+\end{itemize}
+{{/if}}
+{{#if extracurricular.length}}
+\section{Extracurricular Activities}
+{{#each extracurricular}}
+{{#if this.title}}\noindent\textbf{\small {{this.title}} }\\{{/if}}
+\begin{itemize}
+{{#each this.bullets}}
+  \item \small {{this}}
+{{/each}}
+\end{itemize}
+{{/each}}
+{{/if}}

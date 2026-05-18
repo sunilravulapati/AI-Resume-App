@@ -61,11 +61,13 @@ export function trimWords(text = "", maxWords = 30) {
   return words.slice(0, maxWords).join(" ");
 }
 
-/** Prefer DB profile name → first clean name line in resume → AI-extracted name */
+/**
+ * Prefer the name found IN the resume text first, then fall back to the DB
+ * user profile. This prevents the logged-in user's name from silently
+ * overwriting the real candidate name when processing a sample/uploaded resume.
+ */
 export function resolveDisplayName(basicsName = "", resumeText = "", user = null) {
-  const profile = [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim();
-  if (profile.length >= 2 && !looksLikeBadName(profile)) return profile;
-
+  // 1. Try to extract the name directly from the resume text (most reliable)
   const lines = (resumeText || "")
     .split(/\n/)
     .map((l) => l.trim())
@@ -79,16 +81,22 @@ export function resolveDisplayName(basicsName = "", resumeText = "", user = null
     if (/^[A-Z][a-z]+(?:\s+[A-Z][a-z.'\-]+){1,4}$/.test(line)) return line;
   }
 
+  // 2. Fall back to what the AI extracted from the resume JSON
   const fromBasics = (basicsName || "").trim();
   if (fromBasics && !looksLikeBadName(fromBasics)) return fromBasics;
 
-  return profile || fromBasics || "Candidate";
+  // 3. Last resort: DB user profile name
+  const profile = [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim();
+  if (profile.length >= 2 && !looksLikeBadName(profile)) return profile;
+
+  return fromBasics || profile || "Candidate";
 }
 
 export function normalizeBasics(data, { user, resumeText } = {}) {
   if (!data || typeof data !== "object") return data;
   data.basics = data.basics || {};
   data.basics.name = resolveDisplayName(data.basics.name, resumeText, user);
+  // Only inject DB contact data when the resume itself has nothing — never overwrite
   if (user?.email && !data.basics.email) data.basics.email = user.email;
   if (user?.mobile && !data.basics.phone) data.basics.phone = user.mobile;
   return data;
@@ -104,13 +112,22 @@ export function enforceLimits(data, jobDescription = "") {
   const jdKeywords = extractJDKeywords(jobDescription);
 
   if (Array.isArray(data.tailoredExperience)) {
-    data.tailoredExperience = data.tailoredExperience
-      .map((project) => ({
-        ...project,
-        __score: scoreProject(project, jdKeywords),
-      }))
+    // Score for JD relevance but preserve ALL roles (don't silently drop chronological ones).
+    // Instead: sort most-relevant first, keep up to 5, always retain the most recent role.
+    const scored = data.tailoredExperience.map((entry) => ({
+      ...entry,
+      __score: scoreProject(entry, jdKeywords),
+    }));
+
+    // Always keep the first entry (most recent / senior) regardless of score
+    const [first, ...rest] = scored;
+    const topRest = rest
       .sort((a, b) => b.__score - a.__score)
-      .slice(0, 6)
+      .slice(0, 4); // keep up to 4 more
+    const combined = first ? [first, ...topRest] : topRest;
+
+    data.tailoredExperience = combined
+      .slice(0, 5)
       .map(({ __score, ...entry }) => ({
         ...entry,
         title: (entry.title || "").trim(),
@@ -125,23 +142,24 @@ export function enforceLimits(data, jobDescription = "") {
   }
 
   if (Array.isArray(data.tailoredSkills)) {
-    data.tailoredSkills = data.tailoredSkills.slice(0, 6).map((row) => ({
+    // Expanded to 8 rows so infrastructure/tools skills aren't dropped
+    data.tailoredSkills = data.tailoredSkills.slice(0, 8).map((row) => ({
       label: (row.label || "").trim(),
       value: (row.value || "").trim(),
     }));
   }
 
   if (Array.isArray(data.education)) {
-    data.education = data.education.slice(0, 3).map((edu) => ({
+    data.education = data.education.slice(0, 2).map((edu) => ({
       ...edu,
       institution: (edu.institution || "").trim(),
       degree: (edu.degree || "").trim(),
-      extra: (edu.extra || []).slice(0, 3).map((e) => (e || "").trim()),
+      extra: (edu.extra || []).slice(0, 2).map((e) => (e || "").trim()),
     }));
   }
 
   if (Array.isArray(data.awards)) {
-    data.awards = data.awards.slice(0, 4).map((a) => ({
+    data.awards = data.awards.slice(0, 3).map((a) => ({
       ...a,
       title: (a.title || "").trim(),
       desc: (a.desc || "").trim(),
@@ -151,7 +169,7 @@ export function enforceLimits(data, jobDescription = "") {
   if (Array.isArray(data.achievements)) {
     const allBullets = data.achievements
       .flatMap((a) => a.bullets || [])
-      .slice(0, 6)
+      .slice(0, 4)
       .map((b) => (b || "").trim());
     data.achievements = allBullets.length
       ? [{ category: "Achievements", bullets: allBullets }]
@@ -159,7 +177,7 @@ export function enforceLimits(data, jobDescription = "") {
   }
 
   if (Array.isArray(data.certifications)) {
-    data.certifications = data.certifications.slice(0, 4).map((c) => ({
+    data.certifications = data.certifications.slice(0, 3).map((c) => ({
       ...c,
       title: (c.title || "").trim(),
     }));
@@ -167,12 +185,12 @@ export function enforceLimits(data, jobDescription = "") {
 
   if (Array.isArray(data.dsaProficiency)) {
     data.dsaProficiency = data.dsaProficiency
-      .slice(0, 4)
+      .slice(0, 3)
       .map((l) => (l || "").trim());
   }
 
   if (Array.isArray(data.extracurricular)) {
-    data.extracurricular = data.extracurricular.slice(0, 2).map((item) => ({
+    data.extracurricular = data.extracurricular.slice(0, 1).map((item) => ({
       ...item,
       role: (item.role || item.title || "").trim(),
       bullets: (item.bullets || []).slice(0, 2).map((b) => (b || "").trim()),

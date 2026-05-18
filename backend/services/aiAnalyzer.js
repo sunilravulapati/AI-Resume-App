@@ -306,7 +306,7 @@ PRE-OUTPUT PLANNING  (think through this before writing JSON)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Step 1 — INVENTORY: Identify every project and internship/work entry in the resume.
 Step 2 — SCORE each entry 1–10 against the Job Description for relevance.
-Step 3 — RANK and select the TOP 6 entries (or all entries if the resume has ≤6 total).
+Step 3 — RANK and select the TOP 5 entries (or all if the resume has ≤5). Always keep ALL real jobs.
 Step 4 — Write bullets for the selected entries using the bullet rules below.
 Step 5 — Run the mandatory self-check. Fix any failure before producing JSON.
 
@@ -340,7 +340,9 @@ RULE 5 — UNIFIED tailoredExperience
 tailoredExperience holds ALL selected entries — both internship/work roles AND projects.
 Internships at real companies must always be included and appear before solo projects.
 
-RULE 6 — ENTRY LIMIT: at most 6 entries total in tailoredExperience.
+RULE 6 — ENTRY LIMIT: at most 5 entries total in tailoredExperience.
+         Always include ALL internship/work roles from the resume — never drop a real job.
+         If there are more than 5 combined entries (jobs + projects), drop solo projects last.
 
 RULE 7 — BULLETS PER ENTRY: exactly 2 or 3 bullets per entry. No more, no fewer.
 
@@ -376,23 +378,23 @@ RULE 9  — GPA: plain number only — "9.05/10". Strip all "CGPA:" / "GPA:" pre
 RULE 10 — EDUCATION DATES: date range only — "Aug 2023 – Present".
 RULE 11 — DSA PROFICIENCY: extract ALL LeetCode / CodeChef / Codeforces / HackerRank / GFG stat lines verbatim as plain strings.
 RULE 12 — CERTIFICATIONS: extract ALL certifications found in the resume.
-RULE 13 — ACHIEVEMENTS: maximum 6 bullets total across all categories.
-RULE 14 — AWARDS: extract ALL awards found. None may be omitted.
-RULE 15 — EXTRACURRICULAR: include role title + relevant bullets.
+RULE 13 — ACHIEVEMENTS: maximum 4 bullets total across all categories.
+RULE 14 — AWARDS: extract ALL awards found (maximum 3 entries).
+RULE 15 — EXTRACURRICULAR: include role title + relevant bullets (maximum 1 entry).
 RULE 16 — LANGUAGES SPOKEN: comma-separated string (e.g. "English, Telugu, Hindi").
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 MANDATORY SELF-CHECK  (fix any failure before outputting)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 □ Every internship and every key project is in tailoredExperience
-□ tailoredExperience has AT MOST 6 entries
+□ tailoredExperience has AT MOST 5 entries; ALL real work/internship roles are present
 □ EVERY entry has exactly 2 or 3 bullets
 □ EVERY bullet starts with a strong past-tense action verb
 □ EVERY bullet is ≤ 30 words — count them
 □ EVERY bullet is a complete sentence or clause — no fragments
 □ tailoredSummary is exactly 3 sentences and ≤ 60 words total — count them
 □ tailoredSkills contains ONLY skills explicitly named in the resume
-□ awards contains ALL awards from the resume — none omitted
+□ awards contains ALL awards from the resume — up to 3 entries
 □ education dates are in "Mon YYYY – Mon YYYY" format
 □ GPA has no prefix label
 
@@ -484,113 +486,40 @@ DO NOT omit any key from the schema.
 // ─────────────────────────────────────────────────────────────────────────────
 // GENERATE LATEX  (AI prompt → Jake's Resume LaTeX)
 // ─────────────────────────────────────────────────────────────────────────────
-export async function generateLatexWithAI(resumeText, tailoredData, user = null) {
-  const prepared = prepareResumeExport(tailoredData, { resumeText, user });
+// ─────────────────────────────────────────────────────────────────────────────
+// STATIC TEMPLATE COMPILATION (Handled by renderLatex.js, not AI)
+// ─────────────────────────────────────────────────────────────────────────────
 
-  const dataJson = JSON.stringify(prepared, null, 2);
-
+// ─
+// GENERATE COVER LETTER  (AI prompt → Tailored Cover Letter)
+// ─────────────────────────────────────────────────────────────────────────────
+export async function generateCoverLetterWithAI(resumeText, tailoredData, company = "Target Company", roleName = "Target Position", jobDescription = "") {
   const systemPrompt = `
-You are an expert LaTeX typesetter. Your ONLY job is to output a single, complete, compile-ready LaTeX document using Jake's Resume template style.
+You are an expert executive resume writer. Your job is to output a highly compelling, professional, and custom-tailored cover letter on behalf of an applicant.
 
-════════════════════════════════════════════════════════════════
-MANDATORY TEMPLATE PREAMBLE — copy this EXACTLY, do not alter:
-════════════════════════════════════════════════════════════════
-\\documentclass[letterpaper,11pt]{article}
+The cover letter must:
+1. Be structured professionally (with space for Applicant Name/Contact details at the top, followed by Date, Hiring Manager salutation).
+2. Express deep interest and genuine enthusiasm for the role of "${roleName}" at "${company}".
+3. Match the applicant's engineering accomplishments, skills, and quantified metrics (from their resume details) directly against the key challenges and requirements listed in the job description.
+4. Keep the tone authentic, warm, and highly professional. Avoid generic templates or boring cliches.
+5. Limit the length strictly to 1 page (around 300 to 400 words) with clear paragraph spacing.
 
-\\usepackage{latexsym}
-\\usepackage[empty]{fullpage}
-\\usepackage{titlesec}
-\\usepackage{marvosym}
-\\usepackage[usenames,dvipsnames]{color}
-\\usepackage{verbatim}
-\\usepackage{enumitem}
-\\usepackage[hidelinks]{hyperref}
-\\usepackage{fancyhdr}
-\\usepackage[english]{babel}
-\\usepackage{tabularx}
-\\input{glyphtounicode}
-
-\\pagestyle{fancy}
-\\fancyhf{}
-\\fancyfoot{}
-\\renewcommand{\\headrulewidth}{0pt}
-\\renewcommand{\\footrulewidth}{0pt}
-
-\\addtolength{\\oddsidemargin}{-0.5in}
-\\addtolength{\\evensidemargin}{-0.5in}
-\\addtolength{\\textwidth}{1in}
-\\addtolength{\\topmargin}{-.5in}
-\\addtolength{\\textheight}{1.0in}
-
-\\urlstyle{same}
-\\raggedbottom
-\\raggedright
-\\setlength{\\tabcolsep}{0in}
-
-\\titleformat{\\section}{
-  \\vspace{-4pt}\\scshape\\raggedright\\large
-}{}{0em}{}[\\color{black}\\titlerule \\vspace{-5pt}]
-
-\\pdfgentounicode=1
-
-\\newcommand{\\resumeItem}[1]{
-  \\item\\small{{#1 \\vspace{-2pt}}}
-}
-
-\\newcommand{\\resumeSubheading}[4]{
-  \\vspace{-2pt}\\item
-    \\begin{tabular*}{0.97\\textwidth}[t]{l@{\\extracolsep{\\fill}}r}
-      \\textbf{#1} & #2 \\\\
-      \\textit{\\small#3} & \\textit{\\small #4} \\\\
-    \\end{tabular*}\\vspace{-7pt}
-}
-
-\\newcommand{\\resumeProjectHeading}[2]{
-    \\item
-    \\begin{tabular*}{0.97\\textwidth}{l@{\\extracolsep{\\fill}}r}
-      \\small#1 & #2 \\\\
-    \\end{tabular*}\\vspace{-7pt}
-}
-
-\\newcommand{\\resumeSubItem}[1]{\\resumeItem{#1}\\vspace{-4pt}}
-\\renewcommand\\labelitemii{$\\vcenter{\\hbox{\\tiny$\\bullet$}}$}
-
-\\newcommand{\\resumeSubHeadingListStart}{\\begin{itemize}[leftmargin=0.15in, label={}]}
-\\newcommand{\\resumeSubHeadingListEnd}{\\end{itemize}}
-\\newcommand{\\resumeItemListStart}{\\begin{itemize}}
-\\newcommand{\\resumeItemListEnd}{\\end{itemize}\\vspace{-5pt}}
-
-════════════════════════════════════════════════════════════════
-CONTENT RULES — follow every rule, no exceptions:
-════════════════════════════════════════════════════════════════
-1. Start with \\begin{document} after the preamble.
-2. Header: center-aligned name in \\Huge\\scshape, then a single line of contact links separated by $|$.
-   - Use \\href{mailto:EMAIL}{EMAIL} for email.
-   - Use \\href{URL}{label} for LinkedIn, GitHub, Portfolio, LeetCode.
-3. Include ALL of these sections (if data exists):
-   Professional Summary | Technical Skills | Experience & Projects |
-   Education | Awards & Achievements | DSA Proficiency | Certifications | Extracurricular
-4. Section headers: \\section{Section Name}
-5. Experience & Projects: use \\resumeSubheading for internship/company roles; \\resumeProjectHeading for solo projects.
-   - Every entry must have \\resumeItemListStart … \\resumeItemListEnd with 2–3 bullet \\resumeItem{} lines.
-6. Technical Skills: use a \\begin{itemize}[leftmargin=0.15in, label={}] block with one \\item per category.
-7. Education: use \\resumeSubheading. Include GPA and any extra lines via \\resumeItemListStart.
-8. LaTeX special characters MUST be escaped: & → \\&, % → \\%, $ → \\$, # → \\#, _ → \\_, { → \\{, } → \\}.
-   Backslash itself → \\textbackslash{}.
-9. End with \\end{document}.
-10. Output ONLY the raw LaTeX source. No markdown fences, no explanation, no commentary.
-
+Output ONLY the plain cover letter text, properly structured with professional paragraph breaks. No markdown code blocks, no intro notes, and no commentary.
 `.trim();
 
   const userPrompt = `
-Here is the structured resume JSON. Use every field — do not skip any section that has data.
-
-${dataJson}
-
-Original resume text (for additional context only — do not copy raw text, use the JSON above):
+Applicant Resume Context:
 ${resumeText ? resumeText.slice(0, 3000) : ""}
 
-Now output the complete LaTeX document.
+Target Company: ${company}
+Target Role: ${roleName}
+Job Description:
+${jobDescription ? jobDescription.slice(0, 2000) : "A dynamic developer role needing strong technical skills and problem-solving abilities."}
+
+Tailored Data Reference:
+${JSON.stringify(tailoredData)}
+
+Output the custom-tailored cover letter now.
 `.trim();
 
   const raw = await callGroq(
@@ -598,12 +527,71 @@ Now output the complete LaTeX document.
       { role: "system", content: systemPrompt },
       { role: "user",   content: userPrompt   },
     ],
-    { temperature: 0.1, jsonMode: false, maxRetries: 2 }
+    { temperature: 0.3, jsonMode: false, maxRetries: 2 }
   );
 
-  // Strip any accidental markdown fences the model may wrap around the output
-  return raw
-    .replace(/^```(?:latex|tex)?\s*/i, "")
-    .replace(/\s*```\s*$/, "")
-    .trim();
-}
+  return raw.trim();
+}
+
+/**
+ * Recruiter Feature: AI-powered candidate ranker.
+ * Screens all candidates against the provided job description/keywords in a single batched call.
+ */
+export async function rankCandidatesWithAI(candidates, jobDescription) {
+  if (!candidates || candidates.length === 0) {
+    return { matches: [] };
+  }
+
+  const candidatesData = candidates.map(c => ({
+    id: c._id.toString(),
+    name: `${c.userId?.firstName || ''} ${c.userId?.lastName || ''}`.trim() || "Unknown Candidate",
+    summary: c.feedback?.summary || "",
+    // Pass normalized resume parts or parsed text snippet to keep prompt length reasonable
+    parsedSnippet: c.parsedText ? c.parsedText.slice(0, 1500) : ""
+  }));
+
+  const systemPrompt = `
+You are an expert AI recruiting assistant. Your job is to screen a pool of candidates against a job description.
+For each candidate, calculate a matchScore (integer between 0 and 100) and provide a concise suitability status and a 1-2 sentence explanation.
+
+Return STRICTLY a JSON object with this exact shape:
+{
+  "matches": [
+    {
+      "id": "candidate_id_here",
+      "matchScore": 85,
+      "suitability": "Strong Match", // Options: "Strong Match", "Good Match", "Potential Match", "Unsuitable"
+      "explanation": "Brief 1-2 sentence explanation of why they fit or what they lack."
+    }
+  ]
+}
+`.trim();
+
+  const userPrompt = `
+Job Description:
+${jobDescription}
+
+Candidate Pool:
+${JSON.stringify(candidatesData, null, 2)}
+`.trim();
+
+  const raw = await callGroq(
+    [
+      { role: "system", content: systemPrompt },
+      { role: "user",   content: userPrompt   },
+    ],
+    { temperature: 0.2, jsonMode: true, maxRetries: 2 }
+  );
+
+  try {
+    return parseJSONRobust(raw);
+  } catch (err) {
+    console.error("Failed to parse rankCandidatesWithAI response, trying repair:", err);
+    try {
+      return await repairJSON(raw);
+    } catch (repErr) {
+      console.error("JSON repair failed too:", repErr);
+      return { matches: [] };
+    }
+  }
+}

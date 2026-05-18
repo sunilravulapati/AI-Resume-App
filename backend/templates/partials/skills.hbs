@@ -1,0 +1,8 @@
+{{#if skills.length}}
+\section{Technical Skills}
+\begin{tabularx}{\textwidth}{@{} >{\bfseries}l X @{}}
+{{#each skills}}
+  {{this.label}} & {{this.value}} \\
+{{/each}}
+\end{tabularx}
+{{/if}}

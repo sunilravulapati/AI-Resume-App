@@ -38,7 +38,29 @@ const resumeSchema = new Schema({
     keywordMatchRate: { type: Number, min: 0, max: 100 },
     missingSkills:    [String],
     experienceGap:    String,
+
+    // Split feedback structures
+    studentFeedback: {
+      strengths:    [String],
+      improvements: [String],
+      summary:      String,
+    },
+    recruiterFeedback: {
+      greenFlags:       [String],
+      redFlags:         [String],
+      recruiterSummary: String,
+    }
   },
+
+  // ── Score Breakdown ────────────────────────────────────────────────────────
+  subScores: {
+    structure:       { type: Number, default: 0 },
+    impact:          { type: Number, default: 0 },
+    skillAlignment:  { type: Number, default: 0 },
+    complexity:      { type: Number, default: 0 },
+    professionalism: { type: Number, default: 0 },
+    skillProjectFit: { type: Number, default: 0 }
+  }
 
 }, { timestamps: true, strict: "throw", versionKey: false });
 
