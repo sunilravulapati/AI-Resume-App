@@ -3,7 +3,8 @@
 % ── PROJECTS ──────────────────────────────────────────────────────────────────
 \section{Projects}
 {{#each projects}}
-\noindent\textbf{ {{this.title}} }{{#if this.tech}} $|$ \textit{\small {{this.tech}} }{{/if}} \hfill \small {{this.meta}}
+\noindent\textbf{ {{this.title}} } \hfill \small {{this.meta}}
+{{#if this.tech}}\\{\footnotesize\textit{ {{this.tech}} }}{{/if}}
 \begin{itemize}
 {{#each this.bullets}}
   \item \small {{this}}
@@ -29,7 +30,7 @@
 % ── CERTIFICATIONS ────────────────────────────────────────────────────────────
 \section{Certifications}
 {{#each certifications}}
-\noindent{{#if this.url}}\textbf{\href{ {{this.url}} }{ {{this.title}} }}{{else}}\textbf{ {{this.title}} }{{/if}}{{#if this.org}} --- \textit{\small {{this.org}} }{{/if}} \hfill \small {{this.dates}}
+\noindent\textbf{ {{this.title}} }{{#if this.org}} --- \textit{\small {{this.org}} }{{/if}} \hfill \small {{this.dates}}{{#if this.url}} \\{\footnotesize \href{ {{this.url}} }{View Credential}}{{/if}}
 {{#unless @last}}\vspace{3pt}{{/unless}}
 {{/each}}
 {{/if}}

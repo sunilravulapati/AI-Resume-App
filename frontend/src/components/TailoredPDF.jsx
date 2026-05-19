@@ -90,8 +90,7 @@ const s = StyleSheet.create({
   sectionTitle: {
     fontSize:          8.7,
     fontFamily:        F.bold,
-    textTransform:     'uppercase',
-    letterSpacing:     1.2,
+    letterSpacing:     0.3,
     color:             C.ink,
     borderBottomWidth: 0.5,
     borderBottomColor: C.rule,
@@ -198,7 +197,7 @@ const ST = ({ children, style }) => <Text style={style || s.sectionTitle}>{child
 
 const Bul = ({ text, style, bulletStyle }) => (
   <View style={bulletStyle || s.bullet}>
-    <Text style={style ? [s.bulletDot, { fontSize: style[1]?.fontSize || 8.5 }] : s.bulletDot}>–</Text>
+    <Text style={style ? [s.bulletDot, { fontSize: style[1]?.fontSize || 8.2 }] : s.bulletDot}>–</Text>
     <Text style={style || s.bulletText}>{text}</Text>
   </View>
 );
@@ -306,7 +305,7 @@ export default function TailoredPDF({ tailoredData, parsedText = '', user, userL
   // Dynamic density adjustments to guarantee 100% stable single-page rendering
   const pageStyle         = [s.page, dense && { paddingTop: 16, paddingBottom: 16, paddingHorizontal: 22, fontSize: 7.9 }];
   const sectionStyle      = [s.section, dense && { marginBottom: 3 }];
-  const sectionTitleStyle = [s.sectionTitle, dense && { fontSize: 7.9, paddingBottom: 1.0, marginBottom: 2 }];
+  const sectionTitleStyle = [s.sectionTitle, dense && { fontSize: 7.9, letterSpacing: 0.2, paddingBottom: 1.0, marginBottom: 2 }];
   const skillRowStyle     = [s.skillRow, dense && { paddingVertical: 0.3 }];
   const skillLabelStyle   = [s.skillLabel, dense && { fontSize: 7.5, width: 100 }];
   const skillValueStyle   = [s.skillValue, dense && { fontSize: 7.5 }];
@@ -432,19 +431,19 @@ export default function TailoredPDF({ tailoredData, parsedText = '', user, userL
 
               return (
                 <View key={i} style={entryWrapStyle}>
-                  {/* Row 1: Project/Company name  ←→  Date */}
+                  {/* Row 1: Company/Project name  ←→  Date */}
                   <View style={s.entryTopRow}>
-                    <Text style={entryTitleStyle}>
-                      {displayTitle}
-                      {job.tech ? ` | ${job.tech}` : ''}
-                    </Text>
+                    <Text style={entryTitleStyle}>{displayTitle}</Text>
                     {date ? <Text style={entryDateStyle}>{date}</Text> : null}
                   </View>
 
-                  {/* Row 2: Role · Location */}
-                  {subLine ? (
+                  {/* Row 2: Role · Location · Tech */}
+                  {(subLine || job.tech) ? (
                     <View style={entrySubRowStyle}>
-                      <Text style={entryMetaStyle}>{subLine}</Text>
+                      <Text style={entryMetaStyle}>
+                        {subLine}{subLine && job.tech ? ' · ' : ''}
+                        {job.tech ? <Text style={[entryMetaStyle, { color: C.muted }]}>{job.tech}</Text> : null}
+                      </Text>
                     </View>
                   ) : null}
 
@@ -498,7 +497,7 @@ export default function TailoredPDF({ tailoredData, parsedText = '', user, userL
 
             {achievements.map((ach, i) => (
               <View key={`ach-${i}`}>
-                {ach.category ? <Text style={[s.achCategory, dense && { fontSize: 8.2, marginTop: 2, marginBottom: 1 }]}>{ach.category}</Text> : null}
+                {ach.category ? <Text style={[s.achCategory, dense && { fontSize: 7.9, marginTop: 2, marginBottom: 1 }]}>{ach.category}</Text> : null}
                 {(ach.bullets || []).map((b, j) => (
                   <Bul key={j} text={b} style={bulletTextStyle} bulletStyle={bulletStyle} />
                 ))}
@@ -527,7 +526,7 @@ export default function TailoredPDF({ tailoredData, parsedText = '', user, userL
                   <Text style={certTitleStyle}>{cert.title}</Text>
                   {cert.org ? <Text style={certOrgStyle}>{cert.org}</Text> : null}
                   {cert.url ? (
-                    <Link src={cert.url} style={[s.certUrl, dense && { fontSize: 7.0 }]}>{cert.url}</Link>
+                    <Link src={cert.url.startsWith('http') ? cert.url : `https://${cert.url}`} style={[s.certUrl, dense && { fontSize: 7.0 }]}>View Credential</Link>
                   ) : null}
                 </View>
                 {cert.dates ? <Text style={certDateStyle}>{cert.dates}</Text> : null}
@@ -542,7 +541,7 @@ export default function TailoredPDF({ tailoredData, parsedText = '', user, userL
             <ST style={sectionTitleStyle}>Extracurricular Activities</ST>
             {extracurricular.map((item, i) => (
               <View key={i}>
-                {item.title ? <Text style={[s.extraTitle, dense && { fontSize: 8.2, marginTop: 2, marginBottom: 1 }]}>{item.title}</Text> : null}
+                {item.title ? <Text style={[s.extraTitle, dense && { fontSize: 7.9, marginTop: 2, marginBottom: 1 }]}>{item.title}</Text> : null}
                 {(item.bullets || []).map((b, j) => (
                   <Bul key={j} text={b} style={bulletTextStyle} bulletStyle={bulletStyle} />
                 ))}

@@ -2,7 +2,7 @@
 \section{Experience}
 {{#each experience}}
 \noindent\textbf{ {{this.company}} }{{#if this.location}} \hfill \textit{\small {{this.location}} }{{/if}} \\
-\textbf{\small {{this.title}} }{{#if this.tech}} | \textit{\small {{this.tech}} }{{/if}} \hfill \small {{this.dates}}
+\textit{\small {{this.title}} }{{#if this.tech}} \hfill {\footnotesize {{this.tech}} }{{/if}}{{#if this.dates}} \hfill \small {{this.dates}}{{/if}}
 \begin{itemize}
 {{#each this.bullets}}
   \item \small {{this}}

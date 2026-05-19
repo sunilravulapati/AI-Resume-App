@@ -67,7 +67,7 @@ const moderatePreset = {
   arrayStretch: "1.06",
 
   sectionSpacingBefore: "9pt",
-  sectionSpacingAfter: "3pt",
+  sectionSpacingAfter: "4pt",
 
   itemSpacing: "3.5pt",
   bulletSpacing: "1.0pt",
@@ -92,7 +92,7 @@ const compactPreset = {
   arrayStretch: "1.00",
 
   sectionSpacingBefore: "6pt",
-  sectionSpacingAfter: "1.5pt",
+  sectionSpacingAfter: "2pt",
 
   itemSpacing: "1.5pt",
   bulletSpacing: "0.3pt",
