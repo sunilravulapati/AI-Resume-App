@@ -47,22 +47,27 @@ export function generateCopyText(tailoredData) {
   lines.push('═══════════════════════════════════════');
   lines.push('');
 
-  if (tailoredData?.tailoredSummary) {
+  const summary = tailoredData?.tailoredSummary || tailoredData?.summary || '';
+  const skills = tailoredData?.tailoredSkills || tailoredData?.skills || [];
+  const experience = tailoredData?.tailoredExperience || tailoredData?.experience || [];
+
+  if (summary) {
     lines.push('── PROFESSIONAL SUMMARY ──────────────');
-    lines.push(tailoredData.tailoredSummary);
+    lines.push(summary);
     lines.push('');
   }
 
-  if (tailoredData?.tailoredSkills?.length) {
+  if (skills?.length) {
+    const skillList = skills.map(s => typeof s === 'object' ? `${s.label}: ${s.value}` : String(s));
     lines.push('── TARGETED SKILLS ───────────────────');
-    lines.push(tailoredData.tailoredSkills.join(' • '));
+    lines.push(skillList.join(' • '));
     lines.push('');
   }
 
-  if (tailoredData?.tailoredExperience?.length) {
+  if (experience?.length) {
     lines.push('── TAILORED EXPERIENCE BULLETS ───────');
     lines.push('');
-    for (const exp of tailoredData.tailoredExperience) {
+    for (const exp of experience) {
       lines.push(`[ ${exp.title} ]`);
       for (const bullet of exp.bullets || []) {
         lines.push(`  • ${bullet}`);

@@ -19,6 +19,9 @@ export default function TailoredPreview({ data }) {
   if (!data) return null;
 
   const basics = data.basics || {};
+  const summary = data.tailoredSummary || data.summary || '';
+  const skills = data.tailoredSkills || data.skills || [];
+  const experience = data.tailoredExperience || data.experience || [];
 
   return (
     <div className="space-y-6">
@@ -38,18 +41,18 @@ export default function TailoredPreview({ data }) {
         </SectionBlock>
       )}
 
-      {data.tailoredSummary && (
+      {summary && (
         <SectionBlock title="Professional Summary">
           <div className="bg-[var(--bg-muted)] border border-[var(--border)] rounded-2xl p-5 text-sm font-medium text-[var(--text)] leading-relaxed shadow-sm">
-            {data.tailoredSummary}
+            {summary}
           </div>
         </SectionBlock>
       )}
 
-      {data.tailoredSkills?.length > 0 && (
+      {skills?.length > 0 && (
         <SectionBlock title="Targeted Skills">
           <div className="space-y-3">
-            {data.tailoredSkills.map((row, i) => (
+            {skills.map((row, i) => (
               <div key={i} className="flex flex-wrap items-start gap-2">
                 {row.label && (
                   <span className="text-xs font-bold text-[var(--text)] w-28 shrink-0">{row.label}</span>
@@ -70,10 +73,10 @@ export default function TailoredPreview({ data }) {
         </SectionBlock>
       )}
 
-      {data.tailoredExperience?.length > 0 && (
+      {experience?.length > 0 && (
         <SectionBlock title="Experience & Projects">
           <div className="space-y-3">
-            {data.tailoredExperience.map((exp, i) => (
+            {experience.map((exp, i) => (
               <div key={i} className="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-2xl p-5 shadow-sm hover:border-[var(--color-accent)] transition-colors focus-within:ring-2 focus-within:ring-[var(--color-accent)]">
                 <div className="flex justify-between gap-3 mb-3">
                   <h4 className="font-bold text-base text-[var(--text)]">{exp.title}</h4>

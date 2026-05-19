@@ -48,6 +48,16 @@ export function enforceLimitsForPdf(data) {
   if (!data || typeof data !== 'object') return data;
   const out = { ...data, basics: { ...(data.basics || {}) } };
 
+  if (!out.tailoredExperience && out.experience) {
+    out.tailoredExperience = out.experience;
+  }
+  if (!out.tailoredSkills && out.skills) {
+    out.tailoredSkills = out.skills;
+  }
+  if (!out.tailoredSummary && out.summary) {
+    out.tailoredSummary = out.summary;
+  }
+
   // Up to 4 experience/project entries, 4 bullets each
   if (Array.isArray(out.tailoredExperience)) {
     out.tailoredExperience = out.tailoredExperience.slice(0, 4).map((entry) => ({

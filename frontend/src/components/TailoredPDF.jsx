@@ -46,88 +46,87 @@ const F = {
 const s = StyleSheet.create({
   // ── Page ──────────────────────────────────────────────────────────────────
   page: {
-    paddingTop:        12,
-    paddingBottom:     10,
-    paddingHorizontal: 16,
+    paddingTop:        24,
+    paddingBottom:     24,
+    paddingHorizontal: 28,
     fontFamily:        F.roman,
-    fontSize:          8.2,
+    fontSize:          9.0,
     color:             C.body,
-    lineHeight:        1.15,
+    lineHeight:        1.22,
   },
 
   // ── Header ────────────────────────────────────────────────────────────────
-  header: { width: '100%', marginBottom: 3 },
+  header: { width: '100%', marginBottom: 4 },
   name: {
-    fontSize:     14,
+    fontSize:     16,
     fontFamily:   F.bold,
-    letterSpacing: 0.4,
+    letterSpacing: 0.5,
     color:        C.ink,
     textAlign:    'center',
-    marginBottom: 2,
+    marginBottom: 3,
   },
-  taglineWrap: { width: '100%', marginBottom: 2, paddingHorizontal: 6 },
+  taglineWrap: { width: '100%', marginBottom: 3, paddingHorizontal: 8 },
   tagline: {
-    fontSize:   7.2,
+    fontSize:   8.0,
     color:      C.mid,
     textAlign:  'center',
-    lineHeight: 1.2,
+    lineHeight: 1.25,
   },
   contactRow: {
     flexDirection:  'row',
     flexWrap:       'wrap',
     justifyContent: 'center',
-    gap:            3,
-    fontSize:       7.4,
+    gap:            4,
+    fontSize:       8.0,
     color:          C.mid,
   },
   link: { color: C.accent, textDecoration: 'none' },
   sep:  { color: '#cccccc' },
 
   // ── Section wrapper ───────────────────────────────────────────────────────
-  section: { marginBottom: 2 },
+  section: { marginBottom: 4 },
 
   // ── Section title ─────────────────────────────────────────────────────────
   sectionTitle: {
-    fontSize:          7.2,
+    fontSize:          9.0,
     fontFamily:        F.bold,
     textTransform:     'uppercase',
     letterSpacing:     1.2,
     color:             C.ink,
     borderBottomWidth: 0.5,
     borderBottomColor: C.rule,
-    paddingBottom:     1,
-    marginBottom:      1.5,
+    paddingBottom:     1.5,
+    marginBottom:      3,
   },
 
   // ── Skills ────────────────────────────────────────────────────────────────
   skillRow: {
     flexDirection:  'row',
-    paddingVertical:   0.3,
-    paddingHorizontal: 2,
+    paddingVertical:   0.5,
+    paddingHorizontal: 3,
     marginBottom:   0,
   },
   skillRowShaded: { backgroundColor: C.shade },
-  // FIX: skillLabel width reduced from 118 → 110 to give more room to value
-  skillLabel: { width: 110, fontFamily: F.bold, fontSize: 7.4, color: C.ink },
-  skillValue: { flex: 1, fontSize: 7.4, color: C.body },
+  skillLabel: { width: 110, fontFamily: F.bold, fontSize: 8.5, color: C.ink },
+  skillValue: { flex: 1, fontSize: 8.5, color: C.body },
 
   // ── Experience entry ──────────────────────────────────────────────────────
-  entryWrap: { marginBottom: 1.5 },
+  entryWrap: { marginBottom: 3 },
 
   entryTopRow: {
     flexDirection:  'row',
     justifyContent: 'space-between',
     alignItems:     'baseline',
-    marginBottom:   0.5,
+    marginBottom:   1,
   },
   entryTitle: {
-    fontSize:   8.2,
+    fontSize:   9.0,
     fontFamily: F.bold,
     color:      C.ink,
     flex:       1,
   },
   entryDate: {
-    fontSize:   7.0,
+    fontSize:   7.8,
     fontFamily: F.italic,
     color:      C.mid,
     marginLeft: 6,
@@ -135,59 +134,58 @@ const s = StyleSheet.create({
 
   entrySubRow: {
     flexDirection: 'row',
-    marginBottom:  1,
+    marginBottom:  2,
   },
   entryMeta: {
-    fontSize:   7.2,
+    fontSize:   8.0,
     fontFamily: F.italic,
     color:      C.mid,
   },
   entryTech: {
-    fontSize:   7.2,
+    fontSize:   8.0,
     fontFamily: F.italic,
     color:      C.muted,
   },
 
-  // Bullets — FIX: tighter spacing and slightly smaller font
-  bullet:    { flexDirection: 'row', marginBottom: 0.3, paddingLeft: 6 },
-  bulletDot: { width: 8, fontSize: 7.6, color: C.mid },
-  // FIX: lineHeight 1.27→1.2 recovers ~0.5pt per bullet line across the whole doc
-  bulletText: { flex: 1, fontSize: 7.6, color: C.body, lineHeight: 1.2 },
+  // Bullets
+  bullet:    { flexDirection: 'row', marginBottom: 0.8, paddingLeft: 6 },
+  bulletDot: { width: 8, fontSize: 8.5, color: C.mid },
+  bulletText: { flex: 1, fontSize: 8.5, color: C.body, lineHeight: 1.25 },
 
   // ── Education ─────────────────────────────────────────────────────────────
-  eduRow:  { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 0.5 },
+  eduRow:  { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 1 },
   eduLeft: { flex: 1 },
-  eduInst: { fontSize: 8.8, fontFamily: F.bold, color: C.ink },
-  eduDeg:  { fontSize: 8.0, fontFamily: F.italic, color: C.mid },
-  eduDet:  { fontSize: 7.6, color: C.mid, marginTop: 0.5 },
-  eduDate: { fontSize: 7.6, fontFamily: F.italic, color: C.mid, textAlign: 'right', minWidth: 72 },
+  eduInst: { fontSize: 9.0, fontFamily: F.bold, color: C.ink },
+  eduDeg:  { fontSize: 8.5, fontFamily: F.italic, color: C.mid },
+  eduDet:  { fontSize: 8.0, color: C.mid, marginTop: 1 },
+  eduDate: { fontSize: 8.0, fontFamily: F.italic, color: C.mid, textAlign: 'right', minWidth: 72 },
 
   // ── Awards ────────────────────────────────────────────────────────────────
-  awardRow:   { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 1.5 },
+  awardRow:   { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 },
   awardLeft:  { flex: 1 },
-  awardTitle: { fontSize: 8.4, fontFamily: F.bold, color: C.ink },
-  awardMeta:  { fontSize: 7.4, color: C.mid, marginTop: 0.5 },
-  awardDesc:  { fontSize: 7.6, color: C.body, marginTop: 0.5 },
-  awardDate:  { fontSize: 7.4, fontFamily: F.italic, color: C.mid, minWidth: 62, textAlign: 'right' },
+  awardTitle: { fontSize: 9.0, fontFamily: F.bold, color: C.ink },
+  awardMeta:  { fontSize: 8.0, color: C.mid, marginTop: 1 },
+  awardDesc:  { fontSize: 8.5, color: C.body, marginTop: 1 },
+  awardDate:  { fontSize: 8.0, fontFamily: F.italic, color: C.mid, minWidth: 62, textAlign: 'right' },
 
   // ── Achievements ──────────────────────────────────────────────────────────
-  achCategory: { fontSize: 8.2, fontFamily: F.bold, color: C.ink, marginBottom: 1.5, marginTop: 2 },
+  achCategory: { fontSize: 9.0, fontFamily: F.bold, color: C.ink, marginBottom: 2, marginTop: 3 },
 
   // ── Extracurricular ───────────────────────────────────────────────────────
-  extraTitle: { fontSize: 8.2, fontFamily: F.bold, color: C.ink, marginBottom: 1.5, marginTop: 2 },
+  extraTitle: { fontSize: 9.0, fontFamily: F.bold, color: C.ink, marginBottom: 2, marginTop: 3 },
 
   // ── Certifications ────────────────────────────────────────────────────────
-  certRow:   { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 1.5 },
+  certRow:   { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 },
   certLeft:  { flex: 1 },
-  certTitle: { fontSize: 8.4, fontFamily: F.bold, color: C.ink },
-  certOrg:   { fontSize: 7.4, fontFamily: F.italic, color: C.mid, marginTop: 0.5 },
-  certUrl:   { fontSize: 6.8, color: C.accent, marginTop: 0.5, textDecoration: 'none' },
-  certDate:  { fontSize: 7.4, fontFamily: F.italic, color: C.mid, minWidth: 72, textAlign: 'right' },
+  certTitle: { fontSize: 9.0, fontFamily: F.bold, color: C.ink },
+  certOrg:   { fontSize: 8.0, fontFamily: F.italic, color: C.mid, marginTop: 1 },
+  certUrl:   { fontSize: 7.5, color: C.accent, marginTop: 1, textDecoration: 'none' },
+  certDate:  { fontSize: 8.0, fontFamily: F.italic, color: C.mid, minWidth: 72, textAlign: 'right' },
 
   // ── DSA / plain ───────────────────────────────────────────────────────────
-  plain: { fontSize: 7.6, color: C.body, lineHeight: 1.25 },
+  plain: { fontSize: 8.5, color: C.body, lineHeight: 1.25 },
 
-  contactWrap: { marginBottom: 2 },
+  contactWrap: { marginBottom: 3 },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
