@@ -1,11 +1,13 @@
 {{#if education.length}}
 \section{Education}
 {{#each education}}
-\noindent\textbf{ {{this.institution}} } \hfill {{this.dates}} \\
+\noindent\textbf{ {{this.institution}} } \hfill \small {{this.dates}} \\
 \textit{\small {{this.degree}} }{{#if this.gpa}} \hfill \small GPA: {{this.gpa}}{{/if}}
-{{#if this.extras}}
-\\\small {{this.extras}}
+{{#if this.extra.length}}
+\\\small \textit{Relevant Coursework / Honors: {{#each this.extra}}{{this}}{{#unless @last}}, {{/unless}}{{/each}} }
+{{else if this.extras}}
+\\\small \textit{Relevant Coursework / Honors: {{this.extras}} }
 {{/if}}
-{{#unless @last}}\vspace{2pt}{{/unless}}
+{{#unless @last}}\vspace{ {{../theme.designSystem.itemSpacing}} }{{/unless}}
 {{/each}}
 {{/if}}

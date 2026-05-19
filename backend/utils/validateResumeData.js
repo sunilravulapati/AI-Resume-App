@@ -8,7 +8,9 @@
 const LIMITS = {
   MAX_SUMMARY_CHARS: 400,
   MAX_EXPERIENCES: 5,
+  MAX_PROJECTS: 4,
   MAX_BULLETS_PER_EXP: 3,
+  MAX_BULLETS_PER_PROJECT: 3,
   MAX_SKILL_ROWS: 8,
   MAX_EDUCATION: 2,
   MAX_AWARDS: 4,
@@ -36,6 +38,16 @@ export function validateResumeData(data) {
     });
   }
 
+  // Projects
+  if (Array.isArray(data.projects)) {
+    data.projects = data.projects.slice(0, LIMITS.MAX_PROJECTS);
+    data.projects.forEach((proj) => {
+      if (Array.isArray(proj.bullets)) {
+        proj.bullets = proj.bullets.slice(0, LIMITS.MAX_BULLETS_PER_PROJECT);
+      }
+    });
+  }
+
   // Skills
   if (Array.isArray(data.skills)) {
     data.skills = data.skills.slice(0, LIMITS.MAX_SKILL_ROWS);
@@ -57,6 +69,9 @@ export function validateResumeData(data) {
   }
 
   // DSA Proficiency
+  if (Array.isArray(data.dsaProfiles)) {
+    data.dsaProfiles = data.dsaProfiles.slice(0, LIMITS.MAX_DSA_LINES);
+  }
   if (Array.isArray(data.dsaProficiency)) {
     data.dsaProficiency = data.dsaProficiency.slice(0, LIMITS.MAX_DSA_LINES);
   }

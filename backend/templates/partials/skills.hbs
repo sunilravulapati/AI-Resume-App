@@ -1,8 +1,11 @@
 {{#if skills.length}}
 \section{Technical Skills}
-\begin{tabularx}{\textwidth}{@{} >{\bfseries}l X @{}}
+\begingroup
+\renewcommand{\arraystretch}{ {{theme.designSystem.arrayStretch}} }
+\begin{tabularx}{\textwidth}{@{} p{2.3cm} X @{}}
 {{#each skills}}
-  {{this.label}} & {{this.value}} \\
+  \textbf{ {{this.label}} } & \small {{this.value}} \\
 {{/each}}
 \end{tabularx}
+\endgroup
 {{/if}}

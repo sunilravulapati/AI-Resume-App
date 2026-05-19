@@ -40,97 +40,89 @@ export function resolveDisplayName(basicsName = '', resumeText = '', user = null
 
 /**
  * Enforce content limits for PDF rendering so the resume fits on a single page.
- * * FIX: We maintain the expanded word counts (horizontal space) to avoid mid-sentence
- * truncation, but strictly reduce array lengths (vertical space) to prevent the
- * renderer from squishing text or overflowing the single page.
+ * Maintains expanded word counts (horizontal space) to avoid mid-sentence
+ * truncation, while strictly reducing array lengths (vertical space) to prevent
+ * the renderer from squishing text or overflowing the single page.
  */
 export function enforceLimitsForPdf(data) {
   if (!data || typeof data !== 'object') return data;
   const out = { ...data, basics: { ...(data.basics || {}) } };
 
-  // MAX 3 experiences to ensure it fits on one page vertically
+  // Up to 4 experience/project entries, 4 bullets each
   if (Array.isArray(out.tailoredExperience)) {
-    out.tailoredExperience = out.tailoredExperience.slice(0, 3).map((entry) => ({
+    out.tailoredExperience = out.tailoredExperience.slice(0, 4).map((entry) => ({
       ...entry,
-      title:   trimWords(entry.title   || '', 12),
-      tech:    trimWords(entry.tech    || '', 12),
-      meta:    trimWords(entry.meta    || '', 14),
-      bullets: (entry.bullets || []).slice(0, 2).map((b) => trimWords(b, 16)),
+      title:   trimWords(entry.title   || '', 18),
+      tech:    trimWords(entry.tech    || '', 24),
+      meta:    trimWords(entry.meta    || '', 20),
+      bullets: (entry.bullets || []).slice(0, 4).map((b) => trimWords(b, 35)),
     }));
   }
 
   if (out.tailoredSummary) {
-    out.tailoredSummary = trimWords(out.tailoredSummary, 32);
+    out.tailoredSummary = trimWords(out.tailoredSummary, 65);
   }
 
-  // MAX 5 skill categories to save vertical space
+  // Up to 6 skill categories
   if (Array.isArray(out.tailoredSkills)) {
-    out.tailoredSkills = out.tailoredSkills.slice(0, 5).map((row) => ({
-      label: trimWords(row.label || '', 4),
-      value: trimWords(row.value || '', 14),
+    out.tailoredSkills = out.tailoredSkills.slice(0, 6).map((row) => ({
+      label: trimWords(row.label || '', 8),
+      value: trimWords(row.value || '', 24),
     }));
   }
 
+  // Up to 3 education entries
   if (Array.isArray(out.education)) {
-    out.education = out.education.slice(0, 2).map((edu) => ({
+    out.education = out.education.slice(0, 3).map((edu) => ({
       ...edu,
-      institution: trimWords(edu.institution || '', 8),
-      degree:      trimWords(edu.degree      || '', 12),
-      extra:       (edu.extra || []).slice(0, 2).map((e) => trimWords(e, 12)),
+      institution: trimWords(edu.institution || '', 12),
+      degree:      trimWords(edu.degree      || '', 16),
+      extra:       (edu.extra || []).slice(0, 3).map((e) => trimWords(e, 18)),
     }));
   }
 
-  // MAX 3 awards (4 pushes standard templates to 2 pages or causes squishing)
+  // Up to 4 awards
   if (Array.isArray(out.awards)) {
-    out.awards = out.awards.slice(0, 2).map((a) => ({
+    out.awards = out.awards.slice(0, 4).map((a) => ({
       ...a,
-      title: trimWords(a.title || '', 14),
-      desc:  a.desc ? trimWords(a.desc, 20) : '',
+      title: trimWords(a.title || '', 20),
+      desc:  a.desc ? trimWords(a.desc, 30) : '',
     }));
   }
 
-  // Smart Merge: achievements and DSA
-  // We limit to either 2 achievement bullets OR 3 DSA lines to prevent 
-  // multiple small sections from eating up vertical heading space.
-  const achBullets = (out.achievements || []).flatMap((a) => a.bullets || []).slice(0, 2);
-  const dsaLines = (out.dsaProficiency || []).slice(0, 1)
-
-  const dsaInAchievements = achBullets.some((b) =>
-    /leetcode|codechef|codeforces|gfg|geeksforgeeks|hackerrank|dsa/i.test(b)
-  );
-
-  if (dsaLines.length > 0 && dsaInAchievements) {
-    out.achievements = [];
-    out.dsaProficiency = dsaLines;
-  } else if (achBullets.length) {
-    out.achievements = [{ category: 'Additional Achievements', bullets: achBullets }];
-    out.dsaProficiency = [];
-  } else if (dsaLines.length) {
-    out.dsaProficiency = dsaLines;
-    out.achievements = [];
+  // FIX: Preserve original achievement category names instead of always
+  // overwriting with the hardcoded 'Additional Achievements' label.
+  // Only limit bullets per category and cap total categories.
+  if (Array.isArray(out.achievements) && out.achievements.length > 0) {
+    out.achievements = out.achievements.slice(0, 2).map((a) => ({
+      ...a,
+      bullets: (a.bullets || []).slice(0, 4).map((b) => trimWords(b, 30)),
+    }));
   } else {
     out.achievements = [];
-    out.dsaProficiency = [];
   }
 
-  // MAX 2 certifications
+  // Up to 3 DSA lines
+  out.dsaProficiency = (out.dsaProficiency || []).slice(0, 3);
+
+  // Up to 4 certifications
   if (Array.isArray(out.certifications)) {
-    out.certifications = out.certifications.slice(0, 2).map((c) => ({
+    out.certifications = out.certifications.slice(0, 4).map((c) => ({
       ...c,
-      title: trimWords(c.title || '', 12),
+      title: trimWords(c.title || '', 18),
     }));
   }
 
-  // MAX 1 extracurricular activity
+  // Up to 3 extracurricular activities
   if (Array.isArray(out.extracurricular)) {
-    out.extracurricular = out.extracurricular.slice(0, 1).map((item) => ({
+    out.extracurricular = out.extracurricular.slice(0, 3).map((item) => ({
       ...item,
-      title:   trimWords(item.title || '', 8),
-      bullets: (item.bullets || []).slice(0, 1).map((b) => trimWords(b, 25)),
+      title:   trimWords(item.title || '', 12),
+      bullets: (item.bullets || []).slice(0, 3).map((b) => trimWords(b, 35)),
     }));
   }
 
-  if (out.languages) out.languages = trimWords(out.languages, 14);
+  if (out.languages) out.languages = trimWords(out.languages, 20);
 
   return out;
 }

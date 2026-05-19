@@ -111,6 +111,19 @@ export function enforceLimits(data, jobDescription = "") {
 
   const jdKeywords = extractJDKeywords(jobDescription);
 
+  // 1. Experience
+  if (Array.isArray(data.experience)) {
+    data.experience = data.experience.slice(0, 5).map((entry) => ({
+      ...entry,
+      title: (entry.title || "").trim(),
+      company: (entry.company || "").trim(),
+      location: (entry.location || "").trim(),
+      dates: (entry.dates || "").trim(),
+      tech: (entry.tech || "").trim(),
+      bullets: (entry.bullets || []).slice(0, 3).map((b) => (b || "").trim()),
+    }));
+  }
+
   if (Array.isArray(data.tailoredExperience)) {
     // Score for JD relevance but preserve ALL roles (don't silently drop chronological ones).
     // Instead: sort most-relevant first, keep up to 5, always retain the most recent role.
@@ -137,18 +150,40 @@ export function enforceLimits(data, jobDescription = "") {
       }));
   }
 
+  // 2. Projects
+  if (Array.isArray(data.projects)) {
+    data.projects = data.projects.slice(0, 4).map((entry) => ({
+      ...entry,
+      title: (entry.title || "").trim(),
+      tech: (entry.tech || "").trim(),
+      meta: (entry.meta || "").trim(),
+      bullets: (entry.bullets || []).slice(0, 3).map((b) => (b || "").trim()),
+    }));
+  }
+
+  // 3. Summary
+  if (data.summary) {
+    data.summary = (data.summary || "").trim();
+  }
   if (data.tailoredSummary) {
     data.tailoredSummary = (data.tailoredSummary || "").trim();
   }
 
+  // 4. Skills
+  if (Array.isArray(data.skills)) {
+    data.skills = data.skills.slice(0, 8).map((row) => ({
+      label: (row.label || "").trim(),
+      value: (row.value || "").trim(),
+    }));
+  }
   if (Array.isArray(data.tailoredSkills)) {
-    // Expanded to 8 rows so infrastructure/tools skills aren't dropped
     data.tailoredSkills = data.tailoredSkills.slice(0, 8).map((row) => ({
       label: (row.label || "").trim(),
       value: (row.value || "").trim(),
     }));
   }
 
+  // 5. Education
   if (Array.isArray(data.education)) {
     data.education = data.education.slice(0, 2).map((edu) => ({
       ...edu,
@@ -158,6 +193,7 @@ export function enforceLimits(data, jobDescription = "") {
     }));
   }
 
+  // 6. Awards
   if (Array.isArray(data.awards)) {
     data.awards = data.awards.slice(0, 3).map((a) => ({
       ...a,
@@ -166,6 +202,7 @@ export function enforceLimits(data, jobDescription = "") {
     }));
   }
 
+  // 7. Achievements
   if (Array.isArray(data.achievements)) {
     const allBullets = data.achievements
       .flatMap((a) => a.bullets || [])
@@ -176,6 +213,7 @@ export function enforceLimits(data, jobDescription = "") {
       : [];
   }
 
+  // 8. Certifications
   if (Array.isArray(data.certifications)) {
     data.certifications = data.certifications.slice(0, 3).map((c) => ({
       ...c,
@@ -183,12 +221,19 @@ export function enforceLimits(data, jobDescription = "") {
     }));
   }
 
+  // 9. DSA Proficiency
   if (Array.isArray(data.dsaProficiency)) {
     data.dsaProficiency = data.dsaProficiency
       .slice(0, 3)
       .map((l) => (l || "").trim());
   }
+  if (Array.isArray(data.dsaProfiles)) {
+    data.dsaProfiles = data.dsaProfiles
+      .slice(0, 3)
+      .map((l) => (l || "").trim());
+  }
 
+  // 10. Extracurricular
   if (Array.isArray(data.extracurricular)) {
     data.extracurricular = data.extracurricular.slice(0, 1).map((item) => ({
       ...item,

@@ -1,35 +1,63 @@
+{{#if projects.length}}
+\section{Projects}
+{{#each projects}}
+\noindent\textbf{ {{this.title}} }{{#if this.tech}} $|$ \textit{\small {{this.tech}} }{{/if}} \hfill \small {{this.meta}}
+\begin{itemize}
+{{#each this.bullets}}
+  \item \small {{this}}
+{{/each}}
+\end{itemize}
+{{#unless @last}}\vspace{ {{../theme.designSystem.itemSpacing}} }{{/unless}}
+{{/each}}
+{{/if}}
+
 {{#if awards.length}}
 \section{Awards \& Achievements}
-\begin{itemize}
 {{#each awards}}
-  \item \small \textbf{ {{this.title}} }{{#if this.date}} \hfill {{this.date}}{{/if}}{{#if this.desc}} --- {{this.desc}}{{/if}}
+\noindent\textbf{ {{this.title}} }{{#if this.date}} \hfill \small {{this.date}}{{/if}} \\
+{{#if this.org}}\textit{\small {{this.org}} }{{/if}}{{#if this.desc}} --- \small {{this.desc}}{{/if}}
+{{#unless @last}}\vspace{ {{../theme.designSystem.itemSpacing}} }{{/unless}}
 {{/each}}
-\end{itemize}
 {{/if}}
+
 {{#if certifications.length}}
 \section{Certifications}
-\begin{itemize}
 {{#each certifications}}
-  \item \small \textbf{ {{this.title}} }{{#if this.org}} --- {{this.org}}{{/if}}{{#if this.dates}} \hfill {{this.dates}}{{/if}}
+\noindent{{#if this.url}}\textbf{\href{ {{this.url}} }{ {{this.title}} }}{{else}}\textbf{ {{this.title}} }{{/if}}{{#if this.org}} --- \textit{\small {{this.org}} }{{/if}} \hfill \small {{this.dates}}
+{{#unless @last}}\vspace{3pt}{{/unless}}
+{{/each}}
+{{/if}}
+
+{{#if dsaProfiles.length}}
+\section{DSA Proficiency \& Competitive Programming}
+\begin{itemize}
+{{#each dsaProfiles}}
+  \item \small {{this}}
 {{/each}}
 \end{itemize}
-{{/if}}
-{{#if dsaProficiency.length}}
-\section{DSA Proficiency}
+{{else if dsaProficiency.length}}
+\section{DSA Proficiency \& Competitive Programming}
 \begin{itemize}
 {{#each dsaProficiency}}
   \item \small {{this}}
 {{/each}}
 \end{itemize}
 {{/if}}
+
 {{#if extracurricular.length}}
 \section{Extracurricular Activities}
 {{#each extracurricular}}
-{{#if this.title}}\noindent\textbf{\small {{this.title}} }\\{{/if}}
+\noindent\textbf{ {{this.title}} }{{#if this.org}} --- \textit{\small {{this.org}} }{{/if}}{{#if this.dates}} \hfill \small {{this.dates}}{{/if}}
 \begin{itemize}
 {{#each this.bullets}}
   \item \small {{this}}
 {{/each}}
 \end{itemize}
+{{#unless @last}}\vspace{ {{../theme.designSystem.itemSpacing}} }{{/unless}}
 {{/each}}
+{{/if}}
+
+{{#if languages}}
+\section{Languages}
+\noindent \small \textbf{Languages:} {{languages}}
 {{/if}}

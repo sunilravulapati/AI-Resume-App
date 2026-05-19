@@ -1,13 +1,13 @@
 {{#if experience.length}}
 \section{Experience}
 {{#each experience}}
-\noindent\textbf{ {{this.title}} } \hfill {{this.dates}} \\
-\textit{\small {{this.company}}{{#if this.location}}, {{this.location}}{{/if}} }{{#if this.tech}} \hfill \textit{\small {{this.tech}} }{{/if}}
+\noindent\textbf{ {{this.company}} }{{#if this.location}} \hfill \textit{\small {{this.location}} }{{/if}} \\
+\textbf{\small {{this.title}} }{{#if this.tech}} | \textit{\small {{this.tech}} }{{/if}} \hfill \small {{this.dates}}
 \begin{itemize}
 {{#each this.bullets}}
   \item \small {{this}}
 {{/each}}
 \end{itemize}
-{{#unless @last}}\vspace{1pt}{{/unless}}
+{{#unless @last}}\vspace{ {{../theme.designSystem.itemSpacing}} }{{/unless}}
 {{/each}}
 {{/if}}

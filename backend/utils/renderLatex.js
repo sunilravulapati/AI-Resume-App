@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import Handlebars from "handlebars";
+import { getDesignTokens, countResumeElements } from "./designSystem.js";
 
 // Theme registry — lazy loaded
 const themeCache = {};
@@ -41,6 +42,8 @@ function registerPartials(hbs) {
  */
 export async function renderLatex(data, themeName = "classic") {
   const theme = await loadTheme(themeName);
+  const totalElements = countResumeElements(data);
+  const designTokens = getDesignTokens(themeName, totalElements);
 
   // Fresh Handlebars instance to avoid partial collisions
   const hbs = Handlebars.create();
@@ -57,7 +60,10 @@ export async function renderLatex(data, themeName = "classic") {
   // Merge theme config with resume data
   const context = {
     ...data,
-    theme,
+    theme: {
+      ...theme,
+      designSystem: designTokens
+    },
   };
 
   return compiled(context);

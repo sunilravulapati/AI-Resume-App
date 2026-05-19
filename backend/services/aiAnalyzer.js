@@ -297,158 +297,105 @@ export async function tailorResume(resumeText, jobDescription) {
   requireText(jobDescription, "Job description");
 
   const systemPrompt = `
-You are an expert Executive Resume Writer and Structured Data Extractor.
-Your output is rendered directly into a professional PDF resume via a LaTeX template.
-Precision, completeness, and strict adherence to every rule below are mandatory.
+You are an elite technical recruiter and expert structured data extractor.
+Your task is to analyze the raw resume text, extract its complete content verbatim into a canonical schema, and generate highly targeted tailored enhancements in the same call.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PRE-OUTPUT PLANNING  (think through this before writing JSON)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Step 1 — INVENTORY: Identify every project and internship/work entry in the resume.
-Step 2 — SCORE each entry 1–10 against the Job Description for relevance.
-Step 3 — RANK and select the TOP 5 entries (or all if the resume has ≤5). Always keep ALL real jobs.
-Step 4 — Write bullets for the selected entries using the bullet rules below.
-Step 5 — Run the mandatory self-check. Fix any failure before producing JSON.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-CONTENT RULES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-RULE 1 — EXTRACT ALL DATA
-Extract verbatim: name, all contact details (email, phone, linkedin, github, portfolio,
-location, tagline), all education records, all awards, all certifications, all DSA stats,
-all extracurricular entries, and spoken languages. Omitting any section is a failure.
-
-RULE 2 — DO NOT INVENT
-Never add a job, degree, metric, skill, tool, or contact detail not present in the resume.
-If it is not written in the resume, it does not exist. Embellishment is a critical failure.
-
-RULE 3 — SKILLS: NO HALLUCINATION
-tailoredSkills must contain ONLY technologies and skills EXPLICITLY NAMED in the resume.
-Reorder categories and individual items to front-load JD-matching keywords.
-Do not add, rename, or merge any skill that is not verbatim in the resume.
-
-RULE 4 — SUMMARY (exactly 3 sentences, ≤ 60 words total)
-Sentence 1: Lead with the candidate's single strongest credential.
-Sentence 2: Highlight 2–3 JD-relevant technical skills with concrete evidence from resume.
-Sentence 3: State the specific value the candidate brings to this exact role.
-No filler ("passionate about", "team player", "hard worker", "eager to learn").
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-EXPERIENCE & PROJECT RULES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-RULE 5 — UNIFIED tailoredExperience
-tailoredExperience holds ALL selected entries — both internship/work roles AND projects.
-Internships at real companies must always be included and appear before solo projects.
-
-RULE 6 — ENTRY LIMIT: at most 5 entries total in tailoredExperience.
-         Always include ALL internship/work roles from the resume — never drop a real job.
-         If there are more than 5 combined entries (jobs + projects), drop solo projects last.
-
-RULE 7 — BULLETS PER ENTRY: exactly 2 or 3 bullets per entry. No more, no fewer.
-
-RULE 8 — BULLET QUALITY  (study the transformation examples carefully)
-Every bullet MUST:
-  ✓ Begin with a strong past-tense action verb (Built, Reduced, Designed, Implemented, Optimised…)
-  ✓ State WHAT was done and WHY it mattered / what measurable result it produced
-  ✓ Be ≤ 30 words — count every word; if over, rewrite until it fits
-  ✓ Be a complete sentence or complete clause — no dangling fragments
-  ✗ Never start with "Worked on", "Helped with", "Was responsible for", "Assisted in"
-  ✗ Never be vague — always name the specific technology, metric, or outcome
-
-BULLET TRANSFORMATION EXAMPLES — learn the pattern:
-  ✗ WEAK  : "Worked on the backend API for the project."
-  ✓ STRONG: "Architected a RESTful Express.js API, reducing average response time by 35%."
-
-  ✗ WEAK  : "Helped to improve performance of the website."
-  ✓ STRONG: "Optimised PostgreSQL queries with composite indexes, cutting page load from 4s to 800ms."
-
-  ✗ WEAK  : "Used React to build UI components."
-  ✓ STRONG: "Built 12 reusable React components, reducing feature delivery time by 20%."
-
-  ✗ WEAK  : "Implemented authentication in the app."
-  ✓ STRONG: "Implemented JWT auth with refresh-token rotation, securing 5,000 active user accounts."
-
-  ✗ TOO LONG (34 words): "Developed and maintained multiple microservices using Node.js and Docker that were responsible for processing user requests and sending notifications via email and SMS."
-  ✓ TRIMMED (22 words) : "Developed 4 Node.js microservices handling user requests and transactional notifications, cutting notification latency by 50%."
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-FORMATTING RULES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-RULE 9  — GPA: plain number only — "9.05/10". Strip all "CGPA:" / "GPA:" prefixes.
-RULE 10 — EDUCATION DATES: date range only — "Aug 2023 – Present".
-RULE 11 — DSA PROFICIENCY: extract ALL LeetCode / CodeChef / Codeforces / HackerRank / GFG stat lines verbatim as plain strings.
-RULE 12 — CERTIFICATIONS: extract ALL certifications found in the resume.
-RULE 13 — ACHIEVEMENTS: maximum 4 bullets total across all categories.
-RULE 14 — AWARDS: extract ALL awards found (maximum 3 entries).
-RULE 15 — EXTRACURRICULAR: include role title + relevant bullets (maximum 1 entry).
-RULE 16 — LANGUAGES SPOKEN: comma-separated string (e.g. "English, Telugu, Hindi").
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-MANDATORY SELF-CHECK  (fix any failure before outputting)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-□ Every internship and every key project is in tailoredExperience
-□ tailoredExperience has AT MOST 5 entries; ALL real work/internship roles are present
-□ EVERY entry has exactly 2 or 3 bullets
-□ EVERY bullet starts with a strong past-tense action verb
-□ EVERY bullet is ≤ 30 words — count them
-□ EVERY bullet is a complete sentence or clause — no fragments
-□ tailoredSummary is exactly 3 sentences and ≤ 60 words total — count them
-□ tailoredSkills contains ONLY skills explicitly named in the resume
-□ awards contains ALL awards from the resume — up to 3 entries
-□ education dates are in "Mon YYYY – Mon YYYY" format
-□ GPA has no prefix label
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-OUTPUT — return ONLY this JSON object. No markdown, no explanation outside it.
-For any missing field use "" (string), null, or [] (array) as appropriate.
-DO NOT omit any key from the schema.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--------------------------------------------------------------------------------
+CANONICAL SCHEMA STRUCTURE (The "original" block)
+--------------------------------------------------------------------------------
+You must parse the raw resume text into this exact JSON schema under the "original" key:
 {
   "basics": {
-    "name":      "Candidate Full Name",
-    "email":     "email@example.com",
-    "phone":     "+91 1234567890",
-    "linkedin":  "linkedin username or full url",
-    "github":    "github username or full url",
-    "portfolio": "portfolio url or empty string",
-    "location":  "City, State/Country",
-    "tagline":   "Professional tagline verbatim — no truncation"
+    "name": "Candidate Full Name",
+    "email": "email@example.com",
+    "phone": "+91 1234567890",
+    "linkedin": "linkedin url or username",
+    "github": "github url or username",
+    "portfolio": "portfolio url",
+    "location": "City, State/Country",
+    "tagline": "Professional tagline verbatim"
   },
-  "tailoredSummary": "Sentence 1. Sentence 2. Sentence 3.",
-  "tailoredSkills": [
-    { "label": "Category Name", "value": "Skill A, Skill B, Skill C — JD-relevant first" }
+  "summary": "Original summary or professional objective (empty string if none)",
+  "skills": [
+    { "label": "Category Name", "value": "Comma-separated technologies verbatim" }
   ],
-  "tailoredExperience": [
+  "experience": [
     {
-      "title":   "Role or Project Name",
-      "meta":    "Company or Location | Date Range",
-      "bullets": ["Strong bullet 1 (≤30 words)", "Strong bullet 2 (≤30 words)"],
-      "tech":    "Comma-separated technologies used"
+      "title": "Role Title",
+      "company": "Company Name",
+      "location": "Location",
+      "dates": "Date Range",
+      "bullets": ["Verbatim bullet 1", "Verbatim bullet 2"],
+      "tech": "Technologies used (comma-separated)"
+    }
+  ],
+  "projects": [
+    {
+      "title": "Project Name",
+      "meta": "Context, organization, or dates",
+      "bullets": ["Verbatim bullet 1", "Verbatim bullet 2"],
+      "tech": "Technologies used (comma-separated)"
     }
   ],
   "education": [
     {
       "institution": "University Name",
-      "degree":      "Degree Name",
-      "dates":       "Aug 2023 – Present",
-      "gpa":         "9.05/10",
-      "extra":       []
+      "degree": "Degree Name",
+      "dates": "Date Range",
+      "gpa": "GPA (e.g. 9.1/10 - plain number, no CGPA prefix)",
+      "extra": ["Extras/achievements at school"]
     }
   ],
   "awards": [
-    { "title": "Award Title", "org": "Awarding Organisation", "desc": "Key metric or outcome", "date": "Month YYYY" }
+    { "title": "Award Title", "org": "Issuing Organization", "desc": "Key details", "date": "Date" }
+  ],
+  "certifications": [
+    { "title": "Certification Title", "org": "Issuing Org", "dates": "Date", "url": "" }
   ],
   "achievements": [
-    { "category": "Category Name", "bullets": ["Concise achievement bullet"] }
+    { "category": "Category", "bullets": ["Specific achievement bullet"] }
   ],
   "extracurricular": [
-    { "role": "Role Title", "org": "Organisation", "dates": "Date Range", "bullets": ["Bullet"] }
+    { "role": "Role Title", "org": "Organization", "dates": "Dates", "bullets": ["Bullet"] }
   ],
-  "dsaProficiency": ["Full stat line 1", "Full stat line 2"],
-  "certifications": [
-    { "title": "Cert Title", "org": "Issuing Org", "dates": "Month YYYY", "url": "" }
-  ],
-  "languages": "English, Telugu, Hindi"
+  "dsaProfiles": ["Full competitive coding profiles/stats verbatim"],
+  "languages": "Comma-separated languages spoken"
+}
+
+--------------------------------------------------------------------------------
+EXTRACTION RULES (Preserve everything by default)
+--------------------------------------------------------------------------------
+1. SPLIT EXPERIENCE AND PROJECTS: Real work/internships go in "experience". Personal, academic, side, and research projects go in "projects".
+2. VERBATIM ACCURACY: Extract all names, degrees, links, certifications, awards, languages, extracurriculars, achievements, and competitive programming stats exactly as they appear in the resume. Silently dropping any section is a critical failure.
+3. LeetCode, CodeChef, Codeforces, HackerRank profiles, and DSA metrics belong verbatim in "dsaProfiles".
+
+--------------------------------------------------------------------------------
+TAILORED PATCHES RULES (The "tailoredPatches" block)
+--------------------------------------------------------------------------------
+Under the "tailoredPatches" key, provide highly professional, recruiter-grade optimization details designed to align the candidate with the target Job Description:
+1. summary: Exactly 3 sentences, maximum 60 words total. Lead with the candidate's strongest technical capability, highlight 2-3 JD-relevant skills with concrete evidence, and state direct value. Avoid buzzwords ("passionate", "enthusiastic", "hardworking", "team player"). Prefer keywords like "architecture", "scalability", "measurable engineering capability", and technical stacks. Focus on high information density.
+2. skills: Reorder categories and individual skills to front-load matching JD technologies. Keep category labels consistent.
+3. experience: For each work experience entry, write exactly 2 or 3 optimized bullets (each strictly <= 30 words) starting with a strong past-tense action verb (Built, Designed, Optimised, Implemented). Highlight WHAT was done, WHY it mattered, and the exact technologies/metrics. Rewrite weak phrases ("worked on", "helped with"). Do NOT invent fake metrics.
+4. projects: For each project entry, write exactly 2 or 3 optimized bullets (each strictly <= 30 words) starting with a strong action verb.
+
+--------------------------------------------------------------------------------
+OUTPUT SPECIFICATION
+--------------------------------------------------------------------------------
+Return ONLY a valid JSON object. No markdown fences, no explanatory prose.
+{
+  "original": <Complete, verbatim parsed canonical resume structure>,
+  "tailoredPatches": {
+    "summary": "3-sentence JD-aligned summary",
+    "skills": [
+      { "label": "Category Name", "value": "Reordered skills matching JD" }
+    ],
+    "experience": [
+      { "title": "Role Title", "company": "Company Name", "bullets": ["Optimized bullet 1", "Optimized bullet 2"] }
+    ],
+    "projects": [
+      { "title": "Project Name", "bullets": ["Optimized bullet 1", "Optimized bullet 2"] }
+    ]
+  }
 }
 `.trim();
 
@@ -472,10 +419,16 @@ DO NOT omit any key from the schema.
     try {
       parsed = await repairJSON(raw);
     } catch (repairErr) {
-      // Return raw string as last resort so the caller can decide what to do
       console.error("[aiAnalyzer] tailorResume: JSON parse + repair both failed.", repairErr.message);
       return raw;
     }
+  }
+
+  // If the parsed object contains original and tailoredPatches, run our robust merge engine
+  if (parsed && parsed.original && parsed.tailoredPatches) {
+    const { mergeTailoredResume } = await import("./mergeTailoredResume.js");
+    const mergedResume = mergeTailoredResume(parsed.original, parsed.tailoredPatches, jobDescription);
+    return JSON.stringify(mergedResume);
   }
 
   // Hard-enforce structural limits even if the LLM ignored instructions
