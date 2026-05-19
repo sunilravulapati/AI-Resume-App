@@ -21,7 +21,18 @@ export default function TailoredPreview({ data }) {
   const basics = data.basics || {};
   const summary = data.tailoredSummary || data.summary || '';
   const skills = data.tailoredSkills || data.skills || [];
-  const experience = data.tailoredExperience || data.experience || [];
+  const rawExperience = data.tailoredExperience || data.experience || [];
+  const rawProjects = data.projects || [];
+
+  // Map projects so they render beautifully under the unified section
+  const mappedProjects = rawProjects.map(proj => ({
+    ...proj,
+    company: proj.title,
+    title: 'Personal Project',
+    meta: proj.meta || proj.dates,
+  }));
+
+  const experience = [...rawExperience, ...mappedProjects];
 
   return (
     <div className="space-y-6">

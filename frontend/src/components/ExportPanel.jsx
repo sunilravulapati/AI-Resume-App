@@ -49,7 +49,14 @@ export function generateCopyText(tailoredData) {
 
   const summary = tailoredData?.tailoredSummary || tailoredData?.summary || '';
   const skills = tailoredData?.tailoredSkills || tailoredData?.skills || [];
-  const experience = tailoredData?.tailoredExperience || tailoredData?.experience || [];
+  
+  const rawExperience = tailoredData?.tailoredExperience || tailoredData?.experience || [];
+  const rawProjects = tailoredData?.projects || [];
+  const mappedProjects = rawProjects.map(proj => ({
+    ...proj,
+    title: `Project: ${proj.title}`,
+  }));
+  const experience = [...rawExperience, ...mappedProjects];
 
   if (summary) {
     lines.push('── PROFESSIONAL SUMMARY ──────────────');

@@ -379,10 +379,19 @@ export default function TailoredPDF({ tailoredData, parsedText = '', user, userL
           <View style={s.section}>
             <ST>Experience &amp; Projects</ST>
             {workExps.map((job, i) => {
-              const { projectOrPlace, location, date } = parseMeta(job.meta || '');
+              let company = job.company || '';
+              let location = job.location || '';
+              let date = job.dates || job.date || '';
 
-              const displayTitle = projectOrPlace || job.title || '';
-              const roleLabel = (job.title && job.title !== displayTitle) ? job.title : '';
+              if (job.meta) {
+                const parsed = parseMeta(job.meta);
+                if (parsed.projectOrPlace) company = parsed.projectOrPlace;
+                if (parsed.location) location = parsed.location;
+                if (parsed.date) date = parsed.date;
+              }
+
+              const displayTitle = company || job.title || '';
+              const roleLabel = (company && job.title) ? job.title : '';
               const subParts = [roleLabel, location].filter(Boolean);
               const subLine  = subParts.join(' · ');
 

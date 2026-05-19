@@ -119,17 +119,29 @@ export function countResumeElements(data) {
   let count = 0;
 
   // Summary block counts as 2 lines
-  if (data.tailoredSummary && String(data.tailoredSummary).trim().length > 0) count += 2;
+  const summary = data.tailoredSummary || data.summary || "";
+  if (summary.trim().length > 0) count += 2;
 
   // Each skill row is one line
-  if (Array.isArray(data.tailoredSkills)) count += data.tailoredSkills.length;
+  const skills = data.tailoredSkills || data.skills || [];
+  if (Array.isArray(skills)) count += skills.length;
 
-  // Experience & projects are merged; each entry has 2 header lines + its bullets
-  if (Array.isArray(data.tailoredExperience)) {
-    data.tailoredExperience.forEach((exp) => {
+  // Experience & projects are merged or separate; each entry has 2 header lines + its bullets
+  const experience = data.tailoredExperience || data.experience || [];
+  if (Array.isArray(experience)) {
+    experience.forEach((exp) => {
       if (!exp) return;
       count += 2; // title + tech/meta line
       if (Array.isArray(exp.bullets)) count += exp.bullets.length;
+    });
+  }
+
+  const projects = data.projects || [];
+  if (Array.isArray(projects)) {
+    projects.forEach((proj) => {
+      if (!proj) return;
+      count += 2; // title + tech/meta line
+      if (Array.isArray(proj.bullets)) count += proj.bullets.length;
     });
   }
 

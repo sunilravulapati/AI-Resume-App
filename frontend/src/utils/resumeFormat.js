@@ -48,9 +48,6 @@ export function enforceLimitsForPdf(data) {
   if (!data || typeof data !== 'object') return data;
   const out = { ...data, basics: { ...(data.basics || {}) } };
 
-  if (!out.tailoredExperience && out.experience) {
-    out.tailoredExperience = out.experience;
-  }
   if (!out.tailoredSkills && out.skills) {
     out.tailoredSkills = out.skills;
   }
@@ -58,16 +55,34 @@ export function enforceLimitsForPdf(data) {
     out.tailoredSummary = out.summary;
   }
 
-  // Up to 4 experience/project entries, 4 bullets each
-  if (Array.isArray(out.tailoredExperience)) {
-    out.tailoredExperience = out.tailoredExperience.slice(0, 4).map((entry) => ({
-      ...entry,
-      title:   trimWords(entry.title   || '', 18),
-      tech:    trimWords(entry.tech    || '', 24),
-      meta:    trimWords(entry.meta    || '', 20),
-      bullets: (entry.bullets || []).slice(0, 4).map((b) => trimWords(b, 35)),
-    }));
-  }
+  // Combine experience and projects for single-page PDF rendering under Experience & Projects
+  const rawExperience = out.tailoredExperience || out.experience || [];
+  const rawProjects = out.projects || [];
+
+  const formattedExp = rawExperience.slice(0, 3).map((entry) => ({
+    ...entry,
+    title:   trimWords(entry.title   || '', 22),
+    company: trimWords(entry.company || '', 22),
+    location: trimWords(entry.location || '', 18),
+    dates:   trimWords(entry.dates || entry.date || '', 18),
+    tech:    trimWords(entry.tech    || '', 28),
+    meta:    entry.meta ? trimWords(entry.meta || '', 20) : '',
+    bullets: (entry.bullets || []).slice(0, 3).map((b) => trimWords(b, 38)),
+  }));
+
+  const formattedProj = rawProjects.slice(0, 3).map((entry) => ({
+    ...entry,
+    title:   trimWords(entry.title   || '', 22),
+    company: '', // Projects don't have a company
+    location: '',
+    dates:   trimWords(entry.meta || entry.date || '', 18),
+    tech:    trimWords(entry.tech    || '', 28),
+    meta:    entry.meta ? trimWords(entry.meta || '', 20) : '',
+    bullets: (entry.bullets || []).slice(0, 3).map((b) => trimWords(b, 38)),
+  }));
+
+  // Combine to a single experience/projects array (cap at 5 items to keep it strictly on a single page)
+  out.tailoredExperience = [...formattedExp, ...formattedProj].slice(0, 5);
 
   if (out.tailoredSummary) {
     out.tailoredSummary = trimWords(out.tailoredSummary, 65);
