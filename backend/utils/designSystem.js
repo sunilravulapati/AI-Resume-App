@@ -63,16 +63,16 @@ const spaciousPreset = {
 const moderatePreset = {
   baseFontSize: "11pt",
 
-  lineStretch: "1.10",
-  arrayStretch: "1.12",
+  lineStretch: "1.06",
+  arrayStretch: "1.08",
 
-  sectionSpacingBefore: "12pt",
-  sectionSpacingAfter: "5pt",
+  sectionSpacingBefore: "10pt",
+  sectionSpacingAfter: "4pt",
 
-  itemSpacing: "6pt",
-  bulletSpacing: "2pt",
+  itemSpacing: "4pt",
+  bulletSpacing: "1.2pt",
 
-  headerSpacing: "8pt",
+  headerSpacing: "6pt",
 
   bulletSize: "\\normalsize",
   metaSize: "\\small",
@@ -88,16 +88,16 @@ const moderatePreset = {
 const compactPreset = {
   baseFontSize: "10pt",
 
-  lineStretch: "1.03",
-  arrayStretch: "1.05",
+  lineStretch: "1.01",
+  arrayStretch: "1.02",
 
-  sectionSpacingBefore: "8pt",
-  sectionSpacingAfter: "3pt",
+  sectionSpacingBefore: "7pt",
+  sectionSpacingAfter: "2pt",
 
-  itemSpacing: "3pt",
-  bulletSpacing: "0.8pt",
+  itemSpacing: "2pt",
+  bulletSpacing: "0.5pt",
 
-  headerSpacing: "4pt",
+  headerSpacing: "2pt",
 
   bulletSize: "\\small",
   metaSize: "\\footnotesize",

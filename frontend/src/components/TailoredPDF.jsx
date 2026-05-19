@@ -192,12 +192,12 @@ const s = StyleSheet.create({
 // SUB-COMPONENTS
 // ─────────────────────────────────────────────────────────────────────────────
 
-const ST = ({ children }) => <Text style={s.sectionTitle}>{children}</Text>;
+const ST = ({ children, style }) => <Text style={style || s.sectionTitle}>{children}</Text>;
 
-const Bul = ({ text }) => (
-  <View style={s.bullet}>
-    <Text style={s.bulletDot}>–</Text>
-    <Text style={s.bulletText}>{text}</Text>
+const Bul = ({ text, style, bulletStyle }) => (
+  <View style={bulletStyle || s.bullet}>
+    <Text style={style ? [s.bulletDot, { fontSize: style[1]?.fontSize || 8.5 }] : s.bulletDot}>–</Text>
+    <Text style={style || s.bulletText}>{text}</Text>
   </View>
 );
 
@@ -298,6 +298,39 @@ export default function TailoredPDF({ tailoredData, parsedText = '', user, userL
 
   const hasAwardsSection = awards.length > 0 || achievements.length > 0;
 
+  const totalItems = workExps.length + education.length + (finalSkillRows.length ? 1 : 0) + (awards.length ? 1 : 0) + (certs.length ? 1 : 0);
+  const dense = workExps.length >= 4 || totalItems >= 7;
+
+  // Dynamic density adjustments to guarantee 100% stable single-page rendering
+  const pageStyle         = [s.page, dense && { paddingTop: 16, paddingBottom: 16, paddingHorizontal: 22, fontSize: 8.2 }];
+  const sectionStyle      = [s.section, dense && { marginBottom: 3 }];
+  const sectionTitleStyle = [s.sectionTitle, dense && { fontSize: 8.2, paddingBottom: 1.0, marginBottom: 2 }];
+  const skillRowStyle     = [s.skillRow, dense && { paddingVertical: 0.3 }];
+  const skillLabelStyle   = [s.skillLabel, dense && { fontSize: 7.8, width: 100 }];
+  const skillValueStyle   = [s.skillValue, dense && { fontSize: 7.8 }];
+  const entryWrapStyle    = [s.entryWrap, dense && { marginBottom: 2 }];
+  const entryTitleStyle   = [s.entryTitle, dense && { fontSize: 8.2 }];
+  const entryDateStyle    = [s.entryDate, dense && { fontSize: 7.0 }];
+  const entrySubRowStyle  = [s.entrySubRow, dense && { marginBottom: 1 }];
+  const entryMetaStyle    = [s.entryMeta, dense && { fontSize: 7.5 }];
+  const bulletStyle       = [s.bullet, dense && { marginBottom: 0.4 }];
+  const bulletTextStyle   = [s.bulletText, dense && { fontSize: 7.8, lineHeight: 1.15 }];
+  const eduRowStyle       = [s.eduRow, dense && { marginBottom: 0.5 }];
+  const eduInstStyle      = [s.eduInst, dense && { fontSize: 8.2 }];
+  const eduDegStyle       = [s.eduDeg, dense && { fontSize: 7.8 }];
+  const eduDetStyle       = [s.eduDet, dense && { fontSize: 7.5 }];
+  const eduDateStyle      = [s.eduDate, dense && { fontSize: 7.5 }];
+  const awardRowStyle     = [s.awardRow, dense && { marginBottom: 1 }];
+  const awardTitleStyle   = [s.awardTitle, dense && { fontSize: 8.2 }];
+  const awardMetaStyle    = [s.awardMeta, dense && { fontSize: 7.5 }];
+  const awardDescStyle    = [s.awardDesc, dense && { fontSize: 7.8 }];
+  const awardDateStyle    = [s.awardDate, dense && { fontSize: 7.5 }];
+  const certRowStyle      = [s.certRow, dense && { marginBottom: 1 }];
+  const certTitleStyle    = [s.certTitle, dense && { fontSize: 8.2 }];
+  const certOrgStyle      = [s.certOrg, dense && { fontSize: 7.5 }];
+  const certDateStyle     = [s.certDate, dense && { fontSize: 7.5 }];
+  const plainStyle        = [s.plain, dense && { fontSize: 7.8, lineHeight: 1.15 }];
+
   const renderLink = (href, label) => (
     <Link src={href.startsWith('http') ? href : `https://${href}`} style={s.link}>
       {label}
@@ -306,7 +339,7 @@ export default function TailoredPDF({ tailoredData, parsedText = '', user, userL
 
   return (
     <Document>
-      <Page size="LETTER" style={s.page}>
+      <Page size="LETTER" style={pageStyle}>
 
         {/* ── HEADER ─────────────────────────────────────────────────── */}
         <View style={s.header}>
@@ -349,26 +382,26 @@ export default function TailoredPDF({ tailoredData, parsedText = '', user, userL
 
         {/* ── PROFESSIONAL SUMMARY ────────────────────────────────────── */}
         {finalSummary ? (
-          <View style={s.section}>
-            <ST>Professional Summary</ST>
-            <Text style={s.plain}>{finalSummary}</Text>
+          <View style={sectionStyle}>
+            <ST style={sectionTitleStyle}>Professional Summary</ST>
+            <Text style={plainStyle}>{finalSummary}</Text>
           </View>
         ) : null}
 
         {/* ── SKILLS ──────────────────────────────────────────────────── */}
         {(finalSkillRows.length > 0 || languages) && (
-          <View style={s.section}>
-            <ST>Skills</ST>
+          <View style={sectionStyle}>
+            <ST style={sectionTitleStyle}>Skills</ST>
             {finalSkillRows.map((row, i) => (
-              <View key={i} style={[s.skillRow, i % 2 === 0 ? s.skillRowShaded : null]}>
-                {row.label ? <Text style={s.skillLabel}>{row.label}</Text> : null}
-                <Text style={[s.skillValue, !row.label && { flex: 1 }]}>{row.value}</Text>
+              <View key={i} style={[...skillRowStyle, i % 2 === 0 ? s.skillRowShaded : null]}>
+                {row.label ? <Text style={skillLabelStyle}>{row.label}</Text> : null}
+                <Text style={[...skillValueStyle, !row.label && { flex: 1 }]}>{row.value}</Text>
               </View>
             ))}
             {languages ? (
-              <View style={[s.skillRow, finalSkillRows.length % 2 === 0 ? s.skillRowShaded : null]}>
-                <Text style={s.skillLabel}>Languages</Text>
-                <Text style={s.skillValue}>{languages}</Text>
+              <View key="languages" style={[...skillRowStyle, finalSkillRows.length % 2 === 0 ? s.skillRowShaded : null]}>
+                <Text style={skillLabelStyle}>Languages</Text>
+                <Text style={skillValueStyle}>{languages}</Text>
               </View>
             ) : null}
           </View>
@@ -376,8 +409,8 @@ export default function TailoredPDF({ tailoredData, parsedText = '', user, userL
 
         {/* ── EXPERIENCE & PROJECTS ────────────────────────────────────── */}
         {workExps.length > 0 && (
-          <View style={s.section}>
-            <ST>Experience &amp; Projects</ST>
+          <View style={sectionStyle}>
+            <ST style={sectionTitleStyle}>Experience &amp; Projects</ST>
             {workExps.map((job, i) => {
               let company = job.company || '';
               let location = job.location || '';
@@ -396,24 +429,26 @@ export default function TailoredPDF({ tailoredData, parsedText = '', user, userL
               const subLine  = subParts.join(' · ');
 
               return (
-                <View key={i} style={s.entryWrap}>
+                <View key={i} style={entryWrapStyle}>
                   {/* Row 1: Project/Company name  ←→  Date */}
                   <View style={s.entryTopRow}>
-                    <Text style={s.entryTitle}>
+                    <Text style={entryTitleStyle}>
                       {displayTitle}
                       {job.tech ? ` | ${job.tech}` : ''}
                     </Text>
-                    {date ? <Text style={s.entryDate}>{date}</Text> : null}
+                    {date ? <Text style={entryDateStyle}>{date}</Text> : null}
                   </View>
 
                   {/* Row 2: Role · Location */}
                   {subLine ? (
-                    <View style={s.entrySubRow}>
-                      <Text style={s.entryMeta}>{subLine}</Text>
+                    <View style={entrySubRowStyle}>
+                      <Text style={entryMetaStyle}>{subLine}</Text>
                     </View>
                   ) : null}
 
-                  {(job.bullets || []).map((b, j) => <Bul key={j} text={b} />)}
+                  {(job.bullets || []).map((b, j) => (
+                    <Bul key={j} text={b} style={bulletTextStyle} bulletStyle={bulletStyle} />
+                  ))}
                 </View>
               );
             })}
@@ -422,21 +457,21 @@ export default function TailoredPDF({ tailoredData, parsedText = '', user, userL
 
         {/* ── EDUCATION ───────────────────────────────────────────────── */}
         {education.length > 0 && (
-          <View style={s.section}>
-            <ST>Education</ST>
+          <View style={sectionStyle}>
+            <ST style={sectionTitleStyle}>Education</ST>
             {education.map((edu, i) => {
               const { gpa, extras } = educationExtras(edu);
               return (
-                <View key={i} style={s.eduRow}>
+                <View key={i} style={eduRowStyle}>
                   <View style={s.eduLeft}>
-                    <Text style={s.eduInst}>{edu.institution}</Text>
-                    {edu.degree ? <Text style={s.eduDeg}>{edu.degree}</Text> : null}
-                    {gpa ? <Text style={s.eduDet}>CGPA: {gpa}</Text> : null}
+                    <Text style={eduInstStyle}>{edu.institution}</Text>
+                    {edu.degree ? <Text style={eduDegStyle}>{edu.degree}</Text> : null}
+                    {gpa ? <Text style={eduDetStyle}>CGPA: {gpa}</Text> : null}
                     {extras.length > 0 ? (
-                      <Text style={s.eduDet}>{extras.join('  ·  ')}</Text>
+                      <Text style={eduDetStyle}>{extras.join('  ·  ')}</Text>
                     ) : null}
                   </View>
-                  {edu.dates ? <Text style={s.eduDate}>{edu.dates}</Text> : null}
+                  {edu.dates ? <Text style={eduDateStyle}>{edu.dates}</Text> : null}
                 </View>
               );
             })}
@@ -445,24 +480,26 @@ export default function TailoredPDF({ tailoredData, parsedText = '', user, userL
 
         {/* ── AWARDS & ACHIEVEMENTS ────────────────────────────────────── */}
         {hasAwardsSection && (
-          <View style={s.section}>
-            <ST>Awards &amp; Achievements</ST>
+          <View style={sectionStyle}>
+            <ST style={sectionTitleStyle}>Awards &amp; Achievements</ST>
 
             {awards.map((award, i) => (
-              <View key={`award-${i}`} style={s.awardRow}>
+              <View key={`award-${i}`} style={awardRowStyle}>
                 <View style={s.awardLeft}>
-                  <Text style={s.awardTitle}>{award.title}</Text>
-                  {award.org  ? <Text style={s.awardMeta}>{award.org}</Text>  : null}
-                  {award.desc ? <Text style={s.awardDesc}>{award.desc}</Text> : null}
+                  <Text style={awardTitleStyle}>{award.title}</Text>
+                  {award.org  ? <Text style={awardMetaStyle}>{award.org}</Text>  : null}
+                  {award.desc ? <Text style={awardDescStyle}>{award.desc}</Text> : null}
                 </View>
-                {award.date ? <Text style={s.awardDate}>{award.date}</Text> : null}
+                {award.date ? <Text style={awardDateStyle}>{award.date}</Text> : null}
               </View>
             ))}
 
             {achievements.map((ach, i) => (
               <View key={`ach-${i}`}>
-                {ach.category ? <Text style={s.achCategory}>{ach.category}</Text> : null}
-                {(ach.bullets || []).map((b, j) => <Bul key={j} text={b} />)}
+                {ach.category ? <Text style={[s.achCategory, dense && { fontSize: 8.2, marginTop: 2, marginBottom: 1 }]}>{ach.category}</Text> : null}
+                {(ach.bullets || []).map((b, j) => (
+                  <Bul key={j} text={b} style={bulletTextStyle} bulletStyle={bulletStyle} />
+                ))}
               </View>
             ))}
           </View>
@@ -470,26 +507,28 @@ export default function TailoredPDF({ tailoredData, parsedText = '', user, userL
 
         {/* ── DSA PROFICIENCY ─────────────────────────────────────────── */}
         {dsaLines.length > 0 && (
-          <View style={s.section}>
-            <ST>DSA Proficiency</ST>
-            {dsaLines.map((line, i) => <Bul key={i} text={line} />)}
+          <View style={sectionStyle}>
+            <ST style={sectionTitleStyle}>DSA Proficiency</ST>
+            {dsaLines.map((line, i) => (
+              <Bul key={i} text={line} style={bulletTextStyle} bulletStyle={bulletStyle} />
+            ))}
           </View>
         )}
 
         {/* ── CERTIFICATIONS ──────────────────────────────────────────── */}
         {certs.length > 0 && (
-          <View style={s.section}>
-            <ST>Certifications</ST>
+          <View style={sectionStyle}>
+            <ST style={sectionTitleStyle}>Certifications</ST>
             {certs.map((cert, i) => (
-              <View key={i} style={s.certRow}>
+              <View key={i} style={certRowStyle}>
                 <View style={s.certLeft}>
-                  <Text style={s.certTitle}>{cert.title}</Text>
-                  {cert.org ? <Text style={s.certOrg}>{cert.org}</Text> : null}
+                  <Text style={certTitleStyle}>{cert.title}</Text>
+                  {cert.org ? <Text style={certOrgStyle}>{cert.org}</Text> : null}
                   {cert.url ? (
-                    <Link src={cert.url} style={s.certUrl}>{cert.url}</Link>
+                    <Link src={cert.url} style={[s.certUrl, dense && { fontSize: 7.0 }]}>{cert.url}</Link>
                   ) : null}
                 </View>
-                {cert.dates ? <Text style={s.certDate}>{cert.dates}</Text> : null}
+                {cert.dates ? <Text style={certDateStyle}>{cert.dates}</Text> : null}
               </View>
             ))}
           </View>
@@ -497,12 +536,14 @@ export default function TailoredPDF({ tailoredData, parsedText = '', user, userL
 
         {/* ── EXTRACURRICULAR ACTIVITIES ───────────────────────────────── */}
         {extracurricular.length > 0 && (
-          <View style={s.section}>
-            <ST>Extracurricular Activities</ST>
+          <View style={sectionStyle}>
+            <ST style={sectionTitleStyle}>Extracurricular Activities</ST>
             {extracurricular.map((item, i) => (
               <View key={i}>
-                {item.title ? <Text style={s.extraTitle}>{item.title}</Text> : null}
-                {(item.bullets || []).map((b, j) => <Bul key={j} text={b} />)}
+                {item.title ? <Text style={[s.extraTitle, dense && { fontSize: 8.2, marginTop: 2, marginBottom: 1 }]}>{item.title}</Text> : null}
+                {(item.bullets || []).map((b, j) => (
+                  <Bul key={j} text={b} style={bulletTextStyle} bulletStyle={bulletStyle} />
+                ))}
               </View>
             ))}
           </View>
