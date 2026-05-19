@@ -36,22 +36,22 @@ const themesBase = {
  * Expands layout naturally to fill page.
  */
 const spaciousPreset = {
-  baseFontSize: "12pt",
+  baseFontSize: "11pt",
 
-  lineStretch: "1.16",
-  arrayStretch: "1.18",
+  lineStretch: "1.14",
+  arrayStretch: "1.16",
 
-  sectionSpacingBefore: "16pt",
-  sectionSpacingAfter: "7pt",
+  sectionSpacingBefore: "14pt",
+  sectionSpacingAfter: "6pt",
 
-  itemSpacing: "9pt",
-  bulletSpacing: "3pt",
+  itemSpacing: "8pt",
+  bulletSpacing: "2.5pt",
 
-  headerSpacing: "12pt",
+  headerSpacing: "10pt",
 
-  bulletSize: "\\normalsize",
+  bulletSize: "\\small",
   metaSize: "\\small",
-  skillsSize: "\\normalsize"
+  skillsSize: "\\small"
 };
 
 
@@ -61,21 +61,21 @@ const spaciousPreset = {
  * Best for most resumes.
  */
 const moderatePreset = {
-  baseFontSize: "11pt",
+  baseFontSize: "10pt",
 
-  lineStretch: "1.06",
-  arrayStretch: "1.08",
+  lineStretch: "1.04",
+  arrayStretch: "1.06",
 
-  sectionSpacingBefore: "10pt",
-  sectionSpacingAfter: "4pt",
+  sectionSpacingBefore: "9pt",
+  sectionSpacingAfter: "3pt",
 
-  itemSpacing: "4pt",
-  bulletSpacing: "1.2pt",
+  itemSpacing: "3.5pt",
+  bulletSpacing: "1.0pt",
 
-  headerSpacing: "6pt",
+  headerSpacing: "5pt",
 
-  bulletSize: "\\normalsize",
-  metaSize: "\\small",
+  bulletSize: "\\small",
+  metaSize: "\\footnotesize",
   skillsSize: "\\small"
 };
 
@@ -88,20 +88,20 @@ const moderatePreset = {
 const compactPreset = {
   baseFontSize: "10pt",
 
-  lineStretch: "1.01",
-  arrayStretch: "1.02",
+  lineStretch: "0.99",
+  arrayStretch: "1.00",
 
-  sectionSpacingBefore: "7pt",
-  sectionSpacingAfter: "2pt",
+  sectionSpacingBefore: "6pt",
+  sectionSpacingAfter: "1.5pt",
 
-  itemSpacing: "2pt",
-  bulletSpacing: "0.5pt",
+  itemSpacing: "1.5pt",
+  bulletSpacing: "0.3pt",
 
-  headerSpacing: "2pt",
+  headerSpacing: "1.5pt",
 
-  bulletSize: "\\small",
-  metaSize: "\\footnotesize",
-  skillsSize: "\\small"
+  bulletSize: "\\footnotesize",
+  metaSize: "\\scriptsize",
+  skillsSize: "\\footnotesize"
 };
 
 /**

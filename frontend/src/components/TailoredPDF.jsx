@@ -50,7 +50,7 @@ const s = StyleSheet.create({
     paddingBottom:     24,
     paddingHorizontal: 28,
     fontFamily:        F.roman,
-    fontSize:          9.0,
+    fontSize:          8.7,
     color:             C.body,
     lineHeight:        1.22,
   },
@@ -88,7 +88,7 @@ const s = StyleSheet.create({
 
   // ── Section title ─────────────────────────────────────────────────────────
   sectionTitle: {
-    fontSize:          9.0,
+    fontSize:          8.7,
     fontFamily:        F.bold,
     textTransform:     'uppercase',
     letterSpacing:     1.2,
@@ -107,12 +107,13 @@ const s = StyleSheet.create({
     marginBottom:   0,
   },
   skillRowShaded: { backgroundColor: C.shade },
-  skillLabel: { width: 110, fontFamily: F.bold, fontSize: 8.5, color: C.ink },
-  skillValue: { flex: 1, fontSize: 8.5, color: C.body },
+  skillLabel: { width: 110, fontFamily: F.bold, fontSize: 8.2, color: C.ink },
+  skillValue: { flex: 1, fontSize: 8.2, color: C.body },
 
   // ── Experience entry ──────────────────────────────────────────────────────
   entryWrap: { marginBottom: 3 },
 
+  // Top row
   entryTopRow: {
     flexDirection:  'row',
     justifyContent: 'space-between',
@@ -120,7 +121,7 @@ const s = StyleSheet.create({
     marginBottom:   1,
   },
   entryTitle: {
-    fontSize:   9.0,
+    fontSize:   8.7,
     fontFamily: F.bold,
     color:      C.ink,
     flex:       1,
@@ -132,6 +133,7 @@ const s = StyleSheet.create({
     marginLeft: 6,
   },
 
+  // Sub row
   entrySubRow: {
     flexDirection: 'row',
     marginBottom:  2,
@@ -149,41 +151,41 @@ const s = StyleSheet.create({
 
   // Bullets
   bullet:    { flexDirection: 'row', marginBottom: 0.8, paddingLeft: 6 },
-  bulletDot: { width: 8, fontSize: 8.5, color: C.mid },
-  bulletText: { flex: 1, fontSize: 8.5, color: C.body, lineHeight: 1.25 },
+  bulletDot: { width: 8, fontSize: 8.2, color: C.mid },
+  bulletText: { flex: 1, fontSize: 8.2, color: C.body, lineHeight: 1.25 },
 
   // ── Education ─────────────────────────────────────────────────────────────
   eduRow:  { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 1 },
   eduLeft: { flex: 1 },
-  eduInst: { fontSize: 9.0, fontFamily: F.bold, color: C.ink },
-  eduDeg:  { fontSize: 8.5, fontFamily: F.italic, color: C.mid },
+  eduInst: { fontSize: 8.7, fontFamily: F.bold, color: C.ink },
+  eduDeg:  { fontSize: 8.2, fontFamily: F.italic, color: C.mid },
   eduDet:  { fontSize: 8.0, color: C.mid, marginTop: 1 },
   eduDate: { fontSize: 8.0, fontFamily: F.italic, color: C.mid, textAlign: 'right', minWidth: 72 },
 
   // ── Awards ────────────────────────────────────────────────────────────────
   awardRow:   { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 },
   awardLeft:  { flex: 1 },
-  awardTitle: { fontSize: 9.0, fontFamily: F.bold, color: C.ink },
+  awardTitle: { fontSize: 8.7, fontFamily: F.bold, color: C.ink },
   awardMeta:  { fontSize: 8.0, color: C.mid, marginTop: 1 },
-  awardDesc:  { fontSize: 8.5, color: C.body, marginTop: 1 },
+  awardDesc:  { fontSize: 8.2, color: C.body, marginTop: 1 },
   awardDate:  { fontSize: 8.0, fontFamily: F.italic, color: C.mid, minWidth: 62, textAlign: 'right' },
 
   // ── Achievements ──────────────────────────────────────────────────────────
-  achCategory: { fontSize: 9.0, fontFamily: F.bold, color: C.ink, marginBottom: 2, marginTop: 3 },
+  achCategory: { fontSize: 8.7, fontFamily: F.bold, color: C.ink, marginBottom: 2, marginTop: 3 },
 
   // ── Extracurricular ───────────────────────────────────────────────────────
-  extraTitle: { fontSize: 9.0, fontFamily: F.bold, color: C.ink, marginBottom: 2, marginTop: 3 },
+  extraTitle: { fontSize: 8.7, fontFamily: F.bold, color: C.ink, marginBottom: 2, marginTop: 3 },
 
   // ── Certifications ────────────────────────────────────────────────────────
   certRow:   { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 },
   certLeft:  { flex: 1 },
-  certTitle: { fontSize: 9.0, fontFamily: F.bold, color: C.ink },
+  certTitle: { fontSize: 8.7, fontFamily: F.bold, color: C.ink },
   certOrg:   { fontSize: 8.0, fontFamily: F.italic, color: C.mid, marginTop: 1 },
   certUrl:   { fontSize: 7.5, color: C.accent, marginTop: 1, textDecoration: 'none' },
   certDate:  { fontSize: 8.0, fontFamily: F.italic, color: C.mid, minWidth: 72, textAlign: 'right' },
 
   // ── DSA / plain ───────────────────────────────────────────────────────────
-  plain: { fontSize: 8.5, color: C.body, lineHeight: 1.25 },
+  plain: { fontSize: 8.2, color: C.body, lineHeight: 1.25 },
 
   contactWrap: { marginBottom: 3 },
 });
@@ -302,34 +304,34 @@ export default function TailoredPDF({ tailoredData, parsedText = '', user, userL
   const dense = workExps.length >= 4 || totalItems >= 7;
 
   // Dynamic density adjustments to guarantee 100% stable single-page rendering
-  const pageStyle         = [s.page, dense && { paddingTop: 16, paddingBottom: 16, paddingHorizontal: 22, fontSize: 8.2 }];
+  const pageStyle         = [s.page, dense && { paddingTop: 16, paddingBottom: 16, paddingHorizontal: 22, fontSize: 7.9 }];
   const sectionStyle      = [s.section, dense && { marginBottom: 3 }];
-  const sectionTitleStyle = [s.sectionTitle, dense && { fontSize: 8.2, paddingBottom: 1.0, marginBottom: 2 }];
+  const sectionTitleStyle = [s.sectionTitle, dense && { fontSize: 7.9, paddingBottom: 1.0, marginBottom: 2 }];
   const skillRowStyle     = [s.skillRow, dense && { paddingVertical: 0.3 }];
-  const skillLabelStyle   = [s.skillLabel, dense && { fontSize: 7.8, width: 100 }];
-  const skillValueStyle   = [s.skillValue, dense && { fontSize: 7.8 }];
+  const skillLabelStyle   = [s.skillLabel, dense && { fontSize: 7.5, width: 100 }];
+  const skillValueStyle   = [s.skillValue, dense && { fontSize: 7.5 }];
   const entryWrapStyle    = [s.entryWrap, dense && { marginBottom: 2 }];
-  const entryTitleStyle   = [s.entryTitle, dense && { fontSize: 8.2 }];
-  const entryDateStyle    = [s.entryDate, dense && { fontSize: 7.0 }];
+  const entryTitleStyle   = [s.entryTitle, dense && { fontSize: 7.9 }];
+  const entryDateStyle    = [s.entryDate, dense && { fontSize: 6.8 }];
   const entrySubRowStyle  = [s.entrySubRow, dense && { marginBottom: 1 }];
-  const entryMetaStyle    = [s.entryMeta, dense && { fontSize: 7.5 }];
+  const entryMetaStyle    = [s.entryMeta, dense && { fontSize: 7.2 }];
   const bulletStyle       = [s.bullet, dense && { marginBottom: 0.4 }];
-  const bulletTextStyle   = [s.bulletText, dense && { fontSize: 7.8, lineHeight: 1.15 }];
+  const bulletTextStyle   = [s.bulletText, dense && { fontSize: 7.5, lineHeight: 1.15 }];
   const eduRowStyle       = [s.eduRow, dense && { marginBottom: 0.5 }];
-  const eduInstStyle      = [s.eduInst, dense && { fontSize: 8.2 }];
-  const eduDegStyle       = [s.eduDeg, dense && { fontSize: 7.8 }];
-  const eduDetStyle       = [s.eduDet, dense && { fontSize: 7.5 }];
-  const eduDateStyle      = [s.eduDate, dense && { fontSize: 7.5 }];
+  const eduInstStyle      = [s.eduInst, dense && { fontSize: 7.9 }];
+  const eduDegStyle       = [s.eduDeg, dense && { fontSize: 7.5 }];
+  const eduDetStyle       = [s.eduDet, dense && { fontSize: 7.2 }];
+  const eduDateStyle      = [s.eduDate, dense && { fontSize: 7.2 }];
   const awardRowStyle     = [s.awardRow, dense && { marginBottom: 1 }];
-  const awardTitleStyle   = [s.awardTitle, dense && { fontSize: 8.2 }];
-  const awardMetaStyle    = [s.awardMeta, dense && { fontSize: 7.5 }];
-  const awardDescStyle    = [s.awardDesc, dense && { fontSize: 7.8 }];
-  const awardDateStyle    = [s.awardDate, dense && { fontSize: 7.5 }];
+  const awardTitleStyle   = [s.awardTitle, dense && { fontSize: 7.9 }];
+  const awardMetaStyle    = [s.awardMeta, dense && { fontSize: 7.2 }];
+  const awardDescStyle    = [s.awardDesc, dense && { fontSize: 7.5 }];
+  const awardDateStyle    = [s.awardDate, dense && { fontSize: 7.2 }];
   const certRowStyle      = [s.certRow, dense && { marginBottom: 1 }];
-  const certTitleStyle    = [s.certTitle, dense && { fontSize: 8.2 }];
-  const certOrgStyle      = [s.certOrg, dense && { fontSize: 7.5 }];
-  const certDateStyle     = [s.certDate, dense && { fontSize: 7.5 }];
-  const plainStyle        = [s.plain, dense && { fontSize: 7.8, lineHeight: 1.15 }];
+  const certTitleStyle    = [s.certTitle, dense && { fontSize: 7.9 }];
+  const certOrgStyle      = [s.certOrg, dense && { fontSize: 7.2 }];
+  const certDateStyle     = [s.certDate, dense && { fontSize: 7.2 }];
+  const plainStyle        = [s.plain, dense && { fontSize: 7.5, lineHeight: 1.15 }];
 
   const renderLink = (href, label) => (
     <Link src={href.startsWith('http') ? href : `https://${href}`} style={s.link}>
