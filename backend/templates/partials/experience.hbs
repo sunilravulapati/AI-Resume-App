@@ -1,8 +1,8 @@
 {{#if experience.length}}
 \section{Experience}
 {{#each experience}}
-\noindent\textbf{ {{this.company}} }{{#if this.location}} \hfill \textit{\small {{this.location}} }{{/if}} \\
-\textit{\small {{this.title}} }{{#if this.tech}} \hfill {\footnotesize {{this.tech}} }{{/if}}{{#if this.dates}} \hfill \small {{this.dates}}{{/if}}
+\noindent\textbf{ {{this.company}} } \hfill \small {{this.dates}} \\
+\textit{\small {{this.title}} }{{#if this.location}} --- {\small {{this.location}} }{{/if}}{{#if this.tech}} \hfill {\footnotesize\textit{ {{this.tech}} }}{{/if}}
 \begin{itemize}
 {{#each this.bullets}}
   \item \small {{this}}

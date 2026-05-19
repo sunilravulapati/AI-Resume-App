@@ -22,16 +22,16 @@
 \urlstyle{same}
 \pdfgentounicode=1
 
-% ── Line Spacing / Height ─────────────────────────────────────────────────────
+% ── Line Spacing ──────────────────────────────────────────────────────────────
 \renewcommand{\baselinestretch}{ {{theme.designSystem.lineStretch}} }
 
-% ── Theme Section Formatting ──────────────────────────────────────────────────
+% ── Section Formatting ────────────────────────────────────────────────────────
 {{theme.sectionFormat}}
 
-% ── Deterministic Spacing System ──────────────────────────────────────────────
+% ── Section Spacing ───────────────────────────────────────────────────────────
 \titlespacing*{\section}{0pt}{ {{theme.designSystem.sectionSpacingBefore}} }{ {{theme.designSystem.sectionSpacingAfter}} }
 
-% ── Premium List Formatting ───────────────────────────────────────────────────
+% ── List Formatting ───────────────────────────────────────────────────────────
 \setlist[itemize]{
   itemsep={{theme.designSystem.bulletSpacing}},
   topsep=2pt,
@@ -41,39 +41,19 @@
   label={\small $\bullet$}
 }
 
-% ── DOCUMENT BODY ─────────────────────────────────────────────────────────────
+% ══════════════════════════════════════════════════════════════════════════════
 \begin{document}
 
 {{> header}}
 \vspace{ {{theme.designSystem.headerSpacing}} }
 
-{{#if summary}}
-% ── PROFESSIONAL SUMMARY ──────────────────────────────────────────────────────
 {{> summary}}
 
-\vspace{6pt}
-{{/if}}
-
-{{#if skills.length}}
-% ── TECHNICAL SKILLS ──────────────────────────────────────────────────────────
 {{> skills}}
 
-\vspace{6pt}
-{{/if}}
-
-{{#if experience.length}}
-% ── EXPERIENCE ────────────────────────────────────────────────────────────────
 {{> experience}}
 
-\vspace{6pt}
-{{/if}}
-
-{{#if education.length}}
-% ── EDUCATION ─────────────────────────────────────────────────────────────────
 {{> education}}
-
-\vspace{6pt}
-{{/if}}
 
 {{> projects}}
 
