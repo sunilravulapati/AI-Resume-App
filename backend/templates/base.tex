@@ -1,10 +1,15 @@
 \documentclass[letterpaper,{{theme.designSystem.baseFontSize}}]{article}
 
 % ── Core Packages ─────────────────────────────────────────────────────────────
-\usepackage[left=0.55in,right=0.55in,top=0.45in,bottom=0.45in]{geometry}
+\usepackage[
+top=0.55in,
+bottom=0.55in,
+left=0.65in,
+right=0.65in
+]{geometry}
 \usepackage{enumitem}
 \usepackage[hidelinks]{hyperref}
-\usepackage{titlesec}
+\usepackage{array}
 \usepackage{tabularx}
 \usepackage{xcolor}
 \usepackage{latexsym}
@@ -18,27 +23,33 @@
 \pagestyle{empty}
 \raggedbottom
 \raggedright
-\setlength{\tabcolsep}{0in}
+\setlength{\parindent}{0pt}
+\setlength{\emergencystretch}{1.5em}
+\setlength{\tabcolsep}{0.08in}
 \urlstyle{same}
 \pdfgentounicode=1
 
 % ── Line Spacing ──────────────────────────────────────────────────────────────
 \renewcommand{\baselinestretch}{ {{theme.designSystem.lineStretch}} }
 
-% ── Section Formatting ────────────────────────────────────────────────────────
-{{theme.sectionFormat}}
-
-% ── Section Spacing ───────────────────────────────────────────────────────────
-\titlespacing*{\section}{0pt}{ {{theme.designSystem.sectionSpacingBefore}} }{ {{theme.designSystem.sectionSpacingAfter}} }
+% ── Section headings (custom — avoids titlesec titlerule overlap) ─────────────
+{{theme.sectionSetup}}
+\newcommand{\resumesection}[1]{%
+  \par\vspace{ {{theme.designSystem.sectionSpacingBefore}} }%
+  { {{theme.sectionTitleStyle}} #1\par }%
+  \nopagebreak\vspace{5pt}%
+  {\color{ {{theme.sectionRuleColor}} }\rule{\textwidth}{0.4pt}}\par%
+  \nopagebreak\vspace{ {{theme.designSystem.sectionSpacingAfter}} }%
+}
 
 % ── List Formatting ───────────────────────────────────────────────────────────
 \setlist[itemize]{
   itemsep={{theme.designSystem.bulletSpacing}},
-  topsep=2pt,
-  parsep=0pt,
+  topsep=3pt,
+  parsep=1pt,
   partopsep=0pt,
-  leftmargin=0.15in,
-  label={\small $\bullet$}
+  leftmargin=0.20in,
+  label={\normalsize $\bullet$}
 }
 
 % ══════════════════════════════════════════════════════════════════════════════

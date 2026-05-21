@@ -91,7 +91,7 @@ export function sanitizeResume(data) {
     contactParts.push(escaped.location);
   }
 
-  escaped.contactLine = contactParts.join(" $|$ ");
+  escaped.contactLine = contactParts.join(" \\textbullet ");
 
   return escaped;
 }

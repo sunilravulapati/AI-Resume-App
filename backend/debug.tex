@@ -1,0 +1,159 @@
+\documentclass[letterpaper,10pt]{article}
+
+% ── Core Packages ─────────────────────────────────────────────────────────────
+\usepackage[left=0.55in,right=0.55in,top=0.45in,bottom=0.45in]{geometry}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage[nostruts]{titlesec}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage{latexsym}
+\usepackage{ragged2e}
+
+% ── Theme Font ────────────────────────────────────────────────────────────────
+\usepackage{lmodern}
+
+
+% ── Page Setup ────────────────────────────────────────────────────────────────
+\pagestyle{empty}
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+\urlstyle{same}
+\pdfgentounicode=1
+
+% ── Line Spacing ──────────────────────────────────────────────────────────────
+\renewcommand{\baselinestretch}{ 0.99 }
+
+% ── Section Formatting ────────────────────────────────────────────────────────
+\titleformat{\section}[block]{
+  \bfseries\raggedright\large
+}{}{0em}{}
+[\vspace{2pt}\titleline{\color{black}\titlerule[0.4pt]}\vspace{8pt}]
+
+% ── Section Spacing ───────────────────────────────────────────────────────────
+\titlespacing*{\section}{0pt}{ 6pt }{ 6pt }
+
+% ── List Formatting ───────────────────────────────────────────────────────────
+\setlist[itemize]{
+  itemsep=0.3pt,
+  topsep=2pt,
+  parsep=0pt,
+  partopsep=0pt,
+  leftmargin=0.15in,
+  label={\small $\bullet$}
+}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\begin{document}
+
+\begin{center}
+    {\Huge \bfseries Alex Mercer } \\ \vspace{3pt}
+    {\large \textit{ Senior Full Stack \& AI Platforms Engineer }} \\ \vspace{4pt}
+    \small +1 (555) 019-2834 $|$ \href{mailto:alex.mercer@gmail.com}{alex.mercer@gmail.com} $|$ \href{https://linkedin.com/in/alexmercer-dev-profile-long-handle-test}{linkedin.com/in/alexmercer-dev-profile-long-handle-test} $|$ \href{https://github.com/alexmercer-open-source-projects-portfolio}{github.com/alexmercer-open-source-projects-portfolio} $|$ \href{https://alexmercer.dev/portfolio-highlights-and-labs}{alexmercer.dev/portfolio-highlights-and-labs} $|$ San Francisco, CA
+\end{center}
+\vspace{ 1.5pt }
+
+\section{Professional Summary}
+\noindent \small Results-driven Senior Full Stack Engineer with 6+ years of experience designing, building, and optimizing high-throughput distributed systems and enterprise-grade AI integration platforms. Proven track record of scaling microservices and leading cross-functional teams to deliver production-ready software solutions with high performance.
+
+\section{Technical Skills}
+\begingroup
+\renewcommand{\arraystretch}{ 1.00 }
+\begin{tabularx}{\textwidth}{@{} p{4.2cm} X @{}}
+  \textbf{ Languages } & \small JavaScript, TypeScript, Python, Go, C++, Rust, SQL, HTML5, CSS3, Bash \\
+  \textbf{ Frameworks \& Libs } & \small React, Next.js, Node.js, Express, Fastify, Django, Flask, FastAPI, Spring Boot \\
+  \textbf{ Cloud \& DevOps } & \small AWS (S3, EC2, RDS, Lambda, ECS), Docker, Kubernetes, Terraform, GitHub Actions, Jenkins \\
+  \textbf{ Databases \& Caching } & \small PostgreSQL, MongoDB, Redis, Elasticsearch, MySQL, DynamoDB, Cassandra \\
+\end{tabularx}
+\endgroup
+
+\section{Experience}
+\begin{tabularx}{\textwidth}{@{} X r @{}}
+  \textbf{ Google DeepMind - Advanced Agentic Systems Group Division } & \small Oct 2023 - Present \\
+  \textit{\small Senior Staff Engineer \& Platform Architect (Core Agentic Automation and Orchestration Runtime) } \ --- \small Mountain View, CA & 
+\end{tabularx}
+\par\noindent{\footnotesize\textit{Technologies: TypeScript, Python, PyTorch, Kubernetes, GCP, Docker, GRPC, Redis, Terraform, FastAPI }}
+\begin{itemize}
+  \item \small Architected and deployed a highly scalable agentic framework handling over 50M daily transactions with an average latency of under 45ms.
+  \item \small Led a cross-functional team of 8 engineers in designing standard API protocols for agentic communication, improving overall team throughput by 40\%.
+  \item \small Optimized deep learning inference pipelines, reducing memory usage by 35\% and cloud infrastructure costs by \$120K annually.
+\end{itemize}
+\vspace{ 1.5pt }
+\begin{tabularx}{\textwidth}{@{} X r @{}}
+  \textbf{ Stripe - Developer Infrastructure \& Platform Group } & \small Jul 2021 - Sep 2023 \\
+  \textit{\small Senior Software Engineer (Payments Orchestration \& High-Availability Database Layer) } \ --- \small San Francisco, CA & 
+\end{tabularx}
+\par\noindent{\footnotesize\textit{Technologies: Go, React, PostgreSQL, Redis, AWS, Kafka, Terraform, Docker, Datadog }}
+\begin{itemize}
+  \item \small Redesigned the core ledger database synchronization protocol to achieve 99.999\% uptime during peak holiday traffic events.
+  \item \small Refactored high-throughput Kafka consumers, decreasing message processing lag by 75\% and eliminating data loss incidents.
+  \item \small Implemented rigorous automated load testing suites simulating 10x production volume, identifying critical bottlenecks prior to major releases.
+\end{itemize}
+
+
+\section{Education}
+\begin{tabularx}{\textwidth}{@{} X r @{}}
+  \textbf{ Stanford University - School of Engineering \& Computer Science } & \small Sep 2017 - Jun 2021 \\
+  \textit{\small Bachelor of Science in Computer Science (Specialization in Artificial Intelligence and Systems Design) } & \small GPA: 3.92 / 4.00
+\end{tabularx}
+\par\noindent\small \textit{Relevant Coursework / Honors: Outstanding Senior Thesis Award in Deep Learning · Tau Beta Pi Engineering Honor Society Member }
+
+
+
+% ── PROJECTS ──────────────────────────────────────────────────────────────────
+\section{Projects}
+\noindent\textbf{ Aetherial - Open Source Distributed AI Multi-Agent Orchestration \& Workflow Engine }
+  \\
+  \begin{tabularx}{\textwidth}{@{} X r @{}}
+    \small\textit{ Next.js 14, Node.js, Redis, PyTorch, Docker, Kubernetes, WebSockets, TailwindCSS, AWS ECS } & \small Jan 2024 - Apr 2024
+  \end{tabularx}
+\begin{itemize}
+  \item \small Created an open-source visual workflow designer for AI agents, gathering over 8,500 GitHub stars within the first two weeks of release.
+  \item \small Implemented real-time state synchronization using robust WebSocket connections, maintaining low latency with up to 10K concurrent users.
+  \item \small Optimized Docker containerization scripts, reducing final image footprint by 60\% for faster cloud platform deployment.
+\end{itemize}
+
+
+
+% ── AWARDS & ACHIEVEMENTS ─────────────────────────────────────────────────────
+\section{Awards \& Achievements}
+\begin{tabularx}{\textwidth}{@{} X r @{}}
+  \textbf{ First Place Winner - Global Generative AI Hackathon \& Venture Challenge } & \small Nov 2023
+\end{tabularx}
+  \par\noindent\textit{\small OpenAI \& Y Combinator } \ --- \small Awarded top honors among 500+ competing teams for building a zero-latency real-time voice translation assistant using custom edge-model quantization.
+
+
+
+% ── CERTIFICATIONS ────────────────────────────────────────────────────────────
+\section{Certifications}
+\noindent\textbf{ AWS Certified Solutions Architect – Professional (SAP-C02) Platform Deployment }
+  \\
+  \begin{tabularx}{\textwidth}{@{} X r @{}}
+    \small\textit{ Amazon Web Services (AWS) Training \& Certification Authority } \ {\footnotesize $\cdot$ \ \href{ https://aws.amazon.com/verification/certified-solutions-architect-professional-alex-mercer }{View Credential}} & \small Feb 2024
+  \end{tabularx}
+\vspace{4pt}
+\noindent\textbf{ Certified Kubernetes Administrator (CKA) Production Orchestration }
+  \\
+  \begin{tabularx}{\textwidth}{@{} X r @{}}
+    \small\textit{ The Linux Foundation \& Cloud Native Computing Foundation (CNCF) } \ {\footnotesize $\cdot$ \ \href{ https://www.cncf.io/verification/cka-kubernetes-administrator-alex-mercer-ck-92837 }{View Credential}} & \small Nov 2023
+  \end{tabularx}
+
+
+
+
+% ── EXTRACURRICULAR ───────────────────────────────────────────────────────────
+\section{Extracurricular Activities}
+\begin{tabularx}{\textwidth}{@{} X r @{}}
+  \textbf{ Lead Technical Mentor \& Organizer } & 
+\end{tabularx}
+\begin{itemize}
+  \item \small Mentored over 250 student developers annually on rapid prototyping, cloud architecture, and database design fundamentals.
+  \item \small Coordinated with industry sponsors (Google, Microsoft, Stripe) to secure \$45K in funding and API credits for participants.
+\end{itemize}
+
+
+
+\vfill
+
+\end{document}

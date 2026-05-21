@@ -1,11 +1,16 @@
 {{#if experience.length}}
-\section{Experience}
+\resumesection{Experience}
 {{#each experience}}
-\noindent\textbf{ {{this.company}} } \hfill \small {{this.dates}} \\
-\textit{\small {{this.title}} }{{#if this.location}} --- {\small {{this.location}} }{{/if}}{{#if this.tech}} \hfill {\footnotesize\textit{ {{this.tech}} }}{{/if}}
+\noindent\textbf{ {{this.company}} }
+\vspace{2pt}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}X >{\raggedleft\arraybackslash}p{2.8cm}@{}}
+  {{../theme.designSystem.metaSize}}\textit{ {{this.title}}{{#if this.tech}} • {{this.tech}}{{/if}}{{#if this.location}} • {{this.location}}{{/if}} } &
+  {{../theme.designSystem.metaSize}} {{this.dates}} \\
+\end{tabularx}
+\vspace{3pt}
 \begin{itemize}
 {{#each this.bullets}}
-  \item \small {{this}}
+  \item {{../theme.designSystem.bulletSize}} {{this}}
 {{/each}}
 \end{itemize}
 {{#unless @last}}\vspace{ {{../theme.designSystem.itemSpacing}} }{{/unless}}

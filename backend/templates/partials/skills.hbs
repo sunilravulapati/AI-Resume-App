@@ -1,10 +1,10 @@
 {{#if skills.length}}
-\section{Technical Skills}
+\resumesection{Technical Skills}
 \begingroup
 \renewcommand{\arraystretch}{ {{theme.designSystem.arrayStretch}} }
-\begin{tabularx}{\textwidth}{@{} p{4.2cm} X @{}}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{3.3cm} X @{} }
 {{#each skills}}
-  \textbf{ {{this.label}} } & \small {{this.value}} \\
+  \textbf{ {{this.label}} } & {{theme.designSystem.skillsSize}} {{this.value}} \\
 {{/each}}
 \end{tabularx}
 \endgroup

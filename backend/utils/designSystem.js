@@ -38,14 +38,14 @@ const themesBase = {
 const spaciousPreset = {
   baseFontSize: "11pt",
 
-  lineStretch: "1.14",
+  lineStretch: "1.12",
   arrayStretch: "1.16",
 
-  sectionSpacingBefore: "14pt",
+  sectionSpacingBefore: "12pt",
   sectionSpacingAfter: "6pt",
 
   itemSpacing: "8pt",
-  bulletSpacing: "2.5pt",
+  bulletSpacing: "3pt",
 
   headerSpacing: "10pt",
 
@@ -61,21 +61,21 @@ const spaciousPreset = {
  * Best for most resumes.
  */
 const moderatePreset = {
-  baseFontSize: "10pt",
+  baseFontSize: "11pt",
 
-  lineStretch: "1.04",
+  lineStretch: "1.08",
   arrayStretch: "1.06",
 
-  sectionSpacingBefore: "9pt",
-  sectionSpacingAfter: "4pt",
+  sectionSpacingBefore: "10pt",
+  sectionSpacingAfter: "5pt",
 
-  itemSpacing: "3.5pt",
-  bulletSpacing: "1.0pt",
+  itemSpacing: "6pt",
+  bulletSpacing: "2pt",
 
-  headerSpacing: "5pt",
+  headerSpacing: "8pt",
 
   bulletSize: "\\small",
-  metaSize: "\\footnotesize",
+  metaSize: "\\small",
   skillsSize: "\\small"
 };
 
@@ -88,19 +88,19 @@ const moderatePreset = {
 const compactPreset = {
   baseFontSize: "10pt",
 
-  lineStretch: "0.99",
+  lineStretch: "1.05",
   arrayStretch: "1.00",
 
-  sectionSpacingBefore: "6pt",
-  sectionSpacingAfter: "2pt",
+  sectionSpacingBefore: "8pt",
+  sectionSpacingAfter: "5pt",
 
-  itemSpacing: "1.5pt",
-  bulletSpacing: "0.3pt",
+  itemSpacing: "5pt",
+  bulletSpacing: "1pt",
 
-  headerSpacing: "1.5pt",
+  headerSpacing: "6pt",
 
   bulletSize: "\\footnotesize",
-  metaSize: "\\scriptsize",
+  metaSize: "\\footnotesize",
   skillsSize: "\\footnotesize"
 };
 
@@ -179,10 +179,8 @@ export function countResumeElements(data) {
 /**
  * Resolves the perfectly balanced design system tokens based on content density.
  *
- * FIX: Raised the moderate threshold from 22 → 26 so that a typical
- * entry-level resume (3 projects, 5 skill rows, 1 education, a few awards)
- * lands in moderatePreset rather than compactPreset, preventing text from
- * appearing overly tight for low-to-medium content volumes.
+ * FIX: Raised the moderate threshold from 26 → 30 so that a wider range of
+ * resumes retain balanced spacing instead of over-compressing into compact.
  */
 export function getDesignTokens(themeName = "classic", totalElements = 0) {
   const base = themesBase[themeName] || themesBase.classic;
@@ -191,7 +189,7 @@ export function getDesignTokens(themeName = "classic", totalElements = 0) {
   if (totalElements <= 14) {
     // Very sparse resume — use generous spacing to avoid a half-empty page
     preset = spaciousPreset;
-  } else if (totalElements <= 26) {
+  } else if (totalElements <= 30) {
     // Medium-density resume — balanced spacing
     preset = moderatePreset;
   } else {

@@ -1,5 +1,7 @@
 \begin{center}
-    {\Huge \bfseries {{name}} } \\ \vspace{3pt}
-    {{#if tagline}}{\large \textit{ {{tagline}} }} \\ \vspace{4pt}{{/if}}
-    \small {{{contactLine}}}
+  {\Huge \bfseries {{name}} }\\[4pt]
+  {{#if tagline}}{\large \textit{ {{tagline}} }}\\[7pt]{{/if}}
+  \begin{tabularx}{0.92\textwidth}{@{}>{\centering\arraybackslash}X@{}}
+    {\footnotesize {{{contactLine}}} }
+  \end{tabularx}
 \end{center}
