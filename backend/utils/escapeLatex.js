@@ -66,13 +66,24 @@ export function normalizeUnicode(str) {
  */
 export function escapeLatex(str) {
   if (str == null) return "";
-  const s = normalizeUnicode(String(str));
+  let s = normalizeUnicode(String(str));
 
-  return s
-    .replace(/\\/g, "\\textbackslash{}")   // \ → \textbackslash{}  (MUST be first)
+  // 1. Ensure the backslash replacement \\textbackslash{} executes first before any other character substitution.
+  s = s.replace(/\\/g, "\\textbackslash{}");
+
+  // 4. Scan string properties for duplicate accidental math indicators like `$` or `$$` and clear them completely,
+  // or force them into an explicit text separator format like `\\textbar{}` when processing skill matrices or technology subtitlings.
+  s = s.replace(/(\$\$)|(\s+\$\s+)|(\$(?=\d))|(\$)/g, (match, p1, p2, p3, p4) => {
+    if (p1) return ""; // raw double dollar signs ($$) - completely remove
+    if (p2) return " \\textbar{} "; // single $ surrounded by spaces - textbar
+    if (p3) return "\\$"; // true financial metric followed by digit - escape safely
+    if (p4) return ""; // any other unescaped $ - completely remove
+  });
+
+  // Standard LaTeX escaping
+  s = s
     .replace(/\{/g, "\\{")                  // { → \{
     .replace(/\}/g, "\\}")                  // } → \}
-    .replace(/\$/g, "\\$")                  // $ → \$
     .replace(/&/g, "\\&")                   // & → \&
     .replace(/#/g, "\\#")                   // # → \#
     .replace(/%/g, "\\%")                   // % → \%
@@ -82,6 +93,14 @@ export function escapeLatex(str) {
     .replace(/</g, "\\textless{}")          // < → \textless{}
     .replace(/>/g, "\\textgreater{}")       // > → \textgreater{}
     .replace(/\|/g, "\\textbar{}");         // | → \textbar{}
+
+  // 2. Catch inline markdown bold blocks matching `\*\*(.*?)\*\*` and transform them explicitly into valid LaTeX formatting: `\\textbf{$1}`.
+  s = s.replace(/\*\*(.*?)\*\*/g, "\\textbf{$1}");
+
+  // 3. Catch inline markdown italic blocks matching `\*(.*?)\*` and transform them cleanly into `\\textit{$1}`.
+  s = s.replace(/\*(.*?)\*/g, "\\textit{$1}");
+
+  return s;
 }
 
 // ─── escapeLatexUrl ──────────────────────────────────────────────────────────

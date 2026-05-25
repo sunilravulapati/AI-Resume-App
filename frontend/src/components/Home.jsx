@@ -973,9 +973,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════
-            SPLIT VALUE PROP
-        ═══════════════════════════════════════════════ */}
+        {/*SPLIT VALUE PROP*/}
         <section className="page-section">
           <p className="section-eyebrow" style={{ textAlign: "center" }}>Two sides. One platform.</p>
           <h2 className="section-title" style={{ textAlign: "center", marginBottom: 56 }}>Built for both sides of the table</h2>
@@ -1024,9 +1022,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════
-            DIFFERENTIATORS
-        ═══════════════════════════════════════════════ */}
+        {/*DIFFERENTIATOR */}
         <section className="page-section-bg" style={{ background: "#F0EFE8" }}>
           <div className="inner">
             <p className="section-eyebrow">Why not just use ChatGPT?</p>
@@ -1045,9 +1041,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════
-            FINAL CTA
-        ═══════════════════════════════════════════════ */}
+        {/*FINAL CTA*/}
         <section className="page-section" style={{ paddingBottom: 100 }}>
           <div className="cta-section">
             <div className="cta-glow" />

@@ -3,10 +3,10 @@
 % ── PROJECTS ──────────────────────────────────────────────────────────────────
 \resumesection{Projects}
 {{#each projects}}
-\noindent\textbf{ {{this.title}} }{{#if this.tech}} $|$ {{this.tech}}{{/if}}\hfill{ {{../theme.designSystem.metaSize}} {{this.meta}} }\par\nopagebreak
+\noindent\textbf{{escapeLatex this.title}}{{#if this.tech}} \textbar{} \textit{\small {{escapeLatex this.tech}}}{{/if}}\hfill{ {{../theme.designSystem.metaSize}} {{escapeLatex this.meta}} }\par\nopagebreak
 \begin{itemize}
 {{#each this.bullets}}
-  \item {{../theme.designSystem.bulletSize}} {{this}}
+  \item {{../theme.designSystem.bulletSize}} {{escapeLatex this}}
 {{/each}}
 \end{itemize}
 {{#unless @last}}\vspace{1pt}{{/unless}}

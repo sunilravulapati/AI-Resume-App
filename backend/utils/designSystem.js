@@ -1,10 +1,3 @@
-/**
- * Premium Recruiter-First Resume PDF Design System with Adaptive Layouts.
- * Implements Task 1, 2, 3, 4, 5, 6, 7, 8, 9, and 10.
- * Dynamically scales base font sizes, line heights, tabular spacing,
- * and section rhythms, ensuring visual page-balance for all resume lengths.
- */
-
 const themesBase = {
   classic: {
     fontPackage: "\\usepackage{lmodern}",

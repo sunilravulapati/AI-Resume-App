@@ -6,7 +6,7 @@ import User from "../models/User.js";
 import { calculateProgrammaticScore, calculateFinalScore, structureScore, impactScore, skillAlignmentScore } from "../services/scorer.js";
 import { analyzeResume, analyzeResumeTargeted, tailorResume, generateCoverLetterWithAI, rankCandidatesWithAI, generateLatexWithAI } from "../services/aiAnalyzer.js";
 import { generateResumePdf, generateResumeLatex } from "../services/generateResumePdf.js";
-import { prepareResumeExport } from "../services/resumeFormat.js";
+import { prepareResumeExport, resolveDisplayName } from "../services/resumeFormat.js";
 import { extractJSON } from "../utils/jsonExtractor.js";
 import { verifyToken } from "../middleware/auth.js";
 import { parseResume } from "../services/resumeParser.js";
@@ -18,14 +18,8 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 
-// ─────────────────────────────────────────────────────────────────────────────
 // 1. UPLOAD & ANALYZE
-// ─────────────────────────────────────────────────────────────────────────────
-resumeRouter.post(
-  "/upload",
-  verifyToken("student"),
-  upload.single("resume"),
-  async (req, res) => {
+resumeRouter.post("/upload", verifyToken("student"), upload.single("resume"), async (req, res) => {
     try {
       if (!req.file) return res.status(400).json({ error: "No resume uploaded" });
 
@@ -127,9 +121,7 @@ resumeRouter.post(
 );
 
 
-// ─────────────────────────────────────────────────────────────────────────────
 // 2. GET RESUME HISTORY
-// ─────────────────────────────────────────────────────────────────────────────
 resumeRouter.get("/history", verifyToken("student"), async (req, res) => {
   try {
     const history = await Resume.find({ userId: req.user.id }).sort({ createdAt: -1 });
@@ -140,9 +132,7 @@ resumeRouter.get("/history", verifyToken("student"), async (req, res) => {
 });
 
 
-// ─────────────────────────────────────────────────────────────────────────────
 // 3. GET ALL RESUMES (Recruiters & Admins)
-// ─────────────────────────────────────────────────────────────────────────────
 resumeRouter.get("/all", verifyToken("recruiter", "admin"), async (req, res) => {
   try {
     const resumes = await Resume.find().sort({ atsScore: -1 }).populate("userId", "firstName lastName email mobile username");
@@ -154,9 +144,7 @@ resumeRouter.get("/all", verifyToken("recruiter", "admin"), async (req, res) => 
 });
 
 
-// ─────────────────────────────────────────────────────────────────────────────
 // 4. TAILOR RESUME
-// ─────────────────────────────────────────────────────────────────────────────
 resumeRouter.post("/tailor", verifyToken("student"), async (req, res) => {
   try {
     const { resumeId, jobDescription, userLinks } = req.body;
@@ -203,9 +191,7 @@ resumeRouter.post("/tailor", verifyToken("student"), async (req, res) => {
 });
 
 
-// ─────────────────────────────────────────────────────────────────────────────
 // 5. GENERATE LATEX
-// ─────────────────────────────────────────────────────────────────────────────
 resumeRouter.post("/generate-latex", verifyToken("student"), async (req, res) => {
   try {
     const { resumeId, tailoredData, template = "classic", mode = "ats" } = req.body;
@@ -237,9 +223,7 @@ resumeRouter.post("/generate-latex", verifyToken("student"), async (req, res) =>
 });
 
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 5.1 GENERATE PDF
-// ─────────────────────────────────────────────────────────────────────────────
+// 5.1 GENERATE PDF 
 resumeRouter.post("/generate-pdf", verifyToken("student"), async (req, res) => {
   try {
     const { resumeId, tailoredData, template = "classic" } = req.body;
@@ -253,7 +237,34 @@ resumeRouter.post("/generate-pdf", verifyToken("student"), async (req, res) => {
     const resumeText = baseResume.rawText || baseResume.parsedText;
     const dbUser     = await User.findById(req.user.id).select("firstName lastName email mobile");
 
-    const prepared = prepareResumeExport(tailoredData, { resumeText, user: dbUser });
+    // Construct a protectedTailoredData object
+    const protectedTailoredData = JSON.parse(JSON.stringify(tailoredData));
+
+    // Extract original contact details from the database record / resume text & dbUser
+    const parsedContacts = parseResume(resumeText).contacts || {};
+    const resolvedName = resolveDisplayName(null, resumeText, dbUser);
+
+    const dbBasics = {
+      name: resolvedName,
+      email: parsedContacts.email || dbUser?.email || "",
+      phone: parsedContacts.phone || dbUser?.mobile || "",
+      linkedin: parsedContacts.linkedin || "",
+      github: parsedContacts.github || "",
+      portfolio: parsedContacts.portfolio || "",
+    };
+
+    // Deep-merge and re-inject contact block basics
+    protectedTailoredData.basics = {
+      ...protectedTailoredData.basics,
+      name: dbBasics.name || (protectedTailoredData.basics && protectedTailoredData.basics.name) || "",
+      email: dbBasics.email || (protectedTailoredData.basics && protectedTailoredData.basics.email) || "",
+      phone: dbBasics.phone || (protectedTailoredData.basics && protectedTailoredData.basics.phone) || "",
+      linkedin: dbBasics.linkedin || (protectedTailoredData.basics && protectedTailoredData.basics.linkedin) || "",
+      github: dbBasics.github || (protectedTailoredData.basics && protectedTailoredData.basics.github) || "",
+      portfolio: dbBasics.portfolio || (protectedTailoredData.basics && protectedTailoredData.basics.portfolio) || "",
+    };
+
+    const prepared = prepareResumeExport(protectedTailoredData, { resumeText, user: dbUser });
 
     // Full pipeline: normalize → validate → sanitize → render → compile PDF
     const { outputPath } = await generateResumePdf(prepared, template);
@@ -275,9 +286,7 @@ resumeRouter.post("/generate-pdf", verifyToken("student"), async (req, res) => {
 });
 
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 5.5 GENERATE TAILORED COVER LETTER
-// ─────────────────────────────────────────────────────────────────────────────
+// 5.2 GENERATE TAILORED COVER LETTER
 resumeRouter.post("/generate-cover-letter", verifyToken("student"), async (req, res) => {
   try {
     const { resumeId, tailoredData, company, roleName } = req.body;
@@ -306,9 +315,7 @@ resumeRouter.post("/generate-cover-letter", verifyToken("student"), async (req, 
 });
 
 
-// ─────────────────────────────────────────────────────────────────────────────
 // 6. GET SINGLE RESUME
-// ─────────────────────────────────────────────────────────────────────────────
 resumeRouter.get("/:id", verifyToken(), async (req, res) => {
   try {
     const resume = await Resume.findById(req.params.id).populate("userId", "firstName lastName email mobile username");
@@ -322,9 +329,7 @@ resumeRouter.get("/:id", verifyToken(), async (req, res) => {
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
 // 7. RECRUITER: SCREEN CANDIDATES WITH AI (MATCH POOL)
-// ─────────────────────────────────────────────────────────────────────────────
 resumeRouter.post("/match-pool", verifyToken("recruiter", "admin"), async (req, res) => {
   try {
     const { jobDescription } = req.body;
@@ -341,9 +346,7 @@ resumeRouter.post("/match-pool", verifyToken("recruiter", "admin"), async (req, 
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
 // 8. RECRUITER: INVITE CANDIDATE (SIMULATED VIA EMAIL)
-// ─────────────────────────────────────────────────────────────────────────────
 resumeRouter.post("/invite-candidate", verifyToken("recruiter", "admin"), async (req, res) => {
   try {
     const { resumeId, emailSubject, emailBody } = req.body;

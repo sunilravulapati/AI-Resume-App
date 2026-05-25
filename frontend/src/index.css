@@ -7,7 +7,7 @@
   --color-brand-500: #3b82f6;
   --color-brand-600: #2563eb;
   --color-brand-700: #1d4ed8;
-  
+
   --color-accent: #0055FF;
   --color-accent-hover: #0044CC;
   --color-accent-soft: rgba(0, 85, 255, 0.08);
@@ -33,6 +33,7 @@
       opacity: 0;
       transform: translateY(12px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -40,8 +41,13 @@
   }
 
   @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
   }
 
   @keyframes slide-up {
@@ -49,6 +55,7 @@
       opacity: 0;
       transform: translateY(100%);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -56,8 +63,15 @@
   }
 
   @keyframes pulse-soft {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
+
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.7;
+    }
   }
 }
 
@@ -70,7 +84,7 @@
   --text: #09090B;
   --text-secondary: #52525B;
   --text-muted: #A1A1AA;
-  
+
   --success: #10B981;
   --success-soft: #D1FAE5;
   --warning: #F59E0B;
@@ -130,13 +144,16 @@ body {
   width: 8px;
   height: 8px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #D4D4D8;
   border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: #A1A1AA;
 }
@@ -146,4 +163,3 @@ body {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
-

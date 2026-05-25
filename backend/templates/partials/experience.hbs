@@ -1,11 +1,10 @@
 {{#if experience}}
 \resumesection{Experience}
 {{#each experience}}
-\noindent\textbf{ {{this.company}} }\hfill{ {{../theme.designSystem.metaSize}} {{this.dates}} }\par\nopagebreak
-\noindent{{../theme.designSystem.metaSize}}\textit{ {{this.title}}{{#if this.tech}} $|$ {{this.tech}}{{/if}}{{#if this.location}} $|$ {{this.location}}{{/if}} }\par\nopagebreak
+\noindent\textbf{{escapeLatex this.company}} \textbar{} \textit{\small {{escapeLatex this.title}}}{{#if this.tech}} \textbar{} \textit{\small {{escapeLatex this.tech}}}{{/if}}{{#if this.location}} \textbar{} \textit{\small {{escapeLatex this.location}}}{{/if}}\hfill{ {{../theme.designSystem.metaSize}} {{escapeLatex this.dates}} }\par\nopagebreak
 \begin{itemize}
 {{#each this.bullets}}
-  \item {{../theme.designSystem.bulletSize}} {{this}}
+  \item {{../theme.designSystem.bulletSize}} {{escapeLatex this}}
 {{/each}}
 \end{itemize}
 {{#unless @last}}\vspace{ {{../theme.designSystem.itemSpacing}} }{{/unless}}

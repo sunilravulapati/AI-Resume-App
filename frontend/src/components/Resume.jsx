@@ -143,7 +143,7 @@ export default function Resume() {
               <span>🤖</span> {isRecruiter ? 'Recruiter Fit Assessment' : 'Candid AI Assessment'}
             </h3>
             <p className={`${bodyText} text-sm leading-relaxed`}>
-              {isRecruiter 
+              {isRecruiter
                 ? (resume.feedback?.recruiterFeedback?.recruiterSummary || resume.feedback?.summary)
                 : (resume.feedback?.studentFeedback?.summary || resume.feedback?.summary)
               }
@@ -155,13 +155,13 @@ export default function Resume() {
             <h3 className="text-[0.65rem] font-bold text-[#0066cc] uppercase tracking-wider mb-4 flex items-center gap-2">
               <span>📊</span> Interactive Score Breakdown
             </h3>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {(() => {
                 const defaultSub = { structure: 0, impact: 0, skillAlignment: 0, complexity: 0, professionalism: 0, skillProjectFit: 0 };
                 const rawSub = resume.subScores || defaultSub;
                 const totalSub = rawSub.structure + rawSub.impact + rawSub.skillAlignment + rawSub.complexity + rawSub.professionalism + rawSub.skillProjectFit;
-                
+
                 const ats = resume.atsScore || 0;
                 const items = totalSub > 0 ? [
                   { name: 'Formatting & Layout', score: rawSub.structure, max: 20, desc: 'Structure and standard section presence.', color: 'from-[#0066cc] to-[#3399ff]', icon: '📝', type: 'Programmatic' },
@@ -182,8 +182,8 @@ export default function Resume() {
                 return items.map((item, idx) => {
                   const percent = Math.round((item.score / item.max) * 100);
                   return (
-                    <div 
-                      key={idx} 
+                    <div
+                      key={idx}
                       className="group relative flex flex-col p-3.5 bg-[#f5f5f7] border border-[#e8e8ed] rounded-xl hover:border-[#0066cc]/30 transition-all duration-200 overflow-hidden cursor-help"
                     >
                       {/* Hover definition overlay */}
@@ -206,8 +206,8 @@ export default function Resume() {
 
                       <div className="mt-auto flex items-center justify-between gap-3">
                         <div className="flex-1 bg-[#e8e8ed] rounded-full h-1.5 overflow-hidden">
-                          <div 
-                            className={`h-full rounded-full bg-gradient-to-r ${item.color} transition-all duration-500`} 
+                          <div
+                            className={`h-full rounded-full bg-gradient-to-r ${item.color} transition-all duration-500`}
                             style={{ width: `${percent}%` }}
                           />
                         </div>
@@ -230,7 +230,7 @@ export default function Resume() {
               <span>🟢</span> {isRecruiter ? 'Candidate Green Flags' : 'Key Strengths'}
             </h3>
             <ul className="space-y-3">
-              {(isRecruiter 
+              {(isRecruiter
                 ? (resume.feedback?.recruiterFeedback?.greenFlags?.length > 0 ? resume.feedback.recruiterFeedback.greenFlags : resume.feedback?.strengths)
                 : (resume.feedback?.studentFeedback?.strengths || resume.feedback?.strengths)
               )?.map((str, idx) => (
@@ -248,7 +248,7 @@ export default function Resume() {
               <span>🔴</span> {isRecruiter ? 'Candidate Red Flags' : 'Areas of Concern'}
             </h3>
             <ul className="space-y-3">
-              {(isRecruiter 
+              {(isRecruiter
                 ? (resume.feedback?.recruiterFeedback?.redFlags?.length > 0 ? resume.feedback.recruiterFeedback.redFlags : resume.feedback?.improvements)
                 : (resume.feedback?.studentFeedback?.improvements || resume.feedback?.improvements)
               )?.map((imp, idx) => (

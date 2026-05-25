@@ -18,6 +18,7 @@
   right=0.6in
 ]{geometry}
 \usepackage{enumitem}
+\usepackage{etoolbox}
 \usepackage{array}
 \usepackage{tabularx}
 \usepackage{xcolor}
@@ -78,15 +79,7 @@
 }
 
 % ── List Formatting (ATS-safe — text-mode bullet, not math-mode) ─────────────
-\setlist[itemize]{
-  nosep,
-  itemsep=0pt,
-  topsep=1pt,
-  parsep=0pt,
-  partopsep=0pt,
-  leftmargin=0.18in,
-  label={\textbullet}
-}
+\setlist[itemize]{leftmargin=0.15in, parsep=0pt, topsep=2pt, itemsep={{theme.designSystem.bulletItemSep}}}
 
 % ── ATS PDF Metadata ─────────────────────────────────────────────────────────
 \hypersetup{
@@ -120,7 +113,5 @@
 {{> extracurricular}}
 
 {{> languages}}
-
-\vfill
 
 \end{document}

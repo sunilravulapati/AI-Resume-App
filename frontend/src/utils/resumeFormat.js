@@ -1,4 +1,3 @@
-// frontend/src/utils/resumeFormat.js
 export function trimWords(text = '', maxWords = 14) {
   const words = String(text).trim().split(/\s+/).filter(Boolean);
   if (words.length <= maxWords) return String(text).trim();
