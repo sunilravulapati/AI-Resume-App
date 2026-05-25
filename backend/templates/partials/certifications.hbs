@@ -1,0 +1,13 @@
+{{#if certifications}}
+
+% ── CERTIFICATIONS ────────────────────────────────────────────────────────────
+\resumesection{Certifications}
+{{#each certifications}}
+\noindent\textbf{ {{this.title}} }\hfill{ {{../theme.designSystem.metaSize}} {{this.dates}} }\par\nopagebreak
+{{#if this.org}}\noindent{{../theme.designSystem.metaSize}}\textit{ {{this.org}} }\par\nopagebreak{{/if}}
+{{#if this.url}}
+\noindent{{../theme.designSystem.metaSize}}\href{ {{this.url}} }{View Credential}\par
+{{/if}}
+{{#unless @last}}\vspace{ {{../theme.designSystem.itemSpacing}} }{{/unless}}
+{{/each}}
+{{/if}}

@@ -89,4 +89,41 @@ export function validateResumeData(data) {
   return data;
 }
 
+export function evaluateResumeQuality(data) {
+  if (!data || typeof data !== "object") return data;
+  const warnings = [];
+
+  const checkBullets = (sectionName, items) => {
+    if (!Array.isArray(items)) return;
+    const seenBullets = new Set();
+    
+    items.forEach(item => {
+      if (!item) return;
+      if (item.bullets && item.bullets.length === 0) {
+        warnings.push(`Empty bullet list in ${sectionName}: ${item.title || item.company || 'Unknown'}`);
+      }
+      if (Array.isArray(item.bullets)) {
+        item.bullets.forEach(b => {
+          const wordCount = String(b).split(/\s+/).length;
+          if (wordCount > 35) {
+            warnings.push(`Excessively long bullet (>35 words) in ${sectionName}: "${String(b).substring(0, 30)}..."`);
+          }
+          const lower = String(b).toLowerCase().trim();
+          if (seenBullets.has(lower)) {
+            warnings.push(`Duplicate bullet in ${sectionName}: "${String(b).substring(0, 30)}..."`);
+          }
+          seenBullets.add(lower);
+        });
+      }
+    });
+  };
+
+  checkBullets("experience", data.experience);
+  checkBullets("projects", data.projects);
+  checkBullets("extracurricular", data.extracurricular);
+
+  data.qualityWarnings = warnings;
+  return data;
+}
+
 export { LIMITS };

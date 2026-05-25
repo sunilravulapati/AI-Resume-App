@@ -4,7 +4,7 @@ import PDFParser from "pdf2json";
 import { Resume } from "../models/Resume.js";
 import User from "../models/User.js";
 import { calculateProgrammaticScore, calculateFinalScore, structureScore, impactScore, skillAlignmentScore } from "../services/scorer.js";
-import { analyzeResume, analyzeResumeTargeted, tailorResume, generateCoverLetterWithAI, rankCandidatesWithAI } from "../services/aiAnalyzer.js";
+import { analyzeResume, analyzeResumeTargeted, tailorResume, generateCoverLetterWithAI, rankCandidatesWithAI, generateLatexWithAI } from "../services/aiAnalyzer.js";
 import { generateResumePdf, generateResumeLatex } from "../services/generateResumePdf.js";
 import { prepareResumeExport } from "../services/resumeFormat.js";
 import { extractJSON } from "../utils/jsonExtractor.js";
@@ -208,7 +208,7 @@ resumeRouter.post("/tailor", verifyToken("student"), async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 resumeRouter.post("/generate-latex", verifyToken("student"), async (req, res) => {
   try {
-    const { resumeId, tailoredData, template = "classic" } = req.body;
+    const { resumeId, tailoredData, template = "classic", mode = "ats" } = req.body;
 
     if (!resumeId || !tailoredData)
       return res.status(400).json({ error: "Missing resumeId or tailoredData." });
@@ -222,8 +222,12 @@ resumeRouter.post("/generate-latex", verifyToken("student"), async (req, res) =>
     // Prepare + normalize via resumeFormat (merges DB profile if basics blank)
     const prepared = prepareResumeExport(tailoredData, { resumeText, user: dbUser });
 
-    // Pipeline: normalize → validate → sanitize → render → debug.tex
-    const compiledLatex = await generateResumeLatex(prepared, template);
+    let compiledLatex;
+    if (mode === "ai") {
+      compiledLatex = await generateLatexWithAI(prepared);
+    } else {
+      compiledLatex = await generateResumeLatex(prepared, template);
+    }
 
     return res.status(200).json({ latex: compiledLatex.trim() });
   } catch (err) {

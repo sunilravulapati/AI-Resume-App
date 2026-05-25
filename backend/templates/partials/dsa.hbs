@@ -1,0 +1,19 @@
+{{#if dsaProfiles}}
+
+% ── DSA PROFICIENCY ───────────────────────────────────────────────────────────
+\resumesection{DSA Proficiency \& Competitive Programming}
+\begin{itemize}
+{{#each dsaProfiles}}
+  \item {{../theme.designSystem.bulletSize}} {{this}}
+{{/each}}
+\end{itemize}
+{{else if dsaProficiency}}
+
+% ── DSA PROFICIENCY ───────────────────────────────────────────────────────────
+\resumesection{DSA Proficiency \& Competitive Programming}
+\begin{itemize}
+{{#each dsaProficiency}}
+  \item {{../theme.designSystem.bulletSize}} {{this}}
+{{/each}}
+\end{itemize}
+{{/if}}

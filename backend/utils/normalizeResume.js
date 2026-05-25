@@ -81,8 +81,8 @@ export function normalizeResume(data) {
   const rawSkills = data.skills || data.tailoredSkills || [];
   if (Array.isArray(rawSkills)) {
     normalized.skills = rawSkills.map((s) => ({
-      label: (s.label || "").trim(),
-      value: (s.value || "").trim(),
+      label: (s.label || s.category || "").trim(),
+      value: (s.value || (Array.isArray(s.items) ? s.items.join(", ") : s.items) || "").trim(),
     })).filter((s) => s.label && s.value);
   } else if (rawSkills && typeof rawSkills === "object") {
     normalized.skills = Object.entries(rawSkills).map(([k, v]) => ({

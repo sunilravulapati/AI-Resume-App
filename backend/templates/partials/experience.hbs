@@ -1,13 +1,8 @@
-{{#if experience.length}}
+{{#if experience}}
 \resumesection{Experience}
 {{#each experience}}
-\noindent\textbf{ {{this.company}} }
-\vspace{2pt}
-\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}X >{\raggedleft\arraybackslash}p{2.8cm}@{}}
-  {{../theme.designSystem.metaSize}}\textit{ {{this.title}}{{#if this.tech}} • {{this.tech}}{{/if}}{{#if this.location}} • {{this.location}}{{/if}} } &
-  {{../theme.designSystem.metaSize}} {{this.dates}} \\
-\end{tabularx}
-\vspace{3pt}
+\noindent\textbf{ {{this.company}} }\hfill{ {{../theme.designSystem.metaSize}} {{this.dates}} }\par\nopagebreak
+\noindent{{../theme.designSystem.metaSize}}\textit{ {{this.title}}{{#if this.tech}} $|$ {{this.tech}}{{/if}}{{#if this.location}} $|$ {{this.location}}{{/if}} }\par\nopagebreak
 \begin{itemize}
 {{#each this.bullets}}
   \item {{../theme.designSystem.bulletSize}} {{this}}

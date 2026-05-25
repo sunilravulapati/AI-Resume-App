@@ -13,56 +13,17 @@ const globalStyles = `
 
   .serif { font-family: 'Instrument Serif', serif; }
 
-  /* Noise texture overlay */
-  .home-root::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-    opacity: 0.4;
-  }
+  /* Noise texture removed for cleaner look */
 
-  /* ── Animations ── */
-  @keyframes in-up {
-    from { opacity: 0; transform: translateY(32px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes in-fade {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-  }
-  @keyframes marquee {
-    from { transform: translateX(0); }
-    to   { transform: translateX(-50%); }
-  }
-  @keyframes bar-grow {
-    from { transform: scaleX(0); }
-    to   { transform: scaleX(1); }
-  }
-  @keyframes score-pop {
-    0%   { transform: scale(0.8); opacity: 0; }
-    70%  { transform: scale(1.04); }
-    100% { transform: scale(1); opacity: 1; }
-  }
-  @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50%       { transform: translateY(-8px); }
-  }
-  @keyframes spin-slow {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
-  }
-
-  .a-up   { animation: in-up 0.7s cubic-bezier(0.22,1,0.36,1) both; }
-  .a-fade { animation: in-fade 0.6s ease both; }
-  .d1 { animation-delay: 0.05s; }
-  .d2 { animation-delay: 0.14s; }
-  .d3 { animation-delay: 0.23s; }
-  .d4 { animation-delay: 0.32s; }
-  .d5 { animation-delay: 0.42s; }
-  .d6 { animation-delay: 0.52s; }
+  /* Entrance animations disabled for a more static, calm layout */
+  .a-up   { }
+  .a-fade { }
+  .d1 { }
+  .d2 { }
+  .d3 { }
+  .d4 { }
+  .d5 { }
+  .d6 { }
 
   /* ── Hero Badge ── */
   .hero-badge {
@@ -89,15 +50,16 @@ const globalStyles = `
   }
 
   .hero-title {
-    font-family: 'Instrument Serif', serif;
-    font-size: clamp(3rem, 9vw, 7.5rem);
-    line-height: 0.95;
-    letter-spacing: -0.02em;
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
     color: #0F0F0D;
   }
   .hero-title em {
-    font-style: italic;
-    color: #1A5CFF;
+    font-style: normal;
+    color: #0F0F0D;
   }
 
   .hero-sub {
@@ -151,24 +113,16 @@ const globalStyles = `
     transform: translateY(-1px);
   }
 
-  /* ── Score Widget ── */
   .score-widget {
-    background: #0F0F0D;
+    background: #fff;
+    border: 1px solid rgba(15,15,13,0.1);
     border-radius: 20px;
     padding: 28px;
-    color: #FAFAF8;
+    color: #0F0F0D;
     position: relative;
     overflow: hidden;
   }
-  .score-widget::before {
-    content: '';
-    position: absolute;
-    top: -60px; right: -60px;
-    width: 180px; height: 180px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(26,92,255,0.3) 0%, transparent 70%);
-    pointer-events: none;
-  }
+  /* Removed radial gradient glow from score widget */
 
   /* FIX: Score columns layout — use flex with explicit dividers, no grid column bleed */
   .score-cols {
@@ -182,7 +136,7 @@ const globalStyles = `
   }
   .score-col-divider {
     width: 1px;
-    background: rgba(250,250,248,0.08);
+    background: rgba(15,15,13,0.1);
     margin: 0 20px;
     flex-shrink: 0;
     align-self: stretch;
@@ -202,22 +156,20 @@ const globalStyles = `
   }
 
   .score-num {
-    font-family: 'Instrument Serif', serif;
-    font-size: 4.5rem;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 3.5rem;
     line-height: 1;
-    animation: score-pop 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.9s both;
   }
   .score-bar-track {
-    height: 3px;
-    background: rgba(255,255,255,0.12);
+    height: 4px;
+    background: rgba(15,15,13,0.1);
     border-radius: 99px;
     overflow: hidden;
   }
   .score-bar-fill {
     height: 100%;
     border-radius: 99px;
-    transform-origin: left;
-    animation: bar-grow 1.2s cubic-bezier(0.4,0,0.2,1) 1.1s both;
   }
   .chip {
     font-size: 10px;
@@ -241,8 +193,8 @@ const globalStyles = `
     display: flex;
     gap: 48px;
     width: max-content;
-    animation: marquee 22s linear infinite;
     white-space: nowrap;
+    /* Animation removed for a toned-down look */
   }
   .marquee-item {
     display: flex;
@@ -271,15 +223,16 @@ const globalStyles = `
     margin-bottom: 12px;
   }
   .section-title {
-    font-family: 'Instrument Serif', serif;
-    font-size: clamp(2rem, 5vw, 3.8rem);
-    line-height: 1.05;
-    letter-spacing: -0.02em;
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.5rem, 3vw, 2.5rem);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
     color: #0F0F0D;
   }
   .section-title em {
-    font-style: italic;
-    color: #1A5CFF;
+    font-style: normal;
+    color: #0F0F0D;
   }
 
   /* ── Numbered Steps ── */
@@ -300,13 +253,7 @@ const globalStyles = `
   }
   .step-cell:hover { background: #fff; }
   .step-num {
-    font-family: 'Instrument Serif', serif;
-    font-size: 5rem;
-    line-height: 1;
-    color: rgba(15,15,13,0.06);
-    position: absolute;
-    top: 16px; right: 20px;
-    user-select: none;
+    display: none;
   }
   .step-arrow {
     width: 32px; height: 32px;
@@ -326,16 +273,14 @@ const globalStyles = `
     gap: 16px;
   }
   .mode-card {
-    border-radius: 24px;
-    padding: 40px;
+    border-radius: 16px;
+    padding: 32px;
     position: relative;
     overflow: hidden;
-    border: 1.5px solid rgba(15,15,13,0.1);
-    transition: transform 0.25s, box-shadow 0.25s;
+    border: 1px solid rgba(15,15,13,0.1);
   }
   .mode-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 24px 56px rgba(15,15,13,0.08);
+    border-color: rgba(15,15,13,0.2);
   }
   .mode-card.general { background: #fff; }
   .mode-card.targeted { background: #0F0F0D; color: #FAFAF8; border-color: #0F0F0D; }
@@ -405,16 +350,14 @@ const globalStyles = `
   }
   .export-card {
     background: #fff;
-    border: 1px solid rgba(15,15,13,0.08);
-    border-radius: 20px;
+    border: 1px solid rgba(15,15,13,0.1);
+    border-radius: 16px;
     padding: 32px;
-    transition: transform 0.2s, box-shadow 0.2s;
     position: relative;
     overflow: hidden;
   }
   .export-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 16px 40px rgba(15,15,13,0.07);
+    border-color: rgba(15,15,13,0.2);
   }
   .export-icon-wrap {
     width: 52px; height: 52px;
@@ -529,31 +472,25 @@ const globalStyles = `
 
   /* ── Final CTA ── */
   .cta-section {
-    background: #0F0F0D;
-    border-radius: 28px;
-    padding: 80px 48px;
+    background: #fff;
+    border: 1px solid rgba(15,15,13,0.1);
+    border-radius: 16px;
+    padding: 60px 40px;
     text-align: center;
     position: relative;
     overflow: hidden;
   }
   .cta-title {
-    font-family: 'Instrument Serif', serif;
-    font-size: clamp(2.2rem, 6vw, 5rem);
-    line-height: 1.02;
-    letter-spacing: -0.02em;
-    color: #FAFAF8;
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.5rem, 4vw, 2.5rem);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: #0F0F0D;
     margin-bottom: 20px;
   }
-  .cta-title em { font-style: italic; color: #7AADFF; }
-  .cta-glow {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 600px; height: 400px;
-    border-radius: 50%;
-    background: radial-gradient(ellipse, rgba(26,92,255,0.2) 0%, transparent 70%);
-    pointer-events: none;
-  }
+  .cta-title em { font-style: normal; color: #0F0F0D; }
+  /* Removed cta-glow */
   .cta-btns {
     display: flex;
     gap: 12px;
@@ -796,11 +733,11 @@ export default function Home() {
 
                 {/* General Score */}
                 <div className="score-col" style={{ paddingRight: 4 }}>
-                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(250,250,248,0.4)", marginBottom: 8 }}>General Score</p>
-                  <div className="score-num" style={{ color: "#FAFAF8" }}>85</div>
-                  <p style={{ fontSize: 10, color: "rgba(250,250,248,0.4)", marginTop: 4 }}>out of 100</p>
+                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(15,15,13,0.5)", marginBottom: 8 }}>General Score</p>
+                  <div className="score-num" style={{ color: "#0F0F0D" }}>85</div>
+                  <p style={{ fontSize: 10, color: "rgba(15,15,13,0.4)", marginTop: 4 }}>out of 100</p>
                   <div className="score-bar-track" style={{ marginTop: 12 }}>
-                    <div className="score-bar-fill" style={{ width: "85%", background: "#FAFAF8" }} />
+                    <div className="score-bar-fill" style={{ width: "85%", background: "#0F0F0D" }} />
                   </div>
                 </div>
 
@@ -809,11 +746,11 @@ export default function Home() {
 
                 {/* Role Match */}
                 <div className="score-col" style={{ padding: "0 4px" }}>
-                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(250,250,248,0.4)", marginBottom: 8 }}>Role match</p>
-                  <div className="score-num" style={{ color: "#86EFAC", animationDelay: "1s" }}>72</div>
-                  <p style={{ fontSize: 10, color: "rgba(250,250,248,0.4)", marginTop: 4 }}>out of 100</p>
+                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(15,15,13,0.5)", marginBottom: 8 }}>Role match</p>
+                  <div className="score-num" style={{ color: "#22C55E", animationDelay: "1s" }}>72</div>
+                  <p style={{ fontSize: 10, color: "rgba(15,15,13,0.4)", marginTop: 4 }}>out of 100</p>
                   <div className="score-bar-track" style={{ marginTop: 12 }}>
-                    <div className="score-bar-fill" style={{ width: "72%", background: "#86EFAC", animationDelay: "1.2s" }} />
+                    <div className="score-bar-fill" style={{ width: "72%", background: "#22C55E", animationDelay: "1.2s" }} />
                   </div>
                 </div>
 
@@ -822,31 +759,31 @@ export default function Home() {
 
                 {/* Tailored for — FIX: full column, no divider bleeding in */}
                 <div className="score-col" style={{ paddingLeft: 4 }}>
-                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(250,250,248,0.4)", marginBottom: 12 }}>Tailored for</p>
-                  <div style={{ background: "rgba(134,239,172,0.12)", border: "1px solid rgba(134,239,172,0.2)", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
-                    <p style={{ fontSize: 11, fontWeight: 700, color: "#86EFAC", marginBottom: 2 }}>Senior SWE @ JPMC</p>
-                    <p style={{ fontSize: 10, color: "rgba(250,250,248,0.4)" }}>Role match enabled</p>
+                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(15,15,13,0.5)", marginBottom: 12 }}>Tailored for</p>
+                  <div style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: "#15803D", marginBottom: 2 }}>Senior SWE @ JPMC</p>
+                    <p style={{ fontSize: 10, color: "rgba(15,15,13,0.5)" }}>Role match enabled</p>
                   </div>
-                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(250,250,248,0.4)", marginBottom: 8 }}>Keyword match</p>
+                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(15,15,13,0.5)", marginBottom: 8 }}>Keyword match</p>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <div className="score-bar-track" style={{ flex: 1 }}>
-                      <div className="score-bar-fill" style={{ width: "68%", background: "#7AADFF", animationDelay: "1.3s" }} />
+                      <div className="score-bar-fill" style={{ width: "68%", background: "#1A5CFF", animationDelay: "1.3s" }} />
                     </div>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: "#7AADFF" }}>68%</span>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: "#1A5CFF" }}>68%</span>
                   </div>
                 </div>
 
               </div>
 
               {/* Missing skills chips */}
-              <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(250,250,248,0.08)" }}>
-                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(250,250,248,0.35)", marginBottom: 10 }}>Missing keywords</p>
+              <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(15,15,13,0.1)" }}>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(15,15,13,0.5)", marginBottom: 10 }}>Missing keywords</p>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {["Kubernetes", "gRPC", "System Design", "Distributed Systems"].map(k => (
-                    <span key={k} className="chip" style={{ color: "#F87171", borderColor: "rgba(248,113,113,0.3)", background: "rgba(248,113,113,0.08)" }}>{k}</span>
+                    <span key={k} className="chip" style={{ color: "#DC2626", borderColor: "rgba(220,38,38,0.2)", background: "rgba(220,38,38,0.05)" }}>{k}</span>
                   ))}
                   {["Spring Boot", "AWS Lambda"].map(k => (
-                    <span key={k} className="chip" style={{ color: "rgba(250,250,248,0.5)", borderColor: "rgba(250,250,248,0.1)", background: "rgba(250,250,248,0.04)" }}>{k}</span>
+                    <span key={k} className="chip" style={{ color: "rgba(15,15,13,0.6)", borderColor: "rgba(15,15,13,0.15)", background: "rgba(15,15,13,0.03)" }}>{k}</span>
                   ))}
                 </div>
               </div>
@@ -1115,9 +1052,9 @@ export default function Home() {
           <div className="cta-section">
             <div className="cta-glow" />
             <div style={{ position: "relative" }}>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(250,250,248,0.08)", border: "1px solid rgba(250,250,248,0.12)", borderRadius: 99, padding: "6px 14px", marginBottom: 32 }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22C55E", display: "inline-block", animation: "float 2s ease-in-out infinite" }} />
-                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(250,250,248,0.6)" }}>Free to get started</span>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(15,15,13,0.05)", border: "1px solid rgba(15,15,13,0.1)", borderRadius: 99, padding: "6px 14px", marginBottom: 32 }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22C55E", display: "inline-block" }} />
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(15,15,13,0.6)" }}>Free to get started</span>
               </div>
 
               <h2 className="cta-title">
@@ -1125,20 +1062,20 @@ export default function Home() {
                 starts with <em>one upload.</em>
               </h2>
 
-              <p style={{ color: "rgba(250,250,248,0.55)", fontSize: 15, marginBottom: 44, maxWidth: 440, margin: "0 auto 44px", lineHeight: 1.7 }}>
+              <p style={{ color: "rgba(15,15,13,0.6)", fontSize: 15, marginBottom: 44, maxWidth: 440, margin: "0 auto 44px", lineHeight: 1.7 }}>
                 Join the platform where students get hired and recruiters find talent — powered by a scoring engine that never lies.
               </p>
 
               <div className="cta-btns">
-                <NavLink to="/register" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#FAFAF8", color: "#0F0F0D", fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700, letterSpacing: "0.02em", padding: "14px 28px", borderRadius: 99, textDecoration: "none", transition: "background 0.2s, transform 0.15s" }}>
+                <NavLink to="/register" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#0F0F0D", color: "#FAFAF8", fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700, letterSpacing: "0.02em", padding: "14px 28px", borderRadius: 99, textDecoration: "none", transition: "background 0.2s, transform 0.15s" }}>
                   Create free account →
                 </NavLink>
-                <NavLink to="/login" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "transparent", color: "rgba(250,250,248,0.7)", fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 600, padding: "14px 28px", borderRadius: 99, textDecoration: "none", border: "1.5px solid rgba(250,250,248,0.15)", transition: "border-color 0.2s, color 0.2s" }}>
+                <NavLink to="/login" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "transparent", color: "rgba(15,15,13,0.8)", fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 600, padding: "14px 28px", borderRadius: 99, textDecoration: "none", border: "1.5px solid rgba(15,15,13,0.2)", transition: "border-color 0.2s, color 0.2s" }}>
                   Sign in
                 </NavLink>
               </div>
 
-              <p style={{ color: "rgba(250,250,248,0.3)", fontSize: 11, marginTop: 20, letterSpacing: "0.05em" }}>No credit card required · Takes 30 seconds</p>
+              <p style={{ color: "rgba(15,15,13,0.4)", fontSize: 11, marginTop: 20, letterSpacing: "0.05em" }}>No credit card required · Takes 30 seconds</p>
             </div>
           </div>
         </section>

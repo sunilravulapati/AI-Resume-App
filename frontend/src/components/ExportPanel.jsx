@@ -89,6 +89,7 @@ export function generateCopyText(tailoredData) {
 
 export default function ExportPanel({ tailoredData, parsedText, user, resumeId, userLinks }) {
   const [activeOption, setActiveOption] = useState(null); // null | 'copy' | 'pdf' | 'latex'
+  const [generationMode, setGenerationMode] = useState('ats'); // 'ats' | 'ai'
   const [copied,       setCopied]       = useState(false);
   const [latexCopied,  setLatexCopied]  = useState(false);
   const [latexTab,     setLatexTab]     = useState('code'); // 'code' | 'instructions'
@@ -97,6 +98,11 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
   const [latexCode,    setLatexCode]    = useState(''); // raw compile-ready source
   const [latexLoading, setLatexLoading] = useState(false);
   const [latexError,   setLatexError]   = useState('');
+
+  // Clear latex code when generation mode changes so it regenerates
+  useEffect(() => {
+    setLatexCode('');
+  }, [generationMode]);
 
   // Auto-generate when the latex panel is opened for the first time
   useEffect(() => {
@@ -121,7 +127,7 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
           method:      'POST',
           credentials: 'include',                           // send auth cookie
           headers:     { 'Content-Type': 'application/json' },
-          body:        JSON.stringify({ resumeId, tailoredData }),
+          body:        JSON.stringify({ resumeId, tailoredData, mode: generationMode }),
         });
 
         if (!res.ok) {
@@ -350,6 +356,20 @@ export default function ExportPanel({ tailoredData, parsedText, user, resumeId, 
               {/* Copy / Retry buttons — only on code tab */}
               {latexTab === 'code' && (
                 <div className="ml-auto flex items-center gap-3 my-2">
+                  <div className="flex bg-[var(--bg)] p-1 rounded-lg border border-[var(--border)] mr-2">
+                    <button
+                      onClick={() => setGenerationMode('ats')}
+                      className={`px-3 py-1.5 rounded text-xs font-bold transition-all ${generationMode === 'ats' ? 'bg-[var(--color-accent)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text)]'}`}
+                    >
+                      ATS Engine
+                    </button>
+                    <button
+                      onClick={() => setGenerationMode('ai')}
+                      className={`px-3 py-1.5 rounded text-xs font-bold transition-all ${generationMode === 'ai' ? 'bg-[var(--color-accent)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text)]'}`}
+                    >
+                      Direct AI
+                    </button>
+                  </div>
                   {latexError && (
                     <button
                       onClick={handleRetryLatex}

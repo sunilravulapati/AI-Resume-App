@@ -3,6 +3,46 @@ import path from "path";
 import Handlebars from "handlebars";
 import { getDesignTokens, countResumeElements } from "./designSystem.js";
 
+function filterRedundantBullets(bullets) {
+  if (!Array.isArray(bullets)) return bullets;
+  let filtered = [];
+  
+  for (let b of bullets) {
+    if (!b || typeof b !== 'string') continue;
+    b = b.trim();
+    if (b.length === 0) continue;
+    
+    const normB = b.toLowerCase().replace(/[^a-z0-9]/g, '');
+    let isRedundant = false;
+    let indexToReplace = -1;
+
+    for (let i = 0; i < filtered.length; i++) {
+      const existing = filtered[i];
+      const normE = existing.toLowerCase().replace(/[^a-z0-9]/g, '');
+      
+      if (normB === normE) {
+        isRedundant = true; 
+        break;
+      }
+      if (normB.includes(normE) && normE.length > 10) {
+        indexToReplace = i;
+        break;
+      }
+      if (normE.includes(normB) && normB.length > 10) {
+        isRedundant = true;
+        break;
+      }
+    }
+    
+    if (indexToReplace !== -1) {
+      filtered[indexToReplace] = b;
+    } else if (!isRedundant) {
+      filtered.push(b);
+    }
+  }
+  return filtered;
+}
+
 // Theme registry — lazy loaded
 const themeCache = {};
 
@@ -41,6 +81,33 @@ function registerPartials(hbs) {
  * All LaTeX escaping is handled upstream by sanitizeResume.
  */
 export async function renderLatex(data, themeName = "classic") {
+  // Filter redundant bullets before density calculation
+  if (data.tailoredExperience) {
+    data.tailoredExperience.forEach(exp => {
+      if (exp.bullets) exp.bullets = filterRedundantBullets(exp.bullets);
+    });
+  }
+  if (data.experience) {
+    data.experience.forEach(exp => {
+      if (exp.bullets) exp.bullets = filterRedundantBullets(exp.bullets);
+    });
+  }
+  if (data.projects) {
+    data.projects.forEach(proj => {
+      if (proj.bullets) proj.bullets = filterRedundantBullets(proj.bullets);
+    });
+  }
+  if (data.extracurricular) {
+    data.extracurricular.forEach(ex => {
+      if (ex.bullets) ex.bullets = filterRedundantBullets(ex.bullets);
+    });
+  }
+  if (data.achievements) {
+    data.achievements.forEach(ach => {
+      if (ach.bullets) ach.bullets = filterRedundantBullets(ach.bullets);
+    });
+  }
+
   const theme = await loadTheme(themeName);
   const totalElements = countResumeElements(data);
   const designTokens = getDesignTokens(themeName, totalElements);

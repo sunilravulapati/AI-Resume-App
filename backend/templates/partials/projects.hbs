@@ -1,104 +1,14 @@
-{{#if projects.length}}
+{{#if projects}}
 
 % ── PROJECTS ──────────────────────────────────────────────────────────────────
 \resumesection{Projects}
 {{#each projects}}
-\noindent\textbf{ {{this.title}} }
-\vspace{2pt}
-\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}X >{\raggedleft\arraybackslash}p{2.8cm}@{}}
-  {{#if this.tech}}{{../theme.designSystem.metaSize}}\textit{ {{this.tech}} }{{/if}} &
-  {{../theme.designSystem.metaSize}} {{this.meta}} \\
-\end{tabularx}
-\vspace{3pt}
+\noindent\textbf{ {{this.title}} }{{#if this.tech}} $|$ {{this.tech}}{{/if}}\hfill{ {{../theme.designSystem.metaSize}} {{this.meta}} }\par\nopagebreak
 \begin{itemize}
 {{#each this.bullets}}
   \item {{../theme.designSystem.bulletSize}} {{this}}
 {{/each}}
 \end{itemize}
-{{#unless @last}}\vspace{ {{../theme.designSystem.itemSpacing}} }{{/unless}}
+{{#unless @last}}\vspace{1pt}{{/unless}}
 {{/each}}
-{{/if}}
-
-{{#if awards.length}}
-
-% ── AWARDS & ACHIEVEMENTS ─────────────────────────────────────────────────────
-\resumesection{Awards \& Achievements}
-{{#each awards}}
-\noindent\textbf{ {{this.title}} }
-\vspace{2pt}
-\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}X >{\raggedleft\arraybackslash}p{2.8cm}@{}}
-  {{#if this.org}}{{../theme.designSystem.metaSize}}\textit{ {{this.org}} }{{else}}\mbox{}}{{/if}} &
-  {{#if this.date}}{{../theme.designSystem.metaSize}} {{this.date}}{{/if}} \\
-\end{tabularx}
-{{#if this.desc}}
-\par\vspace{2pt}\noindent{{../theme.designSystem.metaSize}} {{this.desc}}
-{{/if}}
-{{#unless @last}}\vspace{ {{../theme.designSystem.itemSpacing}} }{{/unless}}
-{{/each}}
-{{/if}}
-
-{{#if certifications.length}}
-
-% ── CERTIFICATIONS ────────────────────────────────────────────────────────────
-\resumesection{Certifications}
-{{#each certifications}}
-\noindent\textbf{ {{this.title}} }
-\vspace{2pt}
-\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}X >{\raggedleft\arraybackslash}p{2.8cm}@{}}
-  {{#if this.org}}{{../theme.designSystem.metaSize}}\textit{ {{this.org}} }{{/if}} &
-  {{../theme.designSystem.metaSize}} {{this.dates}} \\
-\end{tabularx}
-{{#if this.url}}
-\par\vspace{1pt}\noindent{{../theme.designSystem.metaSize}}\href{ {{this.url}} }{View Credential}
-{{/if}}
-{{#unless @last}}\vspace{ {{../theme.designSystem.itemSpacing}} }{{/unless}}
-{{/each}}
-{{/if}}
-
-{{#if dsaProfiles.length}}
-
-% ── DSA PROFICIENCY ───────────────────────────────────────────────────────────
-\resumesection{DSA Proficiency \& Competitive Programming}
-\begin{itemize}
-{{#each dsaProfiles}}
-  \item {{../theme.designSystem.bulletSize}} {{this}}
-{{/each}}
-\end{itemize}
-{{else if dsaProficiency.length}}
-
-% ── DSA PROFICIENCY ───────────────────────────────────────────────────────────
-\resumesection{DSA Proficiency \& Competitive Programming}
-\begin{itemize}
-{{#each dsaProficiency}}
-  \item {{../theme.designSystem.bulletSize}} {{this}}
-{{/each}}
-\end{itemize}
-{{/if}}
-
-{{#if extracurricular.length}}
-
-% ── EXTRACURRICULAR ───────────────────────────────────────────────────────────
-\resumesection{Extracurricular Activities}
-{{#each extracurricular}}
-\noindent\textbf{ {{this.title}} }
-\vspace{2pt}
-\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}X >{\raggedleft\arraybackslash}p{2.8cm}@{}}
-  {{#if this.org}}{{../theme.designSystem.metaSize}}\textit{ {{this.org}} }{{else}}\mbox{}}{{/if}} &
-  {{#if this.dates}}{{../theme.designSystem.metaSize}} {{this.dates}}{{/if}} \\
-\end{tabularx}
-\vspace{3pt}
-\begin{itemize}
-{{#each this.bullets}}
-  \item {{../theme.designSystem.bulletSize}} {{this}}
-{{/each}}
-\end{itemize}
-{{#unless @last}}\vspace{ {{../theme.designSystem.itemSpacing}} }{{/unless}}
-{{/each}}
-{{/if}}
-
-{{#if languages}}
-
-% ── LANGUAGES ─────────────────────────────────────────────────────────────────
-\resumesection{Languages}
-\noindent{{theme.designSystem.metaSize}} \textbf{Languages:} {{languages}}
 {{/if}}

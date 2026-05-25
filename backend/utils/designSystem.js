@@ -38,16 +38,16 @@ const themesBase = {
 const spaciousPreset = {
   baseFontSize: "11pt",
 
-  lineStretch: "1.12",
-  arrayStretch: "1.16",
+  lineStretch: "1.05",
+  arrayStretch: "1.10",
 
-  sectionSpacingBefore: "12pt",
-  sectionSpacingAfter: "6pt",
+  sectionSpacingBefore: "8pt",
+  sectionSpacingAfter: "3pt",
 
-  itemSpacing: "8pt",
-  bulletSpacing: "3pt",
+  itemSpacing: "4pt",
+  bulletSpacing: "2pt",
 
-  headerSpacing: "10pt",
+  headerSpacing: "4pt",
 
   bulletSize: "\\small",
   metaSize: "\\small",
@@ -63,16 +63,16 @@ const spaciousPreset = {
 const moderatePreset = {
   baseFontSize: "11pt",
 
-  lineStretch: "1.08",
-  arrayStretch: "1.06",
+  lineStretch: "1.02",
+  arrayStretch: "1.02",
 
-  sectionSpacingBefore: "10pt",
-  sectionSpacingAfter: "5pt",
+  sectionSpacingBefore: "6pt",
+  sectionSpacingAfter: "2pt",
 
-  itemSpacing: "6pt",
-  bulletSpacing: "2pt",
+  itemSpacing: "3pt",
+  bulletSpacing: "1.5pt",
 
-  headerSpacing: "8pt",
+  headerSpacing: "3pt",
 
   bulletSize: "\\small",
   metaSize: "\\small",
@@ -83,56 +83,52 @@ const moderatePreset = {
 /**
  * COMPACT
  * Used ONLY for dense resumes.
- * Keeps one-page layout stable.
+ * Keeps one-page layout stable without over-compressing.
  */
 const compactPreset = {
   baseFontSize: "10pt",
 
-  lineStretch: "1.05",
+  lineStretch: "1.00",
   arrayStretch: "1.00",
 
-  sectionSpacingBefore: "8pt",
-  sectionSpacingAfter: "5pt",
+  sectionSpacingBefore: "5pt",
+  sectionSpacingAfter: "2pt",
 
-  itemSpacing: "5pt",
+  itemSpacing: "2pt",
   bulletSpacing: "1pt",
 
-  headerSpacing: "6pt",
+  headerSpacing: "2pt",
 
-  bulletSize: "\\footnotesize",
-  metaSize: "\\footnotesize",
-  skillsSize: "\\footnotesize"
+  bulletSize: "\\small",
+  metaSize: "\\small",
+  skillsSize: "\\small"
 };
 
 /**
  * Calculates total layout density from the tailored resume data structure.
  *
- * FIX: Was referencing raw field names (data.summary, data.skills,
- * data.experience, data.projects) which never exist on the tailored data
- * object — the correct names are data.tailoredSummary, data.tailoredSkills,
- * and data.tailoredExperience (projects are merged into tailoredExperience).
- * This caused countResumeElements to always return 0, forcing every resume
- * into spaciousPreset regardless of actual content density.
+ * Uses weighted density scoring instead of raw line counts to provide a 
+ * more accurate visual rhythm.
  */
 export function countResumeElements(data) {
   if (!data) return 0;
   let count = 0;
 
-  // Summary block counts as 2 lines
+  // Summary block counts as 2
   const summary = data.tailoredSummary || data.summary || "";
   if (summary.trim().length > 0) count += 2;
 
-  // Each skill row is one line
+  // Each skill row is ~0.8 lines
   const skills = data.tailoredSkills || data.skills || [];
-  if (Array.isArray(skills)) count += skills.length;
+  if (Array.isArray(skills)) count += skills.length * 0.8;
 
-  // Experience & projects are merged or separate; each entry has 2 header lines + its bullets
+  // Experience & projects: header is ~1, bullets are ~0.7
   const experience = data.tailoredExperience || data.experience || [];
   if (Array.isArray(experience)) {
     experience.forEach((exp) => {
       if (!exp) return;
-      count += 2; // title + tech/meta line
-      if (Array.isArray(exp.bullets)) count += exp.bullets.length;
+      count += 1; // title + tech/meta line (compressed)
+      if (Array.isArray(exp.bullets)) count += exp.bullets.length * 0.7;
     });
   }
 
@@ -140,60 +136,57 @@ export function countResumeElements(data) {
   if (Array.isArray(projects)) {
     projects.forEach((proj) => {
       if (!proj) return;
-      count += 2; // title + tech/meta line
-      if (Array.isArray(proj.bullets)) count += proj.bullets.length;
+      count += 1; // title + tech/meta line (compressed)
+      if (Array.isArray(proj.bullets)) count += proj.bullets.length * 0.7;
     });
   }
 
-  // Each education entry counts as 2 lines (institution + degree/date)
-  if (Array.isArray(data.education)) count += data.education.length * 2;
+  // Each education entry counts as 1 line weight 
+  if (Array.isArray(data.education)) count += data.education.length * 1;
 
-  // Awards, certifications — one line each
-  if (Array.isArray(data.awards)) count += data.awards.length;
-  if (Array.isArray(data.certifications)) count += data.certifications.length;
+  // Awards, certifications
+  if (Array.isArray(data.awards)) count += data.awards.length * 0.8;
+  if (Array.isArray(data.certifications)) count += data.certifications.length * 0.6;
 
-  // Extracurricular: 1 header line + its bullets
+  // Extracurricular: 0.8 header + its bullets
   if (Array.isArray(data.extracurricular)) {
     data.extracurricular.forEach((ex) => {
       if (!ex) return;
-      count += 1;
-      if (Array.isArray(ex.bullets)) count += ex.bullets.length;
+      count += 0.8;
+      if (Array.isArray(ex.bullets)) count += ex.bullets.length * 0.7;
     });
   }
 
-  // Achievements: 1 category header + its bullets
+  // Achievements: 0.8 category header + its bullets
   if (Array.isArray(data.achievements)) {
     data.achievements.forEach((a) => {
       if (!a) return;
-      count += 1;
-      if (Array.isArray(a.bullets)) count += a.bullets.length;
+      count += 0.8;
+      if (Array.isArray(a.bullets)) count += a.bullets.length * 0.7;
     });
   }
 
   // DSA proficiency lines
-  if (Array.isArray(data.dsaProficiency)) count += data.dsaProficiency.length;
+  if (Array.isArray(data.dsaProficiency)) count += data.dsaProficiency.length * 0.7;
 
   return count;
 }
 
 /**
  * Resolves the perfectly balanced design system tokens based on content density.
- *
- * FIX: Raised the moderate threshold from 26 → 30 so that a wider range of
- * resumes retain balanced spacing instead of over-compressing into compact.
  */
 export function getDesignTokens(themeName = "classic", totalElements = 0) {
   const base = themesBase[themeName] || themesBase.classic;
 
   let preset;
-  if (totalElements <= 14) {
+  if (totalElements <= 18) {
     // Very sparse resume — use generous spacing to avoid a half-empty page
     preset = spaciousPreset;
-  } else if (totalElements <= 30) {
+  } else if (totalElements <= 38) {
     // Medium-density resume — balanced spacing
     preset = moderatePreset;
   } else {
-    // Dense resume — compact to fit everything on one page
+    // Dense resume — compact to fit everything on one page without being unreadable
     preset = compactPreset;
   }
 

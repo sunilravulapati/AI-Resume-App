@@ -1,0 +1,15 @@
+{{#if extracurricular}}
+
+% ── EXTRACURRICULAR ───────────────────────────────────────────────────────────
+\resumesection{Extracurricular Activities}
+{{#each extracurricular}}
+\noindent\textbf{ {{this.title}} }\hfill{ {{#if this.dates}}{{../theme.designSystem.metaSize}} {{this.dates}}{{/if}} }\par\nopagebreak
+{{#if this.org}}\noindent{{../theme.designSystem.metaSize}}\textit{ {{this.org}} }\par\nopagebreak{{/if}}
+\begin{itemize}
+{{#each this.bullets}}
+  \item {{../theme.designSystem.bulletSize}} {{this}}
+{{/each}}
+\end{itemize}
+{{#unless @last}}\vspace{ {{../theme.designSystem.itemSpacing}} }{{/unless}}
+{{/each}}
+{{/if}}

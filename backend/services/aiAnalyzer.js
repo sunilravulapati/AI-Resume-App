@@ -440,6 +440,38 @@ Return ONLY a valid JSON object. No markdown fences, no explanatory prose.
 // GENERATE LATEX  (AI prompt → Jake's Resume LaTeX)
 // ─────────────────────────────────────────────────────────────────────────────
 // ─────────────────────────────────────────────────────────────────────────────
+// GENERATE LATEX  (AI prompt → Jake's Resume LaTeX)
+// ─────────────────────────────────────────────────────────────────────────────
+export async function generateLatexWithAI(tailoredData) {
+  const systemPrompt = `
+You are an expert LaTeX developer and resume writer.
+Your task is to generate a complete, valid, and compilable LaTeX document using "Jake's Resume" template (or a very similar ATS-friendly standard).
+You must dynamically populate the document using the provided JSON data.
+
+Rules:
+1. ONLY return the raw LaTeX code. Do not output markdown fences (e.g., \`\`\`latex) or any conversational text.
+2. Ensure you escape all special LaTeX characters (e.g. &, %, $, #, _) present in the user's data.
+3. The layout should fit on one page. Do not add excessive vertical spacing.
+4. Output standard preamble (documentclass, packages, custom commands) followed by the document environment.
+`.trim();
+
+  const userPrompt = `
+Generate the LaTeX resume for the following tailored data:
+${JSON.stringify(tailoredData)}
+`.trim();
+
+  const raw = await callGroq(
+    [
+      { role: "system", content: systemPrompt },
+      { role: "user",   content: userPrompt   },
+    ],
+    { temperature: 0.1, jsonMode: false, maxRetries: 2 }
+  );
+
+  return raw.trim().replace(/^```(?:latex|tex)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // STATIC TEMPLATE COMPILATION (Handled by renderLatex.js, not AI)
 // ─────────────────────────────────────────────────────────────────────────────
 

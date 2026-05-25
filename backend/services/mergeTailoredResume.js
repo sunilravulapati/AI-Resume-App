@@ -1,7 +1,8 @@
 import { normalizeBasicsLinks } from "../utils/normalizeLinks.js";
-import { validateResumeData } from "../utils/validateResumeData.js";
+import { validateResumeData, evaluateResumeQuality } from "../utils/validateResumeData.js";
 import { shouldKeepRewrittenBullet } from "../utils/compareResumeQuality.js";
 import { sectionAwareTrimming } from "../utils/sectionAwareTrimming.js";
+import { cleanBulletVerbosity } from "../utils/textCleaner.js";
 
 /**
  * Counts words in a string.
@@ -37,11 +38,20 @@ function detectTargetRole(jd = "") {
 }
 
 /**
- * Helper to compute similarities between titles/companies for matching.
+ * Generates a deterministic normalized key for project and experience matching.
+ * Strips stop words and non-alphanumeric characters.
  */
-function isMatch(nameA = "", nameB = "") {
-  const clean = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, "");
-  return clean(nameA) === clean(nameB) || clean(nameA).includes(clean(nameB)) || clean(nameB).includes(clean(nameA));
+function normalizeProjectKey(name = "") {
+  if (!name) return "";
+  const lower = String(name).toLowerCase().trim();
+  const stopWords = new Set(["app", "application", "platform", "system", "project", "software"]);
+  
+  const tokens = lower.split(/[^a-z0-9]+/).filter(w => w.length > 0 && !stopWords.has(w));
+  
+  if (tokens.length === 0) {
+    return lower.replace(/[^a-z0-9]/g, "");
+  }
+  return tokens.join("-");
 }
 
 /**
@@ -54,6 +64,24 @@ export function mergeTailoredResume(original, patches = {}, jobDescription = "")
 
   const role = detectTargetRole(jobDescription);
   const jdKeywords = getJDKeywords(jobDescription);
+
+  // Pre-compute deterministic maps
+  const expMap = new Map();
+  if (Array.isArray(patches.experience)) {
+    patches.experience.forEach(p => expMap.set(normalizeProjectKey(p.title), p));
+  }
+  const projMap = new Map();
+  if (Array.isArray(patches.projects)) {
+    patches.projects.forEach(p => projMap.set(normalizeProjectKey(p.title), p));
+  }
+  const awardsMap = new Map();
+  if (Array.isArray(patches.awards)) {
+    patches.awards.forEach(p => awardsMap.set(normalizeProjectKey(p.title), p));
+  }
+  const extraMap = new Map();
+  if (Array.isArray(patches.extracurricular)) {
+    patches.extracurricular.forEach(p => extraMap.set(normalizeProjectKey(p.role || p.title), p));
+  }
 
   // ── 1. Contact & Link Preservation (Task 2 & 12) ──
   merged.basics = normalizeBasicsLinks(merged.basics || {});
@@ -90,20 +118,25 @@ export function mergeTailoredResume(original, patches = {}, jobDescription = "")
   // ── 4. Experience Bullets Optimization (Task 2, 6, 9) ──
   if (Array.isArray(patches.experience) && patches.experience.length > 0) {
     merged.experience = merged.experience.map(originalRole => {
-      const patchRole = patches.experience.find(p => 
-        isMatch(p.title, originalRole.title) || 
-        (p.company && isMatch(p.company, originalRole.company))
-      );
+      const patchRole = expMap.get(normalizeProjectKey(originalRole.title));
 
       if (patchRole && Array.isArray(patchRole.bullets) && patchRole.bullets.length > 0) {
-        // Compare rewritten bullets against original bullets using content quality comparator!
-        const mergedBullets = originalRole.bullets.map((origBullet, idx) => {
-          const rewBullet = patchRole.bullets[idx];
-          if (shouldKeepRewrittenBullet(origBullet, rewBullet, role, jdKeywords)) {
-            return rewBullet;
+        // Compare rewritten bullets against original bullets safely accounting for array length mismatch
+        const maxLen = Math.max(originalRole.bullets.length, patchRole.bullets.length);
+        const mergedBullets = [];
+        for (let i = 0; i < maxLen; i++) {
+          const origBullet = originalRole.bullets[i];
+          const rewBullet = patchRole.bullets[i];
+          
+          if (origBullet && rewBullet) {
+            const finalBullet = shouldKeepRewrittenBullet(origBullet, rewBullet, role, jdKeywords) ? rewBullet : origBullet;
+            mergedBullets.push(cleanBulletVerbosity(finalBullet));
+          } else if (rewBullet && !origBullet) {
+            mergedBullets.push(cleanBulletVerbosity(rewBullet));
+          } else if (origBullet && !rewBullet) {
+            mergedBullets.push(cleanBulletVerbosity(origBullet));
           }
-          return origBullet; // Fallback to strong original bullet (retains metrics/tech depth)
-        });
+        }
 
         return {
           ...originalRole,
@@ -117,16 +150,24 @@ export function mergeTailoredResume(original, patches = {}, jobDescription = "")
   // ── 5. Project Bullets Optimization (Task 2, 6, 9) ──
   if (Array.isArray(patches.projects) && patches.projects.length > 0) {
     merged.projects = merged.projects.map(originalProject => {
-      const patchProj = patches.projects.find(p => isMatch(p.title, originalProject.title));
+      const patchProj = projMap.get(normalizeProjectKey(originalProject.title));
 
       if (patchProj && Array.isArray(patchProj.bullets) && patchProj.bullets.length > 0) {
-        const mergedBullets = originalProject.bullets.map((origBullet, idx) => {
-          const rewBullet = patchProj.bullets[idx];
-          if (shouldKeepRewrittenBullet(origBullet, rewBullet, role, jdKeywords)) {
-            return rewBullet;
+        const maxLen = Math.max(originalProject.bullets.length, patchProj.bullets.length);
+        const mergedBullets = [];
+        for (let i = 0; i < maxLen; i++) {
+          const origBullet = originalProject.bullets[i];
+          const rewBullet = patchProj.bullets[i];
+          
+          if (origBullet && rewBullet) {
+            const finalBullet = shouldKeepRewrittenBullet(origBullet, rewBullet, role, jdKeywords) ? rewBullet : origBullet;
+            mergedBullets.push(cleanBulletVerbosity(finalBullet));
+          } else if (rewBullet && !origBullet) {
+            mergedBullets.push(cleanBulletVerbosity(rewBullet));
+          } else if (origBullet && !rewBullet) {
+            mergedBullets.push(cleanBulletVerbosity(origBullet));
           }
-          return origBullet;
-        });
+        }
 
         return {
           ...originalProject,
@@ -141,7 +182,7 @@ export function mergeTailoredResume(original, patches = {}, jobDescription = "")
   // Intelligently merge awards/achievements metadata (preserve winner status, rank, organization)
   if (Array.isArray(patches.awards) && patches.awards.length > 0) {
     merged.awards = merged.awards.map(originalAward => {
-      const patchAward = patches.awards.find(a => isMatch(a.title, originalAward.title));
+      const patchAward = awardsMap.get(normalizeProjectKey(originalAward.title));
       if (patchAward) {
         return {
           ...originalAward,
@@ -157,7 +198,7 @@ export function mergeTailoredResume(original, patches = {}, jobDescription = "")
   // Extracurricular activity bullet optimization with fallback
   if (Array.isArray(patches.extracurricular) && patches.extracurricular.length > 0) {
     merged.extracurricular = merged.extracurricular.map(originalExtra => {
-      const patchExtra = patches.extracurricular.find(e => isMatch(e.role || e.title, originalExtra.role || originalExtra.title));
+      const patchExtra = extraMap.get(normalizeProjectKey(originalExtra.role || originalExtra.title));
       if (patchExtra && Array.isArray(patchExtra.bullets)) {
         const mergedBullets = originalExtra.bullets.map((origBullet, idx) => {
           const rewBullet = patchExtra.bullets[idx];
@@ -177,6 +218,7 @@ export function mergeTailoredResume(original, patches = {}, jobDescription = "")
 
   // ── 8. Enforce clean limits and structure validation (Task 12) ──
   const validated = validateResumeData(trimmed);
+  evaluateResumeQuality(validated); // Appends .qualityWarnings
 
   // ── 9. Resume Diff Engine ──
   const diffs = generateDiffReport(original, validated);
@@ -201,7 +243,7 @@ function generateDiffReport(original, tailored) {
 
   // Track rewritten experience bullets
   tailored.experience.forEach(tExp => {
-    const oExp = original.experience?.find(e => isMatch(e.title, tExp.title));
+    const oExp = original.experience?.find(e => normalizeProjectKey(e.title) === normalizeProjectKey(tExp.title));
     if (oExp) {
       tExp.bullets.forEach((bullet, idx) => {
         const originalBullet = oExp.bullets?.[idx];
@@ -217,7 +259,7 @@ function generateDiffReport(original, tailored) {
 
   // Track rewritten project bullets
   tailored.projects.forEach(tProj => {
-    const oProj = original.projects?.find(p => isMatch(p.title, tProj.title));
+    const oProj = original.projects?.find(p => normalizeProjectKey(p.title) === normalizeProjectKey(tProj.title));
     if (oProj) {
       tProj.bullets.forEach((bullet, idx) => {
         const originalBullet = oProj.bullets?.[idx];

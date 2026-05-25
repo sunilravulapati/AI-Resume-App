@@ -1,19 +1,48 @@
 \documentclass[letterpaper,{{theme.designSystem.baseFontSize}}]{article}
 
+% ── Font & Encoding ───────────────────────────────────────────────────────────
+% cmap ensures proper PDF character mapping (must be loaded before fontenc)
+% T1 encoding gives proper glyph coverage (ligatures, accented chars, etc.)
+% utf8 input allows unicode characters in source
+% lmodern provides high-quality Computer Modern fonts in T1 encoding
+\usepackage{cmap}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+
 % ── Core Packages ─────────────────────────────────────────────────────────────
 \usepackage[
-top=0.55in,
-bottom=0.55in,
-left=0.65in,
-right=0.65in
+  top=0.35in,
+  bottom=0.35in,
+  left=0.6in,
+  right=0.6in
 ]{geometry}
 \usepackage{enumitem}
-\usepackage[hidelinks]{hyperref}
 \usepackage{array}
 \usepackage{tabularx}
 \usepackage{xcolor}
-\usepackage{latexsym}
 \usepackage{ragged2e}
+
+% ── Micro-Typography ─────────────────────────────────────────────────────────
+% microtype enables character protrusion and font expansion for
+% professional-quality text layout (fewer overfull/underfull hboxes)
+\usepackage[
+  activate={true,nocompatibility},
+  tracking=true,
+  factor=1100,
+  stretch=10,
+  shrink=10
+]{microtype}
+
+% ── Hyperlinks (ATS-safe configuration) ──────────────────────────────────────
+\usepackage[
+  hidelinks,
+  unicode=true,
+  pdfstartview=FitH
+]{hyperref}
+\urlstyle{same}
+\input{glyphtounicode}
+\pdfgentounicode=1
 
 % ── Theme Font ────────────────────────────────────────────────────────────────
 {{theme.fontPackages}}
@@ -24,32 +53,46 @@ right=0.65in
 \raggedbottom
 \raggedright
 \setlength{\parindent}{0pt}
-\setlength{\emergencystretch}{1.5em}
+\setlength{\parskip}{0pt}
+\setlength{\emergencystretch}{2em}
 \setlength{\tabcolsep}{0.08in}
-\urlstyle{same}
-\pdfgentounicode=1
+
+% ── Widow / Orphan Prevention ────────────────────────────────────────────────
+% Prevent section headers from being stranded at the bottom of a page
+% and single lines from being stranded at the top
+\widowpenalty=10000
+\clubpenalty=10000
+\brokenpenalty=10000
 
 % ── Line Spacing ──────────────────────────────────────────────────────────────
 \renewcommand{\baselinestretch}{ {{theme.designSystem.lineStretch}} }
 
-% ── Section headings (custom — avoids titlesec titlerule overlap) ─────────────
+% ── Section Headings ─────────────────────────────────────────────────────────
 {{theme.sectionSetup}}
 \newcommand{\resumesection}[1]{%
   \par\vspace{ {{theme.designSystem.sectionSpacingBefore}} }%
   { {{theme.sectionTitleStyle}} #1\par }%
-  \nopagebreak\vspace{5pt}%
+  \nopagebreak[4]\vspace{ {{theme.designSystem.sectionSpacingAfter}} }%
   {\color{ {{theme.sectionRuleColor}} }\rule{\textwidth}{0.4pt}}\par%
-  \nopagebreak\vspace{ {{theme.designSystem.sectionSpacingAfter}} }%
+  \nopagebreak[4]\vspace{1pt}%
 }
 
-% ── List Formatting ───────────────────────────────────────────────────────────
+% ── List Formatting (ATS-safe — text-mode bullet, not math-mode) ─────────────
 \setlist[itemize]{
-  itemsep={{theme.designSystem.bulletSpacing}},
-  topsep=3pt,
-  parsep=1pt,
+  nosep,
+  itemsep=0pt,
+  topsep=1pt,
+  parsep=0pt,
   partopsep=0pt,
-  leftmargin=0.20in,
-  label={\normalsize $\bullet$}
+  leftmargin=0.18in,
+  label={\textbullet}
+}
+
+% ── ATS PDF Metadata ─────────────────────────────────────────────────────────
+\hypersetup{
+  pdfauthor={ {{name}} },
+  pdftitle={ {{name}} - Resume },
+  pdfsubject={Professional Resume},
 }
 
 % ══════════════════════════════════════════════════════════════════════════════
@@ -67,6 +110,16 @@ right=0.65in
 {{> education}}
 
 {{> projects}}
+
+{{> awards}}
+
+{{> certifications}}
+
+{{> dsa}}
+
+{{> extracurricular}}
+
+{{> languages}}
 
 \vfill
 

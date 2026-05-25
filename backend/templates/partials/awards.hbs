@@ -1,0 +1,13 @@
+{{#if awards}}
+
+% ── AWARDS & ACHIEVEMENTS ─────────────────────────────────────────────────────
+\resumesection{Awards \& Achievements}
+{{#each awards}}
+\noindent\textbf{ {{this.title}} }\hfill{ {{#if this.date}}{{../theme.designSystem.metaSize}} {{this.date}}{{/if}} }\par\nopagebreak
+{{#if this.org}}\noindent{{../theme.designSystem.metaSize}}\textit{ {{this.org}} }\par\nopagebreak{{/if}}
+{{#if this.desc}}
+\noindent{{../theme.designSystem.metaSize}} {{this.desc}}\par
+{{/if}}
+{{#unless @last}}\vspace{ {{../theme.designSystem.itemSpacing}} }{{/unless}}
+{{/each}}
+{{/if}}
