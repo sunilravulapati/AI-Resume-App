@@ -1,12 +1,9 @@
-/**
- * Transforms raw and AI-generated resume data into the unified canonical resume schema.
- * Supports both nested canonical properties and flattened legacy properties for legacy Handlebars templates.
- */
+// backend/utils/normalizeResume.js
+import { resolveDisplayName } from "../services/resumeFormat.js";
 
 function parseMeta(meta = "") {
     if (!meta) return { company: "", location: "", dates: "" };
 
-    // Try pipe separator: "Company | Location | Dates"
     if (meta.includes("|")) {
         const parts = meta.split("|").map((p) => p.trim());
         if (parts.length >= 3) {
@@ -17,7 +14,6 @@ function parseMeta(meta = "") {
         }
     }
 
-    // Try slash separator: "Company / Location / Dates"
     if (meta.includes("/")) {
         const parts = meta.split("/").map((p) => p.trim()).filter(Boolean);
         if (parts.length >= 3) {
@@ -32,7 +28,6 @@ function parseMeta(meta = "") {
         }
     }
 
-    // Try trailing date pattern
     const dateMatch = meta.match(
         /(\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)?\s*\d{4}\s*[–\-]\s*(?:Present|\w+ \d{4}|\d{4}))\s*$/i
     );
@@ -50,23 +45,29 @@ export function normalizeResume(data) {
 
     const basics = data.basics || {};
 
-    // --- 1. Canonical Schema Root ---
+    // FIX: Verify extracted name isn't a structural section header text collision
+    let rawName = (basics.name || data.name || "").trim();
+    if (/professional\s+summary|resume|curriculum\s+vitae|cv/i.test(rawName) || !rawName) {
+        rawName = ""; // Forces down-funnel profile fallback checking natively
+    }
+
+    // Anchor-validated regex trim removes trailing structural space safely without dropping letters
+    const cleanName = rawName.replace(/^[^a-zA-Z\s]+/g, "").trim();
+
     const normalized = {
         basics: {
-            name: (basics.name || data.name || "").trim(),
+            name: cleanName,
             email: (basics.email || data.email || "").trim(),
-            phone: (basics.phone || basics.phone || data.phone || "").trim(),
+            phone: (basics.phone || data.phone || "").trim(),
             linkedin: (basics.linkedin || data.linkedin || "").trim(),
             github: (basics.github || data.github || "").trim(),
             portfolio: (basics.portfolio || data.portfolio || "").trim(),
             location: (basics.location || data.location || "").trim(),
             tagline: (basics.tagline || data.tagline || "").trim(),
         },
-
-        // Legacy flattened basics for existing templates
-        name: (basics.name || data.name || "").trim(),
+        name: cleanName,
         email: (basics.email || data.email || "").trim(),
-        phone: (basics.phone || basics.phone || data.phone || "").trim(),
+        phone: (basics.phone || data.phone || "").trim(),
         linkedin: (basics.linkedin || data.linkedin || "").trim(),
         github: (basics.github || data.github || "").trim(),
         portfolio: (basics.portfolio || data.portfolio || "").trim(),
@@ -74,10 +75,8 @@ export function normalizeResume(data) {
         tagline: (basics.tagline || data.tagline || "").trim(),
     };
 
-    // --- Summary ---
     normalized.summary = (data.summary || data.tailoredSummary || "").trim();
 
-    // --- Skills: always [{label, value}] ---
     const rawSkills = data.skills || data.tailoredSkills || [];
     if (Array.isArray(rawSkills)) {
         normalized.skills = rawSkills.map((s) => ({
@@ -93,15 +92,11 @@ export function normalizeResume(data) {
         normalized.skills = [];
     }
 
-    // --- Experience: real jobs/internships only (NOT personal projects) ---
     const rawExp = data.experience || data.tailoredExperience || [];
     const personalProjectMarkers = /^(personal project|side project|academic project|self project|open[- ]?source|hobby project)$/i;
+    
     normalized.experience = rawExp
-        .filter((exp) => {
-            // If company is a generic "Personal Project" label, move it to projects instead
-            const company = (exp.company || "").trim();
-            return !personalProjectMarkers.test(company);
-        })
+        .filter((exp) => !personalProjectMarkers.test((exp.company || "").trim()))
         .map((exp) => {
             if (exp.company && exp.dates) {
                 return {
@@ -124,12 +119,8 @@ export function normalizeResume(data) {
             };
         });
 
-    // --- Rescue personal projects from experience array into projects ---
     const rescuedProjects = rawExp
-        .filter((exp) => {
-            const company = (exp.company || "").trim();
-            return personalProjectMarkers.test(company);
-        })
+        .filter((exp) => personalProjectMarkers.test((exp.company || "").trim()))
         .map((exp) => ({
             title: (exp.title || "").trim(),
             tech: (exp.tech || "").trim(),
@@ -137,7 +128,6 @@ export function normalizeResume(data) {
             bullets: (exp.bullets || []).map((b) => String(b).trim()).filter(Boolean),
         }));
 
-    // --- Projects (merge rescued personal projects from experience) ---
     const rawProjects = data.projects || [];
     const canonicalProjects = rawProjects.map((p) => ({
         title: (p.title || "").trim(),
@@ -145,7 +135,7 @@ export function normalizeResume(data) {
         meta: (p.meta || "").trim(),
         bullets: (p.bullets || []).map((b) => String(b).trim()).filter(Boolean),
     }));
-    // Merge rescued projects (avoid duplicating if title already present)
+
     const existingTitles = new Set(canonicalProjects.map(p => p.title.toLowerCase()));
     rescuedProjects.forEach(rp => {
         if (rp.title && !existingTitles.has(rp.title.toLowerCase())) {
@@ -155,7 +145,6 @@ export function normalizeResume(data) {
     });
     normalized.projects = canonicalProjects;
 
-    // --- Education ---
     normalized.education = (data.education || []).map((edu) => {
         const gpa = edu.gpa ? String(edu.gpa).replace(/(CGPA|GPA)\s*:?\s*/gi, "").trim() : "";
         const extras = (edu.extra || []).filter(Boolean).join(" · ");
@@ -168,7 +157,6 @@ export function normalizeResume(data) {
         };
     });
 
-    // --- Awards (preserve org/organization field — critical for display) ---
     normalized.awards = (data.awards || []).map((a) => ({
         title: (a.title || "").trim(),
         org: (a.org || a.organization || a.issuer || "").trim(),
@@ -176,15 +164,7 @@ export function normalizeResume(data) {
         date: (a.date || a.dates || "").trim(),
     })).filter(a => a.title);
 
-    // --- Achievements ---
-    normalized.achievements = [];
     if (Array.isArray(data.achievements)) {
-        normalized.achievements = data.achievements.map((ach) => ({
-            category: (ach.category || "Achievements").trim(),
-            bullets: (ach.bullets || []).map((b) => String(b).trim()).filter(Boolean),
-        }));
-
-        // Flatten into awards for legacy support
         data.achievements.forEach((ach) => {
             (ach.bullets || []).forEach((b) => {
                 normalized.awards.push({ title: String(b).trim(), desc: "", date: "" });
@@ -192,26 +172,23 @@ export function normalizeResume(data) {
         });
     }
 
-    // --- Certifications (preserve url for clickable links) ---
-    normalized.certifications = (data.certifications || []).map((c) => ({
+    const rawCert = data.certifications || [];
+    normalized.certifications = rawCert.map((c) => ({
         title: (c.title || "").trim(),
         org: (c.org || c.issuer || "").trim(),
         dates: (c.dates || c.date || "").trim(),
         url: (c.url || c.link || "").trim(),
     })).filter(c => c.title);
 
-    // --- DSA Profiles ---
     const rawDSA = data.dsaProfiles || data.dsaProficiency || [];
     normalized.dsaProfiles = rawDSA.map((item) => String(item).trim()).filter(Boolean);
-    normalized.dsaProficiency = normalized.dsaProfiles; // Legacy support
+    normalized.dsaProficiency = normalized.dsaProfiles;
 
-    // --- Extracurricular ---
     normalized.extracurricular = (data.extracurricular || []).map((item) => ({
         title: (item.title || item.role || "").trim(),
         bullets: (item.bullets || []).map((b) => String(b).trim()).filter(Boolean),
     }));
 
-    // --- Languages ---
     if (Array.isArray(data.languages)) {
         normalized.languages = data.languages.join(", ").trim();
     } else {

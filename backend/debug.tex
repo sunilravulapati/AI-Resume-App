@@ -1,91 +1,154 @@
+%---------------------------------------------------------------------------%
+% Jake's Resume – pdflatex-compatible template
+% Adapted from Jake Gutierrez's original (MIT License)
+%---------------------------------------------------------------------------%
 \documentclass[letterpaper,11pt]{article}
 
-% ── Core Packages ─────────────────────────────────────────────────────────────
-\usepackage[
-top=0.55in,
-bottom=0.55in,
-left=0.65in,
-right=0.65in
-]{geometry}
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
 \usepackage{enumitem}
 \usepackage[hidelinks]{hyperref}
-\usepackage{array}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
 \usepackage{tabularx}
-\usepackage{xcolor}
-\usepackage{latexsym}
-\usepackage{ragged2e}
+\usepackage{multicol}
+\input{glyphtounicode}
 
-% ── Theme Font ────────────────────────────────────────────────────────────────
-\usepackage{lmodern}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
 
+% Margins
+\addtolength{\oddsidemargin}{-0.5in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-.5in}
+\addtolength{\textheight}{1.0in}
 
-% ── Page Setup ────────────────────────────────────────────────────────────────
-\pagestyle{empty}
+\urlstyle{same}
 \raggedbottom
 \raggedright
-\setlength{\parindent}{0pt}
-\setlength{\emergencystretch}{1.5em}
-\setlength{\tabcolsep}{0.08in}
-\urlstyle{same}
+\setlength{\tabcolsep}{0in}
+
+% Section formatting
+\titleformat{\section}{
+  \vspace{-4pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
+
 \pdfgentounicode=1
 
-% ── Line Spacing ──────────────────────────────────────────────────────────────
-\renewcommand{\baselinestretch}{ 1.12 }
-
-% ── Section headings (custom — avoids titlesec titlerule overlap) ─────────────
-
-\newcommand{\resumesection}[1]{%
-  \par\vspace{ 12pt }%
-  { \bfseries\raggedright\large\color{black} #1\par }%
-  \nopagebreak\vspace{5pt}%
-  {\color{ black }\rule{\textwidth}{0.4pt}}\par%
-  \nopagebreak\vspace{ 6pt }%
+%---------------------------------------------------------------------------%
+% Custom commands
+%---------------------------------------------------------------------------%
+\newcommand{\resumeItem}[1]{
+  \item\small{#1 \vspace{-2pt}}
 }
 
-% ── List Formatting ───────────────────────────────────────────────────────────
-\setlist[itemize]{
-  itemsep=3pt,
-  topsep=3pt,
-  parsep=1pt,
-  partopsep=0pt,
-  leftmargin=0.20in,
-  label={\normalsize $\bullet$}
+\newcommand{\resumeSubheading}[4]{
+  \vspace{-2pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & #2 \\
+      \textit{\small#3} & \textit{\small #4} \\
+    \end{tabular*}\vspace{-7pt}
 }
 
-% ══════════════════════════════════════════════════════════════════════════════
+\newcommand{\resumeSubheadingThree}[3]{
+  \vspace{-2pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & \textit{\small #2} \\
+      \textit{\small#3} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+    \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \small#1 & #2 \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-4pt}}
+
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.15in, label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
 \begin{document}
 
 \begin{center}
-  {\Huge \bfseries Test }\\[4pt]
-  
-  \begin{tabularx}{0.92\textwidth}{@{}>{\centering\arraybackslash}X@{}}
-    {\footnotesize  }
-  \end{tabularx}
+    {\Huge \scshape Candidate} \\ \vspace{1pt}
+    \small +91-7777777777 $|$ \href{mailto:thala.jitesh@email.com}{thala.jitesh@email.com} $|$ \href{https://linkedin.com/in/thalajitesh}{linkedin.com/in/thalajitesh} $|$ \href{https://github.com/thalajitesh}{github.com/thalajitesh}
 \end{center}
-\vspace{ 10pt }
 
+\section{Summary}
+Highly skilled full-stack developer with expertise in React.js, Node.js, and MongoDB. Proven experience in building scalable web applications and optimizing database queries. Strong understanding of JavaScript and modern ES6+ concepts.
 
+\section{Experience}
+\resumeSubHeadingListStart
+  \resumeSubheading
+    {Software Engineer}{July 2024 – Present}
+    {TechNova Solutions}{Hyderabad, India}
+    \resumeItemListStart
+      \resumeItem{Spearheaded the migration of a legacy monolithic application to a microservices architecture using Node.js and Express, improving system response time by 30\%.}
+      \resumeItem{Optimized database queries for high-traffic environments using MongoDB.}
+      \resumeItem{Designed and optimized complex MongoDB aggregation pipelines, reducing data retrieval times for reporting modules by 40\%.}
+    \resumeItemListEnd
+  \resumeSubHeadingListStart
+  \resumeSubheading
+    {Junior Web Developer}{August 2023 – June 2024}
+    {Creative WebWorks}{Remote}
+    \resumeItemListStart
+      \resumeItem{Collaborated with a team of 4 developers to build an e-commerce platform from scratch using the MERN stack.}
+      \resumeItem{Implemented user authentication and authorization using JWT and bcrypt.}
+      \resumeItem{Wrote comprehensive unit tests using Jest and React Testing Library, achieving 80\% code coverage.}
+    \resumeItemListEnd
+\resumeSubHeadingListEnd
 
-\resumesection{Experience}
-\noindent\textbf{ Comp A }
-\vspace{2pt}
-\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}X >{\raggedleft\arraybackslash}p{2.8cm}@{}}
-  \small\textit{ Title } &
-  \small 2020 - 2021 \\
-\end{tabularx}
-\vspace{3pt}
-\begin{itemize}
-  \item  Bullet 1
+\section{Technical Skills}
+\begin{itemize}[leftmargin=0.15in, label={}]
+  \small{\item{
+    \textbf{Languages}{: JavaScript (ES 6+), TypeScript} \\
+    \textbf{Frontend}{: React.js, Tailwind CSS} \\
+    \textbf{Backend}{: Node.js, Express.js} \\
+    \textbf{Databases}{: MongoDB} \\
+  }}
 \end{itemize}
 
+\section{Projects}
+\resumeSubHeadingListStart
+  \resumeSubheading
+    {TaskFlow Manager}{}
+    {}{}
+    \resumeItemListStart
+      \resumeItem{Built a full-stack project management tool featuring real-time updates using Socket.io, React frontend, and a Node/MongoDB backend.}
+      \resumeItem{Deployed on AWS EC2.}
+    \resumeItemListEnd
+  \resumeSubHeadingListStart
+  \resumeSubheading
+    {WeatherApp Pro}{}
+    {}{}
+    \resumeItemListStart
+      \resumeItem{Created a progressive web app (PWA) using React that fetches real-time weather data from the Open Weather API and caches it for offline use.}
+    \resumeItemListEnd
+\resumeSubHeadingListEnd
 
-
-
-
-
-
-
-
-\vfill
+\section{Education}
+\resumeSubHeadingListStart
+  \resumeSubheading
+    {B.Tech in Computer Science and Engineering}{August 2019 – May 2023}
+    {ABC Institute of Technology}{}
+    \resumeItemListStart
+      \resumeItem{GPA: 8.5/10}
+    \resumeItemListEnd
+\resumeSubHeadingListEnd
 
 \end{document}

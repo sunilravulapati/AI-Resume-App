@@ -2,6 +2,7 @@
 import Groq from "groq-sdk";
 import "dotenv/config";
 import { prepareResumeExport, enforceLimits } from "./resumeFormat.js";
+import { sanitizeLatex, validateLatex } from "../utils/validateLatex.js";
 
 const groq      = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
@@ -415,12 +416,14 @@ Return ONLY a valid JSON object. No markdown fences, no explanatory prose.
   let parsed;
   try {
     parsed = parseJSONRobust(raw);
-  } catch {
+  } catch (parseErr) {
+    console.warn("[aiAnalyzer] tailorResume: initial JSON parse failed, attempting repair.", parseErr.message);
     try {
       parsed = await repairJSON(raw);
     } catch (repairErr) {
+      // FIX: throw instead of silently returning raw string — callers expect an object
       console.error("[aiAnalyzer] tailorResume: JSON parse + repair both failed.", repairErr.message);
-      return raw;
+      throw new Error(`tailorResume: could not produce valid JSON after repair. Original error: ${repairErr.message}`);
     }
   }
 
@@ -439,20 +442,43 @@ Return ONLY a valid JSON object. No markdown fences, no explanatory prose.
 // ─────────────────────────────────────────────────────────────────────────────
 // GENERATE LATEX  (AI prompt → Jake's Resume LaTeX)
 // ─────────────────────────────────────────────────────────────────────────────
-// ─────────────────────────────────────────────────────────────────────────────
-// GENERATE LATEX  (AI prompt → Jake's Resume LaTeX)
-// ─────────────────────────────────────────────────────────────────────────────
-export async function generateLatexWithAI(tailoredData) {
+export async function generateLatexWithAI(tailoredData, isRetry = false) {
   const systemPrompt = `
-You are an expert LaTeX developer and resume writer.
-Your task is to generate a complete, valid, and compilable LaTeX document using "Jake's Resume" template (or a very similar ATS-friendly standard).
-You must dynamically populate the document using the provided JSON data.
+You are an expert ATS resume LaTeX generator.
 
-Rules:
-1. ONLY return the raw LaTeX code. Do not output markdown fences (e.g., \`\`\`latex) or any conversational text.
-2. Ensure you escape all special LaTeX characters (e.g. &, %, $, #, _) present in the user's data.
-3. The layout should fit on one page. Do not add excessive vertical spacing.
-4. Output standard preamble (documentclass, packages, custom commands) followed by the document environment.
+STRICT RULES:
+1. Generate ONLY the body section content of the resume (e.g. \\section{Experience}, \\section{Skills}, etc).
+2. NEVER generate headers (e.g. \\begin{center} ... \\end{center} with candidate name).
+3. NEVER generate \\documentclass, \\usepackage, margins, or \\begin{document} / \\end{document}.
+4. Output ONLY the raw compilable LaTeX for the sections. No markdown fences.
+5. Use ONLY standard Jake's Resume commands (\\resumeSubheading, \\resumeItem, \\resumeProjectHeading).
+6. Ensure you escape all special LaTeX characters (e.g. &, %, $, #, _) present in the user's data.
+
+CRITICAL: You MUST strictly follow the exact LaTeX structure below for the sections:
+
+For Experience:
+\\section{Experience}
+  \\resumeSubHeadingListStart
+    \\resumeSubheading
+      {Job Title}{Dates}
+      {Company Name}{Location}
+      \\resumeItemListStart
+        \\resumeItem{Bullet point 1}
+        \\resumeItem{Bullet point 2}
+      \\resumeItemListEnd
+  \\resumeSubHeadingListEnd
+
+For Skills:
+\\section{Technical Skills}
+ \\begin{itemize}[leftmargin=0.15in, label={}]
+    \\small{\\item{
+     \\textbf{Category 1}{: Skill A, Skill B, Skill C} \\\\
+     \\textbf{Category 2}{: Skill D, Skill E, Skill F} \\\\
+    }}
+ \\end{itemize}
+
+Failure to use \\resumeSubHeadingListStart around \\resumeSubheading, or \\resumeItemListStart around \\resumeItem, will crash the compiler with "Lonely \\item".
+${isRetry ? "\nCRITICAL: Your previous LaTeX output was invalid. Generate ONLY valid section body content using approved resume commands. Ensure all \\begin and \\end environments are perfectly balanced. DO NOT output \\documentclass or \\begin{document}." : ""}
 `.trim();
 
   const userPrompt = `
@@ -468,14 +494,28 @@ ${JSON.stringify(tailoredData)}
     { temperature: 0.1, jsonMode: false, maxRetries: 2 }
   );
 
-  return raw.trim().replace(/^```(?:latex|tex)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+  const sanitized = sanitizeLatex(raw);
+  const validation = validateLatex(sanitized);
+
+  if (!validation.valid) {
+    console.error(`[aiAnalyzer] generateLatexWithAI validation failed: ${validation.error}`);
+    if (!isRetry) {
+      console.log(`[aiAnalyzer] Retrying generateLatexWithAI due to validation failure...`);
+      return generateLatexWithAI(tailoredData, true);
+    } else {
+      console.error(`[aiAnalyzer] generateLatexWithAI retry also failed. Throwing error for fallback.`);
+      throw new Error(`LaTeX Validation Failed: ${validation.error}`);
+    }
+  }
+
+  return sanitized;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STATIC TEMPLATE COMPILATION (Handled by renderLatex.js, not AI)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ─
+// ─────────────────────────────────────────────────────────────────────────────
 // GENERATE COVER LETTER  (AI prompt → Tailored Cover Letter)
 // ─────────────────────────────────────────────────────────────────────────────
 export async function generateCoverLetterWithAI(resumeText, tailoredData, company = "Target Company", roleName = "Target Position", jobDescription = "") {
@@ -527,13 +567,19 @@ export async function rankCandidatesWithAI(candidates, jobDescription) {
     return { matches: [] };
   }
 
-  const candidatesData = candidates.map(c => ({
-    id: c._id.toString(),
-    name: `${c.userId?.firstName || ''} ${c.userId?.lastName || ''}`.trim() || "Unknown Candidate",
-    summary: c.feedback?.summary || "",
-    // Pass normalized resume parts or parsed text snippet to keep prompt length reasonable
-    parsedSnippet: c.parsedText ? c.parsedText.slice(0, 1500) : ""
-  }));
+  const candidatesData = candidates
+    // FIX: guard against docs without _id before calling .toString()
+    .filter(c => c && c._id)
+    .map(c => ({
+      id: c._id.toString(),
+      name: `${c.userId?.firstName || ''} ${c.userId?.lastName || ''}`.trim() || "Unknown Candidate",
+      summary: c.feedback?.summary || "",
+      parsedSnippet: c.parsedText ? c.parsedText.slice(0, 1500) : ""
+    }));
+
+  if (candidatesData.length === 0) {
+    return { matches: [] };
+  }
 
   const systemPrompt = `
 You are an expert AI recruiting assistant. Your job is to screen a pool of candidates against a job description.
@@ -579,4 +625,57 @@ ${JSON.stringify(candidatesData, null, 2)}
       return { matches: [] };
     }
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENHANCE TEXT INLINE (AI prompt -> specific bullet/section improvement)
+// ─────────────────────────────────────────────────────────────────────────────
+export async function enhanceTextWithAI(text, action, context = "") {
+  let instruction = "";
+  switch (action) {
+    case "improve":
+      instruction = "Improve the professionalism, phrasing, and impact of the following text.";
+      break;
+    case "concise":
+      instruction = "Make the following text more concise and punchy without losing key achievements.";
+      break;
+    case "ats_optimize":
+      instruction = "Optimize the following text for ATS by ensuring strong action verbs and clear tech keywords.";
+      break;
+    case "stronger":
+      instruction = "Rewrite the following text using stronger, more authoritative vocabulary and active voice.";
+      break;
+    case "metrics":
+      instruction = "Rewrite the following text to emphasize and highlight any metrics or quantifiable results.";
+      break;
+    default:
+      instruction = "Improve the following text for a professional resume.";
+  }
+
+  const systemPrompt = `
+You are an expert executive resume writer. Your task is to rewrite a specific snippet of text based on the user's instructions.
+Rules:
+1. ONLY return the plain rewritten text. No markdown blocks, no conversational text.
+2. Maintain the same general format (e.g., if it's a single bullet point, return a single bullet point).
+3. Do not make up fake metrics if none were provided or implied.
+4. Keep it focused and avoid unnecessary filler words.
+`.trim();
+
+  const userPrompt = `
+Instruction: ${instruction}
+Context about this text (if any): ${context}
+
+Original Text:
+${text}
+`.trim();
+
+  const raw = await callGroq(
+    [
+      { role: "system", content: systemPrompt },
+      { role: "user",   content: userPrompt   },
+    ],
+    { temperature: 0.3, jsonMode: false, maxRetries: 2 }
+  );
+
+  return raw.trim().replace(/^['"]|['"]$/g, "").trim();
 }

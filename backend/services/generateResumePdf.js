@@ -3,23 +3,29 @@ import path from "path";
 
 import { normalizeResume } from "../utils/normalizeResume.js";
 import { validateResumeData } from "../utils/validateResumeData.js";
-import { sanitizeResume } from "../utils/sanitizeResume.js";
-import { renderLatex } from "../utils/renderLatex.js";
+import { generateLatexWithAI } from "./aiAnalyzer.js";
 import { compileLatex } from "./compileLatex.js";
+import { buildPreamble, buildHeader, buildJakeLatex } from "./jakeLatexBuilder.js";
+
+function injectTemplate(basics, aiBody) {
+  const preamble = buildPreamble();
+  const header = buildHeader(basics);
+  const footer = "\n\\end{document}\n";
+  return `${preamble}\n\\begin{document}\n${header}\n${aiBody}\n${footer}`;
+}
 
 /**
- * Full deterministic PDF generation pipeline:
+ * Full AI-based PDF generation pipeline:
  *
  * 1. Normalize (AI output → canonical schema)
  * 2. Validate (enforce limits — single source)
- * 3. Sanitize (escape LaTeX chars)
- * 4. Render (Handlebars template + theme → LaTeX string)
- * 5. Debug (write debug.tex)
- * 6. Compile (LaTeX → PDF)
+ * 3. Generate LaTeX using Groq AI
+ * 4. Debug (write debug.tex)
+ * 5. Compile (LaTeX → PDF)
  */
 export async function generateResumePdf(data, template = "classic") {
   const startTime = Date.now();
-  console.log(`[PDF] Starting generation (theme: ${template})`);
+  console.log(`[PDF] Starting AI-based generation`);
 
   // 1. Normalize
   const normalized = normalizeResume(data);
@@ -28,13 +34,17 @@ export async function generateResumePdf(data, template = "classic") {
   // 2. Validate
   const validated = validateResumeData(normalized);
 
-  // 3. Sanitize
-  const sanitized = sanitizeResume(validated);
+  // 3. Generate LaTeX using AI with Fallback
+  let texString;
+  try {
+    const aiBody = await generateLatexWithAI(validated);
+    texString = injectTemplate(validated.basics, aiBody);
+  } catch (err) {
+    console.error(`[PDF] AI LaTeX generation failed: ${err.message}. Falling back to structured rendering.`);
+    texString = buildJakeLatex(validated);
+  }
 
-  // 4. Render
-  const texString = await renderLatex(sanitized, template);
-
-  // 5. Debug — always write debug.tex
+  // 4. Debug — always write debug.tex
   const debugPath = path.join(process.cwd(), "debug.tex");
   try {
     fs.writeFileSync(debugPath, texString, "utf8");
@@ -43,7 +53,7 @@ export async function generateResumePdf(data, template = "classic") {
     console.warn(`[PDF] Could not write debug.tex: ${err.message}`);
   }
 
-  // 6. Compile
+  // 5. Compile
   const outputDir = path.join(process.cwd(), "generated");
   fs.mkdirSync(outputDir, { recursive: true });
   const outputPath = path.join(outputDir, "resume.pdf");
@@ -51,20 +61,26 @@ export async function generateResumePdf(data, template = "classic") {
   await compileLatex(texString, outputPath);
 
   const elapsed = Date.now() - startTime;
-  console.log(`[PDF] Generation complete in ${elapsed}ms`);
+  console.log(`[PDF] AI PDF generation complete in ${elapsed}ms`);
 
   return { outputPath, texString };
 }
 
 /**
- * Generates just the LaTeX string without PDF compilation.
+ * Generates the LaTeX string using Groq AI without PDF compilation.
  * Used by the /generate-latex endpoint.
  */
 export async function generateResumeLatex(data, template = "classic") {
   const normalized = normalizeResume(data);
   const validated = validateResumeData(normalized);
-  const sanitized = sanitizeResume(validated);
-  const texString = await renderLatex(sanitized, template);
+  let texString;
+  try {
+    const aiBody = await generateLatexWithAI(validated);
+    texString = injectTemplate(validated.basics, aiBody);
+  } catch (err) {
+    console.error(`[LATEX] AI LaTeX generation failed: ${err.message}. Falling back to structured rendering.`);
+    texString = buildJakeLatex(validated);
+  }
 
   // Write debug.tex
   try {

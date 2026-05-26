@@ -1,8 +1,0 @@
-{{#if skills.length}}
-\resumesection{Technical Skills}
-\begin{description}[leftmargin=1.2in, style=sameline, noitemsep, topsep=2pt]
-    {{#each skills}}
-    \item[\textbf{{{escapeLatex this.label}}}:] {{{escapeLatex this.value}}}
-    {{/each}}
-\end{description}
-{{/if}}

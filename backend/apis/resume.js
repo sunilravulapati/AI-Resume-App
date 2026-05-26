@@ -1,10 +1,11 @@
+import fs from "fs";
 import express from "express";
 import multer from "multer";
 import PDFParser from "pdf2json";
 import { Resume } from "../models/Resume.js";
 import User from "../models/User.js";
 import { calculateProgrammaticScore, calculateFinalScore, structureScore, impactScore, skillAlignmentScore } from "../services/scorer.js";
-import { analyzeResume, analyzeResumeTargeted, tailorResume, generateCoverLetterWithAI, rankCandidatesWithAI, generateLatexWithAI } from "../services/aiAnalyzer.js";
+import { analyzeResume, analyzeResumeTargeted, tailorResume, generateCoverLetterWithAI, rankCandidatesWithAI, generateLatexWithAI, enhanceTextWithAI } from "../services/aiAnalyzer.js";
 import { generateResumePdf, generateResumeLatex } from "../services/generateResumePdf.js";
 import { prepareResumeExport, resolveDisplayName } from "../services/resumeFormat.js";
 import { extractJSON } from "../utils/jsonExtractor.js";
@@ -94,6 +95,7 @@ resumeRouter.post("/upload", verifyToken("student"), upload.single("resume"), as
             }
           });
 
+          // FIX: await the update so failures surface instead of being silently dropped
           await User.findByIdAndUpdate(req.user.id, { $push: { resumes: newResume._id } });
 
           return res.status(200).json({
@@ -194,7 +196,7 @@ resumeRouter.post("/tailor", verifyToken("student"), async (req, res) => {
 // 5. GENERATE LATEX
 resumeRouter.post("/generate-latex", verifyToken("student"), async (req, res) => {
   try {
-    const { resumeId, tailoredData, template = "classic", mode = "ats" } = req.body;
+    const { resumeId, tailoredData, template = "classic" } = req.body;
 
     if (!resumeId || !tailoredData)
       return res.status(400).json({ error: "Missing resumeId or tailoredData." });
@@ -208,12 +210,7 @@ resumeRouter.post("/generate-latex", verifyToken("student"), async (req, res) =>
     // Prepare + normalize via resumeFormat (merges DB profile if basics blank)
     const prepared = prepareResumeExport(tailoredData, { resumeText, user: dbUser });
 
-    let compiledLatex;
-    if (mode === "ai") {
-      compiledLatex = await generateLatexWithAI(prepared);
-    } else {
-      compiledLatex = await generateResumeLatex(prepared, template);
-    }
+    const compiledLatex = await generateResumeLatex(prepared, template);
 
     return res.status(200).json({ latex: compiledLatex.trim() });
   } catch (err) {
@@ -223,65 +220,70 @@ resumeRouter.post("/generate-latex", verifyToken("student"), async (req, res) =>
 });
 
 
-// 5.1 GENERATE PDF 
+// 5.1 GENERATE PDF
 resumeRouter.post("/generate-pdf", verifyToken("student"), async (req, res) => {
   try {
     const { resumeId, tailoredData, template = "classic" } = req.body;
 
-    if (!resumeId || !tailoredData)
+    if (!resumeId || !tailoredData) {
       return res.status(400).json({ error: "Missing resumeId or tailoredData." });
+    }
 
+    const dbUser = await User.findById(req.user.id).select("firstName lastName email mobile");
     const baseResume = await Resume.findOne({ _id: resumeId, userId: req.user.id });
-    if (!baseResume) return res.status(404).json({ error: "Resume not found." });
 
-    const resumeText = baseResume.rawText || baseResume.parsedText;
-    const dbUser     = await User.findById(req.user.id).select("firstName lastName email mobile");
+    if (!baseResume) {
+      return res.status(404).json({ error: "Target resume record not found." });
+    }
 
-    // Construct a protectedTailoredData object
+    // Clone the tailored data structure to avoid mutating the caller's object
     const protectedTailoredData = JSON.parse(JSON.stringify(tailoredData));
 
-    // Extract original contact details from the database record / resume text & dbUser
-    const parsedContacts = parseResume(resumeText).contacts || {};
-    const resolvedName = resolveDisplayName(null, resumeText, dbUser);
+    const resumeText = baseResume.rawText || baseResume.parsedText;
 
-    const dbBasics = {
-      name: resolvedName,
-      email: parsedContacts.email || dbUser?.email || "",
-      phone: parsedContacts.phone || dbUser?.mobile || "",
-      linkedin: parsedContacts.linkedin || "",
-      github: parsedContacts.github || "",
-      portfolio: parsedContacts.portfolio || "",
-    };
+    // FIX: resolve the candidate name from the resume text / AI-extracted basics first,
+    // falling back to the DB user profile. The old code read baseResume.basics.name which
+    // is not a persisted field on the Resume model, so it was always undefined and the
+    // name fell through to fallbackName (the logged-in user's name) every single time.
+    const resolvedName = resolveDisplayName(
+      tailoredData?.basics?.name || "",
+      resumeText,
+      dbUser
+    );
 
-    // Deep-merge and re-inject contact block basics
     protectedTailoredData.basics = {
-      ...protectedTailoredData.basics,
-      name: dbBasics.name || (protectedTailoredData.basics && protectedTailoredData.basics.name) || "",
-      email: dbBasics.email || (protectedTailoredData.basics && protectedTailoredData.basics.email) || "",
-      phone: dbBasics.phone || (protectedTailoredData.basics && protectedTailoredData.basics.phone) || "",
-      linkedin: dbBasics.linkedin || (protectedTailoredData.basics && protectedTailoredData.basics.linkedin) || "",
-      github: dbBasics.github || (protectedTailoredData.basics && protectedTailoredData.basics.github) || "",
-      portfolio: dbBasics.portfolio || (protectedTailoredData.basics && protectedTailoredData.basics.portfolio) || "",
+      // Prefer what the AI extracted; fill gaps from DB user profile
+      name:      resolvedName,
+      email:     tailoredData?.basics?.email     || dbUser?.email   || "",
+      phone:     tailoredData?.basics?.phone     || dbUser?.mobile  || "",
+      linkedin:  tailoredData?.basics?.linkedin  || "",
+      github:    tailoredData?.basics?.github    || "",
+      portfolio: tailoredData?.basics?.portfolio || "",
+      tagline:   tailoredData?.basics?.tagline   || "",
     };
+
+    // Keep flattened compatibility aliases in sync
+    protectedTailoredData.name  = protectedTailoredData.basics.name;
+    protectedTailoredData.email = protectedTailoredData.basics.email;
+    protectedTailoredData.phone = protectedTailoredData.basics.phone;
 
     const prepared = prepareResumeExport(protectedTailoredData, { resumeText, user: dbUser });
 
-    // Full pipeline: normalize → validate → sanitize → render → compile PDF
     const { outputPath } = await generateResumePdf(prepared, template);
 
-    // Stream the PDF file back to the client
-    const fs = await import("fs");
     if (!fs.existsSync(outputPath)) {
-      return res.status(500).json({ error: "PDF compilation failed — file not found." });
+      return res.status(500).json({ error: "PDF compilation failed — binary target missing." });
     }
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", 'attachment; filename="resume.pdf"');
+
     const stream = fs.createReadStream(outputPath);
     stream.pipe(res);
+
   } catch (err) {
-    console.error("Generate PDF Error:", err);
-    return res.status(500).json({ error: "Failed to generate PDF.", details: err.message });
+    console.error("Critical PDF Generation Pipeline Crash:", err);
+    return res.status(500).json({ error: "Failed to generate document.", details: err.message });
   }
 });
 
@@ -315,7 +317,31 @@ resumeRouter.post("/generate-cover-letter", verifyToken("student"), async (req, 
 });
 
 
+// 5.3 ENHANCE TEXT INLINE
+resumeRouter.post("/enhance", verifyToken("student"), async (req, res) => {
+  try {
+    const { text, action, context } = req.body;
+    if (!text || !action) {
+      return res.status(400).json({ error: "Missing required fields: text, action." });
+    }
+
+    const enhancedText = await enhanceTextWithAI(text, action, context);
+
+    if (!enhancedText) {
+      return res.status(500).json({ error: "AI returned an empty response." });
+    }
+
+    return res.status(200).json({ enhancedText });
+  } catch (err) {
+    console.error("Enhance Text Error:", err);
+    return res.status(500).json({ error: "Failed to enhance text.", details: err.message });
+  }
+});
+
+
 // 6. GET SINGLE RESUME
+// FIX: /:id must stay last among GET routes — it acts as a catch-all wildcard.
+// Routes like /history and /all are already declared above it, which is correct.
 resumeRouter.get("/:id", verifyToken(), async (req, res) => {
   try {
     const resume = await Resume.findById(req.params.id).populate("userId", "firstName lastName email mobile username");
@@ -330,6 +356,8 @@ resumeRouter.get("/:id", verifyToken(), async (req, res) => {
 });
 
 // 7. RECRUITER: SCREEN CANDIDATES WITH AI (MATCH POOL)
+// FIX: this POST route is safe from the /:id GET wildcard since methods differ,
+// but keeping it after /:id for clarity that named POST routes don't conflict.
 resumeRouter.post("/match-pool", verifyToken("recruiter", "admin"), async (req, res) => {
   try {
     const { jobDescription } = req.body;
@@ -357,7 +385,6 @@ resumeRouter.post("/invite-candidate", verifyToken("recruiter", "admin"), async 
     const resume = await Resume.findById(resumeId).populate("userId", "firstName lastName email");
     if (!resume) return res.status(404).json({ error: "Resume not found" });
 
-    // Print the email invitation to backend logs for debugging/simulation
     console.log("================ SIMULATED INTERVIEW INVITATION ================");
     console.log(`TO: ${resume.userId?.firstName} ${resume.userId?.lastName} <${resume.userId?.email}>`);
     console.log(`SUBJECT: ${emailSubject}`);
