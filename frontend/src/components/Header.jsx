@@ -60,6 +60,7 @@ function Header() {
           {userRecord ? (
             <>
               <NavLink to={dashboardPath} className={navLinkStyle}>Dashboard</NavLink>
+              <NavLink to="/profile" className={navLinkStyle}>Profile</NavLink>
 
               <div className="w-px h-5 bg-[var(--border)] mx-3" />
 
@@ -142,6 +143,17 @@ function Header() {
                 }
               >
                 Dashboard
+              </NavLink>
+              <NavLink
+                to="/profile"
+                onClick={() => setMenuOpen(false)}
+                className={({ isActive }) =>
+                  `px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                    isActive ? "bg-[var(--color-brand-50)] text-[var(--color-accent)]" : "text-[var(--text)] hover:bg-[var(--bg-muted)]"
+                  }`
+                }
+              >
+                Profile
               </NavLink>
               <div className="border-t border-[var(--border)] my-2" />
               <div className="flex items-center gap-3 px-4 py-2">

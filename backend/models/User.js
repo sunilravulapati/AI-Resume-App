@@ -13,6 +13,10 @@ const userSchema = new Schema({
     required: true
   },
   isActive: { type: Boolean, default: true },
+  githubUrl: { type: String, default: "" },
+  linkedinUrl: { type: String, default: "" },
+  languages: [{ type: String }],
+  preferredRoles: [{ type: String }],
   resumes: [{
     type: Types.ObjectId,
     ref: "Resume"
@@ -20,4 +24,4 @@ const userSchema = new Schema({
 }, { timestamps: true, strict: "throw", versionKey: false });
 
 const User = model('User', userSchema);
-export default User
+export default User;

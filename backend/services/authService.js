@@ -3,6 +3,12 @@ import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 
 export const registerUser = async (userObj) => {
+    if (!userObj.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userObj.email)) {
+        const err = new Error("Please enter a valid email address.");
+        err.status = 400;
+        throw err;
+    }
+
     const existingUser = await User.findOne({ 
         $or: [{ email: userObj.email }, { username: userObj.username }] 
     });

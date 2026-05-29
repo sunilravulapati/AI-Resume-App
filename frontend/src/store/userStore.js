@@ -23,6 +23,11 @@ const useUserStore = create((set) => ({
     await axios.post('/api/user/logout');
     set({ userRecord: null });
   },
+  updateProfile: async (updatedData) => {
+    const res = await axios.put('/api/user/profile', updatedData);
+    set({ userRecord: res.data.user });
+    return res.data;
+  },
 }));
 
 export default useUserStore;

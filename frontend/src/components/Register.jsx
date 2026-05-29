@@ -80,7 +80,7 @@ function Register() {
                 <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#a1a1a6]">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M22 7L13.03 12.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
                 </div>
-                <input type="email" placeholder="john@example.com" {...register("email", { required: "Email is required", pattern: { value: /^[A-Za-z][A-Za-z0-9._%+-]*@[A-Za-z]+\.com$/, message: "Must start with a letter, have only letters after @, and end with .com" } })} className={`${inputBase} pl-10`} />
+                <input type="email" placeholder="john@example.com" {...register("email", { required: "Please enter a valid email address.", pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Please enter a valid email address." } })} className={`${inputBase} pl-10`} />
               </div>
               {errors.email && <p className="text-[#ff3b30] text-xs mt-1 ml-1">{errors.email.message}</p>}
             </div>

@@ -9,6 +9,8 @@ import StudentDashboard from "./components/StudentDashboard";
 import RecruiterDashboard from "./components/RecruiterDashboard";
 import AdminDashboard from "./components/AdminDashboard";
 import Resume from "./components/Resume";
+import Profile from "./components/Profile";
+import ErrorPage from "./components/ErrorPage";
 
 import useUserStore from "./store/userStore";
 
@@ -57,6 +59,7 @@ const router = createBrowserRouter([
   {
     path: "/",
     element: <RootLayout />,
+    errorElement: <ErrorPage />,
     children: [
       { index: true, element: <Home /> },
       { path: "login", element: <Login /> },
@@ -96,11 +99,20 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+
+      {
+        path: "profile",
+        element: (
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        ),
+      },
     ],
   },
 
-  // Catch-all
-  { path: "*", element: <Navigate to="/" replace /> },
+  // Catch-all to display custom Error Page for unmatched paths
+  { path: "*", element: <ErrorPage /> },
 ]);
 
 export default function App() {
