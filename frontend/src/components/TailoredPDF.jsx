@@ -286,9 +286,10 @@ export default function TailoredPDF({ tailoredData, parsedText = '', user, userL
   // FIX: strip trailing ellipsis that appeared when tagline was long
   const tagline = (basics.tagline || '').replace(/…$|\.{3}$/, '').trim();
 
-  const finalSummary    = data.tailoredSummary      || '';
-  const finalSkillRows  = data.tailoredSkills        || [];
-  const workExps        = data.tailoredExperience    || [];
+  const finalSummary    = data.summary               || '';
+  const finalSkillRows  = data.skills                || [];
+  const workExps        = data.experience            || [];
+  const projects        = data.projects              || [];
   const education       = data.education             || [];
   const awards          = data.awards                || [];
   const achievements    = data.achievements          || [];
@@ -299,8 +300,8 @@ export default function TailoredPDF({ tailoredData, parsedText = '', user, userL
 
   const hasAwardsSection = awards.length > 0 || achievements.length > 0;
 
-  const totalItems = workExps.length + education.length + (finalSkillRows.length ? 1 : 0) + (awards.length ? 1 : 0) + (certs.length ? 1 : 0);
-  const dense = workExps.length >= 4 || totalItems >= 7;
+  const totalItems = workExps.length + projects.length + education.length + (finalSkillRows.length ? 1 : 0) + (awards.length ? 1 : 0) + (certs.length ? 1 : 0);
+  const dense = workExps.length + projects.length >= 4 || totalItems >= 7;
 
   // Dynamic density adjustments to guarantee 100% stable single-page rendering
   const pageStyle         = [s.page, dense && { paddingTop: 16, paddingBottom: 16, paddingHorizontal: 22, fontSize: 7.9 }];
@@ -408,10 +409,10 @@ export default function TailoredPDF({ tailoredData, parsedText = '', user, userL
           </View>
         )}
 
-        {/* ── EXPERIENCE & PROJECTS ────────────────────────────────────── */}
+        {/* ── EXPERIENCE ──────────────────────────────────────────────── */}
         {workExps.length > 0 && (
           <View style={sectionStyle}>
-            <ST style={sectionTitleStyle}>Experience &amp; Projects</ST>
+            <ST style={sectionTitleStyle}>Experience</ST>
             {workExps.map((job, i) => {
               let company = job.company || '';
               let location = job.location || '';
@@ -448,6 +449,38 @@ export default function TailoredPDF({ tailoredData, parsedText = '', user, userL
                   ) : null}
 
                   {(job.bullets || []).map((b, j) => (
+                    <Bul key={j} text={b} style={bulletTextStyle} bulletStyle={bulletStyle} />
+                  ))}
+                </View>
+              );
+            })}
+          </View>
+        )}
+
+        {/* ── PROJECTS ────────────────────────────────────────────────── */}
+        {projects.length > 0 && (
+          <View style={sectionStyle}>
+            <ST style={sectionTitleStyle}>Projects</ST>
+            {projects.map((proj, i) => {
+              let location = proj.location || '';
+              let date = proj.dates || proj.meta || proj.date || '';
+
+              return (
+                <View key={i} style={entryWrapStyle}>
+                  {/* Row 1: Project name  ←→  Date */}
+                  <View style={s.entryTopRow}>
+                    <Text style={entryTitleStyle}>{proj.title}</Text>
+                    {date ? <Text style={entryDateStyle}>{date}</Text> : null}
+                  </View>
+
+                  {/* Row 2: Tech */}
+                  {proj.tech ? (
+                    <View style={entrySubRowStyle}>
+                      <Text style={[entryMetaStyle, { color: C.muted }]}>{proj.tech}</Text>
+                    </View>
+                  ) : null}
+
+                  {(proj.bullets || []).map((b, j) => (
                     <Bul key={j} text={b} style={bulletTextStyle} bulletStyle={bulletStyle} />
                   ))}
                 </View>

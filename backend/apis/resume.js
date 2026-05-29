@@ -3,6 +3,7 @@ import express from "express";
 import multer from "multer";
 import PDFParser from "pdf2json";
 import { Resume } from "../models/Resume.js";
+import { ResumeSession } from "../models/ResumeSession.js";
 import User from "../models/User.js";
 import { calculateProgrammaticScore, calculateFinalScore, structureScore, impactScore, skillAlignmentScore } from "../services/scorer.js";
 import { analyzeResume, analyzeResumeTargeted, tailorResume, generateCoverLetterWithAI, rankCandidatesWithAI, generateLatexWithAI, enhanceTextWithAI } from "../services/aiAnalyzer.js";
@@ -123,13 +124,25 @@ resumeRouter.post("/upload", verifyToken("student"), upload.single("resume"), as
 );
 
 
-// 2. GET RESUME HISTORY
+// 2. GET RESUME HISTORY (Base Resumes)
 resumeRouter.get("/history", verifyToken("student"), async (req, res) => {
   try {
     const history = await Resume.find({ userId: req.user.id }).sort({ createdAt: -1 });
     res.status(200).json(history);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch history" });
+  }
+});
+
+// 2.1 GET RESUME SESSIONS
+resumeRouter.get("/sessions", verifyToken("student"), async (req, res) => {
+  try {
+    const sessions = await ResumeSession.find({ userId: req.user.id })
+      .populate("baseResumeId", "parsedText title createdAt")
+      .sort({ createdAt: -1 });
+    res.status(200).json(sessions);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch sessions" });
   }
 });
 
@@ -181,14 +194,59 @@ resumeRouter.post("/tailor", verifyToken("student"), async (req, res) => {
       if (userLinks.competitiveProgramming) tailoredData.basics.competitiveProgramming = userLinks.competitiveProgramming;
     }
 
+    // Create the session in the DB
+    const session = await ResumeSession.create({
+      baseResumeId: baseResume._id,
+      userId: req.user.id,
+      jobDescription,
+      company: tailoredData?.basics?.company || "Target Company",
+      roleName: tailoredData?.basics?.roleName || "Target Role",
+      atsScore: tailoredData?.atsScore || 0,
+      roleMatchScore: tailoredData?.matchScore || null,
+      tailoredData: tailoredData,
+      strengths: tailoredData?.strengths || [],
+      weaknesses: tailoredData?.improvements || [],
+    });
+
     return res.status(200).json({
       message:        "Resume tailored successfully",
+      sessionId:      session._id,
       tailoredResume: tailoredData,
       parsedText:     baseResume.rawText || baseResume.parsedText,
     });
   } catch (err) {
     console.error("Tailoring Error:", err);
     return res.status(500).json({ error: "Failed to tailor resume", details: err.message });
+  }
+});
+
+// 4.1 AUTO-SAVE SESSION
+resumeRouter.put("/session/:id", verifyToken("student"), async (req, res) => {
+  try {
+    const { tailoredData } = req.body;
+    if (!tailoredData || typeof tailoredData !== 'object') {
+      return res.status(400).json({ error: "Invalid tailoredData" });
+    }
+
+    // Basic validation / sanitization
+    // We expect arrays for certain fields. If they are not arrays, force them to be empty arrays.
+    if (tailoredData.experience && !Array.isArray(tailoredData.experience)) tailoredData.experience = [];
+    if (tailoredData.projects && !Array.isArray(tailoredData.projects)) tailoredData.projects = [];
+    if (tailoredData.education && !Array.isArray(tailoredData.education)) tailoredData.education = [];
+    if (tailoredData.skills && !Array.isArray(tailoredData.skills)) tailoredData.skills = [];
+
+    const session = await ResumeSession.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.id },
+      { $set: { tailoredData } },
+      { new: true }
+    );
+
+    if (!session) return res.status(404).json({ error: "Session not found" });
+
+    return res.status(200).json({ message: "Saved" });
+  } catch (err) {
+    console.error("Auto-save Error:", err);
+    return res.status(500).json({ error: "Failed to save session", details: err.message });
   }
 });
 

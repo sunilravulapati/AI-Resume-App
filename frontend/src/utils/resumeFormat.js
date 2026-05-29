@@ -54,11 +54,10 @@ export function enforceLimitsForPdf(data) {
     out.tailoredSummary = out.summary;
   }
 
-  // Combine experience and projects for single-page PDF rendering under Experience & Projects
   const rawExperience = out.tailoredExperience || out.experience || [];
-  const rawProjects = out.projects || [];
+  const rawProjects = out.tailoredProjects || out.projects || [];
 
-  const formattedExp = rawExperience.slice(0, 3).map((entry) => ({
+  const formattedExp = rawExperience.slice(0, 4).map((entry) => ({
     ...entry,
     title:   trimWords(entry.title   || '', 22),
     company: trimWords(entry.company || '', 22),
@@ -74,25 +73,30 @@ export function enforceLimitsForPdf(data) {
     title:   trimWords(entry.title   || '', 22),
     company: '', // Projects don't have a company
     location: '',
-    dates:   trimWords(entry.meta || entry.date || '', 18),
+    dates:   trimWords(entry.meta || entry.date || entry.dates || '', 18),
     tech:    trimWords(entry.tech    || '', 28),
     meta:    entry.meta ? trimWords(entry.meta || '', 20) : '',
     bullets: (entry.bullets || []).slice(0, 3).map((b) => trimWords(b, 38)),
   }));
 
-  // Combine to a single experience/projects array (cap at 5 items to keep it strictly on a single page)
-  out.tailoredExperience = [...formattedExp, ...formattedProj].slice(0, 5);
-
-  if (out.tailoredSummary) {
-    out.tailoredSummary = trimWords(out.tailoredSummary, 65);
-  }
+  out.experience = formattedExp;
+  out.projects = formattedProj;
+  // Remove the old aliases to force downstream to use the normalized shape
+  delete out.tailoredExperience;
+  delete out.tailoredProjects;
 
   // Up to 6 skill categories
   if (Array.isArray(out.tailoredSkills)) {
-    out.tailoredSkills = out.tailoredSkills.slice(0, 6).map((row) => ({
+    out.skills = out.tailoredSkills.slice(0, 6).map((row) => ({
       label: trimWords(row.label || '', 8),
       value: trimWords(row.value || '', 24),
     }));
+    delete out.tailoredSkills;
+  }
+
+  if (out.tailoredSummary) {
+    out.summary = trimWords(out.tailoredSummary, 65);
+    delete out.tailoredSummary;
   }
 
   // Up to 3 education entries

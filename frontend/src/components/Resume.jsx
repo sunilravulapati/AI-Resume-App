@@ -114,7 +114,7 @@ export default function Resume() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
         {/* LEFT: PDF / Text Preview */}
-        <div className="bg-[#f5f5f7] rounded-2xl border border-[#e8e8ed] overflow-hidden flex flex-col h-195">
+        <div className="bg-[#f5f5f7] rounded-2xl border border-[#e8e8ed] overflow-hidden flex flex-col h-[800px] shadow-sm">
           <div className="bg-[#ebebf0] px-4 py-2.5 border-b border-[#e8e8ed]">
             <p className={`${mutedText} text-[0.65rem] uppercase tracking-wider font-semibold text-center`}>
               Original Document
@@ -135,7 +135,7 @@ export default function Resume() {
         </div>
 
         {/* RIGHT: AI Breakdown */}
-        <div className="space-y-5">
+        <div className="space-y-6 flex flex-col">
 
           {/* Candid AI Summary */}
           <div className="bg-white border-l-4 border-[#0066cc] pl-5 pr-5 py-5 rounded-r-2xl shadow-sm border border-[#e8e8ed]">
@@ -151,7 +151,7 @@ export default function Resume() {
           </div>
 
           {/* Interactive Score Breakdown Panel */}
-          <div className={`${cardClass}`}>
+          <div className={`${cardClass} shadow-sm border border-[#e8e8ed]`}>
             <h3 className="text-[0.65rem] font-bold text-[#0066cc] uppercase tracking-wider mb-4 flex items-center gap-2">
               <span>📊</span> Interactive Score Breakdown
             </h3>
@@ -225,7 +225,7 @@ export default function Resume() {
           <div className={divider} />
 
           {/* Strengths / Green Flags */}
-          <div className={`${cardClass}`}>
+          <div className={`${cardClass} shadow-sm border border-[#e8e8ed]`}>
             <h3 className={`text-[0.65rem] font-bold ${isRecruiter ? 'text-[#0066cc]' : 'text-[#248a3d]'} uppercase tracking-wider mb-4 flex items-center gap-2`}>
               <span>🟢</span> {isRecruiter ? 'Candidate Green Flags' : 'Key Strengths'}
             </h3>
@@ -243,7 +243,7 @@ export default function Resume() {
           </div>
 
           {/* Areas of Concern / Red Flags */}
-          <div className={`${cardClass}`}>
+          <div className={`${cardClass} shadow-sm border border-[#e8e8ed]`}>
             <h3 className="text-[0.65rem] font-bold text-[#cc2f26] uppercase tracking-wider mb-4 flex items-center gap-2">
               <span>🔴</span> {isRecruiter ? 'Candidate Red Flags' : 'Areas of Concern'}
             </h3>

@@ -11,14 +11,10 @@ export function generateCopyText(tailoredData) {
   lines.push('═══════════════════════════════════════');
   lines.push('');
 
-  const summary = tailoredData?.tailoredSummary || tailoredData?.summary || '';
-  const skills = tailoredData?.tailoredSkills || tailoredData?.skills || [];
-  const rawExperience = tailoredData?.tailoredExperience || tailoredData?.experience || [];
-  const rawProjects = tailoredData?.projects || [];
-  const experience = [
-    ...rawExperience,
-    ...rawProjects.map(p => ({ ...p, title: `Project: ${p.title}` })),
-  ];
+  const summary = tailoredData?.summary || '';
+  const skills = tailoredData?.skills || [];
+  const experience = tailoredData?.experience || [];
+  const projects = tailoredData?.projects || [];
 
   if (summary) {
     lines.push('── PROFESSIONAL SUMMARY ──────────────');
@@ -38,6 +34,15 @@ export function generateCopyText(tailoredData) {
     for (const exp of experience) {
       lines.push(`[ ${exp.title} ]`);
       for (const bullet of exp.bullets || []) lines.push(`  • ${bullet}`);
+      lines.push('');
+    }
+  }
+  if (projects?.length) {
+    lines.push('── TAILORED PROJECT BULLETS ──────────');
+    lines.push('');
+    for (const proj of projects) {
+      lines.push(`[ ${proj.title} ]`);
+      for (const bullet of proj.bullets || []) lines.push(`  • ${bullet}`);
       lines.push('');
     }
   }
@@ -874,16 +879,17 @@ const css = `
     width: 100%;
     padding: 0.875rem;
     border-radius: 12px;
-    background: var(--success);
+    background: var(--color-accent);
     color: #fff;
     font-size: 0.82rem;
     font-weight: 700;
     text-decoration: none;
-    transition: opacity 0.15s;
+    transition: background 0.15s, box-shadow 0.15s;
     border: none;
     cursor: pointer;
+    box-shadow: 0 2px 8px rgba(79,70,229,0.25);
   }
-  .export-download-btn:hover { opacity: 0.88; }
+  .export-download-btn:hover { background: var(--color-accent-hover); box-shadow: 0 4px 16px rgba(79,70,229,0.35); }
   .export-btn-spinner {
     display: inline-block;
     width: 14px;

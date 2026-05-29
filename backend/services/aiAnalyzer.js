@@ -468,6 +468,16 @@ For Experience:
       \\resumeItemListEnd
   \\resumeSubHeadingListEnd
 
+For Projects:
+\\section{Projects}
+    \\resumeSubHeadingListStart
+      \\resumeProjectHeading
+        {\\textbf{Project Name} $|$ \\emph{\\small Tech Stack}}{Dates}
+      \\resumeItemListStart
+        \\resumeItem{Bullet point 1}
+      \\resumeItemListEnd
+    \\resumeSubHeadingListEnd
+
 For Skills:
 \\section{Technical Skills}
  \\begin{itemize}[leftmargin=0.15in, label={}]
