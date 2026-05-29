@@ -1,7 +1,8 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import InteractiveEditor from './InteractiveEditor';
 import LiveResumePreview from './LiveResumePreview';
-import ExportPanel from './ExportPanel';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import TailoredPDF from './TailoredPDF';
 
 // ─── Shared style helpers ─────────────────────────────────────────────────────
 const F = Object.freeze; // freeze style objects for clarity
@@ -48,8 +49,12 @@ function SaveBadge({ status = 'saved' }) {
   );
 }
 
-// ─── Workspace Header ─────────────────────────────────────────────────────────
-function WorkspaceHeader({ contextTitle, atsScore, jdScore, saveStatus, onBack, onScrollToExport }) {
+// ─── Top Action Bar ─────────────────────────────────────────────────────────────
+function TopActionBar({ contextTitle, selectedResume, saveStatus, onBack, onGenerateAI, tailoredData, parsedText, user, userLinks, resumeId }) {
+  const [exportOpen, setExportOpen] = useState(false);
+  const [modalState, setModalState] = useState({ open: false, title: '', content: '' });
+  const [copied, setCopied] = useState(false);
+
   const btnBase = {
     display: 'inline-flex', alignItems: 'center', gap: '5px',
     fontSize: '12px', fontWeight: 600,
@@ -57,185 +62,128 @@ function WorkspaceHeader({ contextTitle, atsScore, jdScore, saveStatus, onBack, 
     border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#475569',
     transition: 'all 0.15s', fontFamily: 'inherit', whiteSpace: 'nowrap',
   };
+
+  const handleJsonExport = () => {
+    const dataStr = JSON.stringify(tailoredData, null, 2);
+    setModalState({ open: true, title: 'JSON Export', content: dataStr });
+    setExportOpen(false);
+  };
+
+  const handleLatexExport = async () => {
+    try {
+      const raw = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+      const apiBase = raw.replace(/\/+$/, '').replace(/\/api$/, '');
+      const res = await fetch(`${apiBase}/api/resume/generate-latex`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resumeId, tailoredData }),
+      });
+      if (!res.ok) throw new Error(`Failed to generate LaTeX: ${res.statusText}`);
+      const { latex } = await res.json();
+      const code = latex.replace(/^```(?:latex|tex)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+      
+      setModalState({ open: true, title: 'LaTeX Export', content: code });
+    } catch (e) {
+      alert("LaTeX Export failed: " + e.message);
+    }
+    setExportOpen(false);
+  };
+
   return (
     <header style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       gap: '14px', padding: '0 20px', height: '56px',
       background: '#ffffff', borderBottom: '1px solid #E2E8F0', flexShrink: 0,
-      flexWrap: 'wrap',
+      flexWrap: 'wrap', position: 'sticky', top: 0, zIndex: 50
     }}>
       {/* Left: back + context */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
-        <button
-          onClick={onBack}
-          style={{ ...btnBase, flexShrink: 0 }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#4F46E5'; e.currentTarget.style.color = '#4F46E5'; e.currentTarget.style.background = '#EEF2FF'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.color = '#475569'; e.currentTarget.style.background = '#F8FAFC'; }}
-        >
+        <button onClick={onBack} style={{ ...btnBase, flexShrink: 0 }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
           Dashboard
         </button>
-
         <div style={{ width: '1px', height: '22px', background: '#E2E8F0', flexShrink: 0 }} />
-
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', minWidth: 0 }}>
-          {/* File icon */}
-          <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#EEF2FF', border: '1px solid #E0E7FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" strokeWidth="2.5" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
-          </div>
           <div style={{ minWidth: 0 }}>
             <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {contextTitle}
             </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '1px', flexWrap: 'wrap' }}>
-              <ScoreChip score={atsScore} />
-              {jdScore != null && (
-                <span style={{ fontSize: '11px', color: '#94A3B8' }}>JD {jdScore}%</span>
-              )}
-              <span style={{ color: '#E2E8F0', fontSize: '11px' }}>·</span>
-              <SaveBadge status={saveStatus} />
-            </div>
           </div>
         </div>
       </div>
 
-      {/* Right: export shortcuts */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-        {[
-          { label: '↓ PDF',  mono: false },
-          { label: 'LaTeX',  mono: true  },
-          { label: '✉ Cover', mono: false },
-        ].map(({ label, mono }) => (
-          <button key={label} onClick={onScrollToExport}
-            style={{ ...btnBase, fontFamily: mono ? 'monospace' : 'inherit' }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = '#EEF2FF'; e.currentTarget.style.borderColor = '#C7D2FE'; e.currentTarget.style.color = '#4F46E5'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.color = '#475569'; }}
-          >
-            {label}
+      {/* Right: Actions */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, position: 'relative' }}>
+        <SaveBadge status={saveStatus} />
+        
+        <button onClick={onGenerateAI} style={{ ...btnBase, background: '#EEF2FF', borderColor: '#C7D2FE', color: '#4F46E5' }}>
+          ✨ Generate AI Resume
+        </button>
+
+        <button style={{ ...btnBase }} onClick={() => {
+           const previewPanel = document.getElementById('preview-panel-container');
+           if (previewPanel) {
+             previewPanel.scrollIntoView({ behavior: 'smooth' });
+           }
+        }}>
+          Preview
+        </button>
+
+        <div style={{ position: 'relative' }}>
+          <button style={{ ...btnBase }} onClick={() => setExportOpen(!exportOpen)}>
+            Export ▾
           </button>
-        ))}
-      </div>
-    </header>
-  );
-}
-
-// ─── Left Sidebar ─────────────────────────────────────────────────────────────
-function WorkspaceSidebar({ activeSection, onNav, selectedTemplate, onTemplateChange, onScrollToExport }) {
-  return (
-    <nav style={{
-      width: '220px', flexShrink: 0,
-      borderRight: '1px solid #E2E8F0', background: '#FFFFFF',
-      overflowY: 'auto', display: 'flex', flexDirection: 'column',
-    }}>
-      {/* Section navigation */}
-      <div style={{ padding: '16px 10px 8px' }}>
-        <p style={{ fontSize: '9.5px', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#CBD5E1', margin: '0 0 8px 8px' }}>
-          Sections
-        </p>
-        {NAV_ITEMS.map((item) => {
-          const isActive = activeSection === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => item.id === 'export' ? onScrollToExport() : onNav(item.id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '9px',
-                width: '100%', padding: '8px 10px', borderRadius: '9px',
-                border: 'none', cursor: 'pointer', textAlign: 'left',
-                fontSize: '12.5px', fontWeight: isActive ? 600 : 500,
-                background: isActive ? '#EEF2FF' : 'transparent',
-                color: isActive ? '#4F46E5' : '#64748B',
-                transition: 'all 0.12s', marginBottom: '1px',
-                fontFamily: 'inherit',
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive) { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.color = '#0F172A'; }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748B'; }
-              }}
-            >
-              <span style={{ fontSize: '13px', lineHeight: 1 }}>{item.icon}</span>
-              <span>{item.label}</span>
-              {isActive && (
-                <div style={{ marginLeft: 'auto', width: '5px', height: '5px', borderRadius: '3px', background: '#4F46E5' }} />
-              )}
-            </button>
-          );
-        })}
+          
+          {exportOpen && (
+            <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '4px', background: '#fff', border: '1px solid #E2E8F0', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', padding: '4px', minWidth: '120px', display: 'flex', flexDirection: 'column', gap: '2px', zIndex: 60 }}>
+              <PDFDownloadLink
+                document={<TailoredPDF tailoredData={tailoredData} parsedText={parsedText} user={user} userLinks={userLinks} />}
+                fileName={`Tailored_Resume_${user?.firstName || 'Resume'}.pdf`}
+                style={{ padding: '6px 12px', textAlign: 'left', textDecoration: 'none', fontSize: '12px', fontWeight: 500, color: '#475569', borderRadius: '4px', display: 'block' }}
+                onMouseEnter={e => e.target.style.background = '#F8FAFC'}
+                onMouseLeave={e => e.target.style.background = 'transparent'}
+              >
+                {({ loading }) => (loading ? 'Building PDF…' : 'PDF')}
+              </PDFDownloadLink>
+              <button onClick={handleLatexExport} style={{ padding: '6px 12px', textAlign: 'left', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '12px', fontWeight: 500, color: '#475569', borderRadius: '4px' }} onMouseEnter={e => e.target.style.background = '#F8FAFC'} onMouseLeave={e => e.target.style.background = 'transparent'}>LaTeX</button>
+              <button onClick={handleJsonExport} style={{ padding: '6px 12px', textAlign: 'left', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '12px', fontWeight: 500, color: '#475569', borderRadius: '4px' }} onMouseEnter={e => e.target.style.background = '#F8FAFC'} onMouseLeave={e => e.target.style.background = 'transparent'}>JSON</button>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div style={{ height: '1px', background: '#F1F5F9', margin: '6px 0' }} />
-
-      {/* Template picker */}
-      <div style={{ padding: '10px 10px 8px' }}>
-        <p style={{ fontSize: '9.5px', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#CBD5E1', margin: '0 0 8px 8px' }}>
-          Template
-        </p>
-        {TEMPLATES.map((t) => {
-          const isSelected = selectedTemplate === t.id && t.available;
-          return (
-            <button
-              key={t.id}
-              onClick={() => t.available && onTemplateChange(t.id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                width: '100%', padding: '7px 10px', borderRadius: '9px',
-                border: 'none', cursor: t.available ? 'pointer' : 'not-allowed',
-                textAlign: 'left', fontSize: '12px', fontWeight: isSelected ? 600 : 400,
-                background: isSelected ? '#EEF2FF' : 'transparent',
-                color: isSelected ? '#4F46E5' : t.available ? '#64748B' : '#CBD5E1',
-                fontFamily: 'inherit', marginBottom: '1px',
-              }}
-            >
-              <div style={{ width: '14px', height: '14px', borderRadius: '4px', border: `1.5px solid ${isSelected ? '#4F46E5' : '#E2E8F0'}`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {isSelected && <div style={{ width: '7px', height: '7px', borderRadius: '2px', background: '#4F46E5' }} />}
+      {/* ── Modal for Text Exports ── */}
+      {modalState.open && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '800px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#0F172A' }}>{modalState.title}</h3>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(modalState.content);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                  style={{ ...btnBase, background: copied ? '#D1FAE5' : '#EEF2FF', borderColor: copied ? '#34D399' : '#C7D2FE', color: copied ? '#065F46' : '#4F46E5', padding: '4px 10px', transition: 'all 0.2s' }}
+                >
+                  {copied ? '✓ Copied' : 'Copy'}
+                </button>
+                <button onClick={() => setModalState({ open: false, title: '', content: '' })} style={{ background: 'transparent', border: 'none', fontSize: '20px', color: '#64748B', cursor: 'pointer', padding: '0 4px' }}>
+                  ×
+                </button>
               </div>
-              {t.name}
-              {!t.available && <span style={{ fontSize: '9px', fontWeight: 700, color: '#CBD5E1', marginLeft: 'auto' }}>SOON</span>}
-            </button>
-          );
-        })}
-      </div>
-
-      <div style={{ height: '1px', background: '#F1F5F9', margin: '6px 0' }} />
-
-      {/* Export shortcuts */}
-      <div style={{ padding: '10px' }}>
-        <p style={{ fontSize: '9.5px', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#CBD5E1', margin: '0 0 8px 8px' }}>
-          Export
-        </p>
-        {[
-          { label: '↓ Download PDF',  bg: '#EEF2FF', color: '#4F46E5' },
-          { label: '⌗ LaTeX / Overleaf', bg: '#F0FDF4', color: '#059669' },
-          { label: '✉ Cover Letter',   bg: '#FFF7ED', color: '#D97706' },
-        ].map(({ label, bg, color }) => (
-          <button key={label} onClick={onScrollToExport}
-            style={{
-              display: 'block', width: '100%', textAlign: 'left',
-              padding: '8px 10px', borderRadius: '9px', marginBottom: '4px',
-              border: 'none', cursor: 'pointer',
-              fontSize: '11.5px', fontWeight: 600, color,
-              background: bg, fontFamily: 'inherit',
-              transition: 'filter 0.15s',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.filter = 'brightness(0.95)')}
-            onMouseLeave={(e) => (e.currentTarget.style.filter = 'none')}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Push to bottom */}
-      <div style={{ flex: 1 }} />
-
-      <div style={{ padding: '10px 18px 14px', borderTop: '1px solid #F1F5F9' }}>
-        <p style={{ margin: 0, fontSize: '10.5px', color: '#CBD5E1', lineHeight: 1.5 }}>
-          Hover any text field to reveal AI action pills.
-        </p>
-      </div>
-    </nav>
+            </div>
+            <div style={{ padding: '20px', overflowY: 'auto', flex: 1 }}>
+              <pre style={{ margin: 0, fontSize: '12px', fontFamily: 'monospace', color: '#334155', whiteSpace: 'pre-wrap', wordBreak: 'break-word', background: '#F8FAFC', padding: '16px', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                {modalState.content}
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
+    </header>
   );
 }
 
@@ -259,8 +207,8 @@ function PreviewPanel({ previewData, user, template }) {
   }, []);
 
   return (
-    <aside style={{
-      width: '460px', flexShrink: 0,
+    <aside id="preview-panel-container" style={{
+      width: '50%', flexShrink: 0,
       borderLeft: '1px solid #E2E8F0', background: '#F1F5F9',
       display: 'flex', flexDirection: 'column', overflowY: 'auto',
     }}>
@@ -372,6 +320,10 @@ export default function WorkspaceView({
     ? `${selectedResume.company} · ${selectedResume.roleName}`
     : selectedResume?.roleName || selectedResume?.company || 'Tailored Resume';
 
+  const handleGenerateAI = () => {
+    alert("AI will regenerate missing content only (respecting locked personal info). Not fully implemented in this demo.");
+  };
+
   return (
     <div style={{
       position: 'fixed',
@@ -382,31 +334,26 @@ export default function WorkspaceView({
       fontFamily: "'Inter', system-ui, sans-serif",
     }}>
       {/* ── Header ── */}
-      <WorkspaceHeader
+      <TopActionBar
         contextTitle={contextTitle}
-        atsScore={selectedResume?.atsScore}
-        jdScore={selectedResume?.matchScore}
+        selectedResume={selectedResume}
         saveStatus={saveStatus}
         onBack={onBack}
-        onScrollToExport={scrollToExport}
+        onGenerateAI={handleGenerateAI}
+        tailoredData={previewData}
+        parsedText={parsedText}
+        user={user}
+        userLinks={userLinks}
+        resumeId={resumeId}
       />
 
       {/* ── Body ── */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-        {/* Left sidebar */}
-        <WorkspaceSidebar
-          activeSection={activeSection}
-          onNav={navTo}
-          selectedTemplate={selectedTemplate}
-          onTemplateChange={setSelectedTemplate}
-          onScrollToExport={scrollToExport}
-        />
-
-        {/* Center: Editor */}
+        {/* Left: Editor (50%) */}
         <main
           ref={editorPanelRef}
-          style={{ flex: 1, overflowY: 'auto', padding: '24px 28px', minWidth: 0 }}
+          style={{ width: '50%', overflowY: 'auto', padding: '24px 28px', minWidth: 0, flexShrink: 0 }}
         >
           {/* AI hint banner */}
           <div style={{
@@ -418,36 +365,17 @@ export default function WorkspaceView({
             <div>
               <p style={{ margin: 0, fontSize: '12.5px', fontWeight: 600, color: '#4338CA' }}>AI-Powered Workspace</p>
               <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#6366F1', lineHeight: 1.5 }}>
-                Hover any text field to reveal Improve, Concise, ATS, Stronger, and Metrics AI actions — each field enhances independently.
+                Hover any text field to reveal Improve, Concise, ATS, Stronger, and Metrics AI actions. Personal Info is locked.
               </p>
             </div>
           </div>
 
-          {/* Editor sections — sectionRefs attached for scroll tracking */}
+          {/* Editor sections */}
           <InteractiveEditor
             initialData={tailoredData}
             onDataChange={handleEditorChange}
             sectionRefs={sectionRefs}
           />
-
-          {/* Export section at bottom */}
-          <div ref={exportRef} style={{ marginTop: '32px', paddingTop: '8px' }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '10px',
-              marginBottom: '16px',
-            }}>
-              <div style={{ width: '3px', height: '18px', borderRadius: '2px', background: '#4F46E5', flexShrink: 0 }} />
-              <p style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#0F172A' }}>Export</p>
-              <span style={{ fontSize: '11px', color: '#94A3B8' }}>— choose your format</span>
-            </div>
-            <ExportPanel
-              tailoredData={previewData}
-              parsedText={parsedText}
-              user={user}
-              resumeId={resumeId}
-              userLinks={userLinks}
-            />
-          </div>
         </main>
 
         {/* Right: Live Preview */}

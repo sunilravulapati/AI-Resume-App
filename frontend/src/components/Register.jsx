@@ -53,12 +53,12 @@ function Register() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-semibold text-[#6e6e73] uppercase tracking-wider mb-2 block">First Name</label>
-                <input type="text" placeholder="John" {...register("firstName", { required: "Required" })} className={inputBase} />
+                <input type="text" placeholder="John" {...register("firstName", { required: "Required", pattern: { value: /^[A-Za-z]+$/, message: "Only alphabets allowed" } })} className={inputBase} />
                 {errors.firstName && <p className="text-[#ff3b30] text-xs mt-1 ml-1">{errors.firstName.message}</p>}
               </div>
               <div>
                 <label className="text-xs font-semibold text-[#6e6e73] uppercase tracking-wider mb-2 block">Last Name</label>
-                <input type="text" placeholder="Doe" {...register("lastName", { required: "Required" })} className={inputBase} />
+                <input type="text" placeholder="Doe" {...register("lastName", { required: "Required", pattern: { value: /^[A-Za-z]+$/, message: "Only alphabets allowed" } })} className={inputBase} />
                 {errors.lastName && <p className="text-[#ff3b30] text-xs mt-1 ml-1">{errors.lastName.message}</p>}
               </div>
             </div>
@@ -69,7 +69,7 @@ function Register() {
                 <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#a1a1a6]">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 </div>
-                <input type="text" placeholder="johndoe" {...register("username", { required: "Username is required" })} className={`${inputBase} pl-10`} />
+                <input type="text" placeholder="johndoe" {...register("username", { required: "Username is required", pattern: { value: /^[A-Za-z][A-Za-z0-9]*$/, message: "Must start with a letter and contain only letters/numbers" } })} className={`${inputBase} pl-10`} />
               </div>
               {errors.username && <p className="text-[#ff3b30] text-xs mt-1 ml-1">{errors.username.message}</p>}
             </div>
@@ -80,7 +80,7 @@ function Register() {
                 <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#a1a1a6]">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M22 7L13.03 12.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
                 </div>
-                <input type="email" placeholder="john@example.com" {...register("email", { required: "Email is required" })} className={`${inputBase} pl-10`} />
+                <input type="email" placeholder="john@example.com" {...register("email", { required: "Email is required", pattern: { value: /^[A-Za-z][A-Za-z0-9._%+-]*@[A-Za-z]+\.com$/, message: "Must start with a letter, have only letters after @, and end with .com" } })} className={`${inputBase} pl-10`} />
               </div>
               {errors.email && <p className="text-[#ff3b30] text-xs mt-1 ml-1">{errors.email.message}</p>}
             </div>

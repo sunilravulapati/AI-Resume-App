@@ -465,11 +465,27 @@ export default function TailoredPDF({ tailoredData, parsedText = '', user, userL
               let location = proj.location || '';
               let date = proj.dates || proj.meta || proj.date || '';
 
+              const links = [];
+              if (proj.githubUrl) links.push({ label: 'GitHub', url: proj.githubUrl.startsWith('http') ? proj.githubUrl : 'https://' + proj.githubUrl });
+              if (proj.liveDemoUrl) links.push({ label: 'Live Demo', url: proj.liveDemoUrl.startsWith('http') ? proj.liveDemoUrl : 'https://' + proj.liveDemoUrl });
+
               return (
                 <View key={i} style={entryWrapStyle}>
                   {/* Row 1: Project name  ←→  Date */}
                   <View style={s.entryTopRow}>
-                    <Text style={entryTitleStyle}>{proj.title}</Text>
+                    <Text style={entryTitleStyle}>
+                      {proj.title}
+                      {links.length > 0 ? (
+                        <Text style={{ fontFamily: F.roman, fontSize: 7.5, color: C.accent }}>
+                          {' '} | {links.map((lnk, idx) => (
+                            <Text key={idx}>
+                              <Link src={lnk.url} style={s.link}>{lnk.label}</Link>
+                              {idx < links.length - 1 ? ' | ' : ''}
+                            </Text>
+                          ))}
+                        </Text>
+                      ) : null}
+                    </Text>
                     {date ? <Text style={entryDateStyle}>{date}</Text> : null}
                   </View>
 

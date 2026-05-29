@@ -2,7 +2,6 @@
 import Groq from "groq-sdk";
 import "dotenv/config";
 import { prepareResumeExport, enforceLimits } from "./resumeFormat.js";
-import { sanitizeLatex, validateLatex } from "../utils/validateLatex.js";
 
 const groq      = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
@@ -306,16 +305,6 @@ CANONICAL SCHEMA STRUCTURE (The "original" block)
 --------------------------------------------------------------------------------
 You must parse the raw resume text into this exact JSON schema under the "original" key:
 {
-  "basics": {
-    "name": "Candidate Full Name",
-    "email": "email@example.com",
-    "phone": "+91 1234567890",
-    "linkedin": "linkedin url or username",
-    "github": "github url or username",
-    "portfolio": "portfolio url",
-    "location": "City, State/Country",
-    "tagline": "Professional tagline verbatim"
-  },
   "summary": "Original summary or professional objective (empty string if none)",
   "skills": [
     { "label": "Category Name", "value": "Comma-separated technologies verbatim" }
@@ -335,7 +324,9 @@ You must parse the raw resume text into this exact JSON schema under the "origin
       "title": "Project Name",
       "meta": "Context, organization, or dates",
       "bullets": ["Verbatim bullet 1", "Verbatim bullet 2"],
-      "tech": "Technologies used (comma-separated)"
+      "tech": "Technologies used (comma-separated)",
+      "githubUrl": "GitHub repo URL if present (leave empty if none)",
+      "liveDemoUrl": "Live demo/deployment URL if present (leave empty if none)"
     }
   ],
   "education": [
@@ -369,6 +360,7 @@ EXTRACTION RULES (Preserve everything by default)
 1. SPLIT EXPERIENCE AND PROJECTS: Real work/internships go in "experience". Personal, academic, side, and research projects go in "projects".
 2. VERBATIM ACCURACY: Extract all names, degrees, links, certifications, awards, languages, extracurriculars, achievements, and competitive programming stats exactly as they appear in the resume. Silently dropping any section is a critical failure.
 3. LeetCode, CodeChef, Codeforces, HackerRank profiles, and DSA metrics belong verbatim in "dsaProfiles".
+4. DO NOT GENERATE OR EXTRACT PERSONAL INFO: Do NOT generate Name, Email, Phone, Github, LinkedIn, or Portfolio links in the JSON. The template engine handles this exclusively from user input.
 
 --------------------------------------------------------------------------------
 TAILORED PATCHES RULES (The "tailoredPatches" block)
@@ -394,7 +386,7 @@ Return ONLY a valid JSON object. No markdown fences, no explanatory prose.
       { "title": "Role Title", "company": "Company Name", "bullets": ["Optimized bullet 1", "Optimized bullet 2"] }
     ],
     "projects": [
-      { "title": "Project Name", "bullets": ["Optimized bullet 1", "Optimized bullet 2"] }
+      { "title": "Project Name", "bullets": ["Optimized bullet 1", "Optimized bullet 2"], "githubUrl": "Preserved github URL", "liveDemoUrl": "Preserved demo URL" }
     ]
   }
 }
@@ -438,88 +430,6 @@ Return ONLY a valid JSON object. No markdown fences, no explanatory prose.
   return JSON.stringify(enforceLimits(parsed, jobDescription));
 }
 
-
-// ─────────────────────────────────────────────────────────────────────────────
-// GENERATE LATEX  (AI prompt → Jake's Resume LaTeX)
-// ─────────────────────────────────────────────────────────────────────────────
-export async function generateLatexWithAI(tailoredData, isRetry = false) {
-  const systemPrompt = `
-You are an expert ATS resume LaTeX generator.
-
-STRICT RULES:
-1. Generate ONLY the body section content of the resume (e.g. \\section{Experience}, \\section{Skills}, etc).
-2. NEVER generate headers (e.g. \\begin{center} ... \\end{center} with candidate name).
-3. NEVER generate \\documentclass, \\usepackage, margins, or \\begin{document} / \\end{document}.
-4. Output ONLY the raw compilable LaTeX for the sections. No markdown fences.
-5. Use ONLY standard Jake's Resume commands (\\resumeSubheading, \\resumeItem, \\resumeProjectHeading).
-6. Ensure you escape all special LaTeX characters (e.g. &, %, $, #, _) present in the user's data.
-
-CRITICAL: You MUST strictly follow the exact LaTeX structure below for the sections:
-
-For Experience:
-\\section{Experience}
-  \\resumeSubHeadingListStart
-    \\resumeSubheading
-      {Job Title}{Dates}
-      {Company Name}{Location}
-      \\resumeItemListStart
-        \\resumeItem{Bullet point 1}
-        \\resumeItem{Bullet point 2}
-      \\resumeItemListEnd
-  \\resumeSubHeadingListEnd
-
-For Projects:
-\\section{Projects}
-    \\resumeSubHeadingListStart
-      \\resumeProjectHeading
-        {\\textbf{Project Name} $|$ \\emph{\\small Tech Stack}}{Dates}
-      \\resumeItemListStart
-        \\resumeItem{Bullet point 1}
-      \\resumeItemListEnd
-    \\resumeSubHeadingListEnd
-
-For Skills:
-\\section{Technical Skills}
- \\begin{itemize}[leftmargin=0.15in, label={}]
-    \\small{\\item{
-     \\textbf{Category 1}{: Skill A, Skill B, Skill C} \\\\
-     \\textbf{Category 2}{: Skill D, Skill E, Skill F} \\\\
-    }}
- \\end{itemize}
-
-Failure to use \\resumeSubHeadingListStart around \\resumeSubheading, or \\resumeItemListStart around \\resumeItem, will crash the compiler with "Lonely \\item".
-${isRetry ? "\nCRITICAL: Your previous LaTeX output was invalid. Generate ONLY valid section body content using approved resume commands. Ensure all \\begin and \\end environments are perfectly balanced. DO NOT output \\documentclass or \\begin{document}." : ""}
-`.trim();
-
-  const userPrompt = `
-Generate the LaTeX resume for the following tailored data:
-${JSON.stringify(tailoredData)}
-`.trim();
-
-  const raw = await callGroq(
-    [
-      { role: "system", content: systemPrompt },
-      { role: "user",   content: userPrompt   },
-    ],
-    { temperature: 0.1, jsonMode: false, maxRetries: 2 }
-  );
-
-  const sanitized = sanitizeLatex(raw);
-  const validation = validateLatex(sanitized);
-
-  if (!validation.valid) {
-    console.error(`[aiAnalyzer] generateLatexWithAI validation failed: ${validation.error}`);
-    if (!isRetry) {
-      console.log(`[aiAnalyzer] Retrying generateLatexWithAI due to validation failure...`);
-      return generateLatexWithAI(tailoredData, true);
-    } else {
-      console.error(`[aiAnalyzer] generateLatexWithAI retry also failed. Throwing error for fallback.`);
-      throw new Error(`LaTeX Validation Failed: ${validation.error}`);
-    }
-  }
-
-  return sanitized;
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STATIC TEMPLATE COMPILATION (Handled by renderLatex.js, not AI)

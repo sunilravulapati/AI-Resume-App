@@ -3,7 +3,6 @@ import path from "path";
 
 import { normalizeResume } from "../utils/normalizeResume.js";
 import { validateResumeData } from "../utils/validateResumeData.js";
-import { generateLatexWithAI } from "./aiAnalyzer.js";
 import { compileLatex } from "./compileLatex.js";
 import { buildPreamble, buildHeader, buildJakeLatex } from "./jakeLatexBuilder.js";
 
@@ -34,15 +33,8 @@ export async function generateResumePdf(data, template = "classic") {
   // 2. Validate
   const validated = validateResumeData(normalized);
 
-  // 3. Generate LaTeX using AI with Fallback
-  let texString;
-  try {
-    const aiBody = await generateLatexWithAI(validated);
-    texString = injectTemplate(validated.basics, aiBody);
-  } catch (err) {
-    console.error(`[PDF] AI LaTeX generation failed: ${err.message}. Falling back to structured rendering.`);
-    texString = buildJakeLatex(validated);
-  }
+  // 3. Generate LaTeX using Deterministic Template Builder
+  const texString = buildJakeLatex(validated);
 
   // 4. Debug — always write debug.tex
   const debugPath = path.join(process.cwd(), "debug.tex");
@@ -73,14 +65,7 @@ export async function generateResumePdf(data, template = "classic") {
 export async function generateResumeLatex(data, template = "classic") {
   const normalized = normalizeResume(data);
   const validated = validateResumeData(normalized);
-  let texString;
-  try {
-    const aiBody = await generateLatexWithAI(validated);
-    texString = injectTemplate(validated.basics, aiBody);
-  } catch (err) {
-    console.error(`[LATEX] AI LaTeX generation failed: ${err.message}. Falling back to structured rendering.`);
-    texString = buildJakeLatex(validated);
-  }
+  const texString = buildJakeLatex(validated);
 
   // Write debug.tex
   try {

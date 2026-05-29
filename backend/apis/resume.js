@@ -6,7 +6,7 @@ import { Resume } from "../models/Resume.js";
 import { ResumeSession } from "../models/ResumeSession.js";
 import User from "../models/User.js";
 import { calculateProgrammaticScore, calculateFinalScore, structureScore, impactScore, skillAlignmentScore } from "../services/scorer.js";
-import { analyzeResume, analyzeResumeTargeted, tailorResume, generateCoverLetterWithAI, rankCandidatesWithAI, generateLatexWithAI, enhanceTextWithAI } from "../services/aiAnalyzer.js";
+import { analyzeResume, analyzeResumeTargeted, tailorResume, generateCoverLetterWithAI, rankCandidatesWithAI, enhanceTextWithAI } from "../services/aiAnalyzer.js";
 import { generateResumePdf, generateResumeLatex } from "../services/generateResumePdf.js";
 import { prepareResumeExport, resolveDisplayName } from "../services/resumeFormat.js";
 import { extractJSON } from "../utils/jsonExtractor.js";
@@ -96,7 +96,7 @@ resumeRouter.post("/upload", verifyToken("student"), upload.single("resume"), as
             }
           });
 
-          // FIX: await the update so failures surface instead of being silently dropped
+          // push new resume
           await User.findByIdAndUpdate(req.user.id, { $push: { resumes: newResume._id } });
 
           return res.status(200).json({
@@ -138,7 +138,7 @@ resumeRouter.get("/history", verifyToken("student"), async (req, res) => {
 resumeRouter.get("/sessions", verifyToken("student"), async (req, res) => {
   try {
     const sessions = await ResumeSession.find({ userId: req.user.id })
-      .populate("baseResumeId", "parsedText title createdAt")
+      .populate("baseResumeId", "parsedText title createdAt atsScore")
       .sort({ createdAt: -1 });
     res.status(200).json(sessions);
   } catch (error) {
@@ -184,15 +184,20 @@ resumeRouter.post("/tailor", verifyToken("student"), async (req, res) => {
       resumeText,
     });
 
-    // ── Merge userLinks into basics so TailoredPDF always has correct URLs ──
-    // Priority: user-supplied link > AI-extracted value > empty string
-    if (userLinks) {
-      tailoredData.basics = tailoredData.basics || {};
-      if (userLinks.linkedin)               tailoredData.basics.linkedin               = userLinks.linkedin;
-      if (userLinks.github)                 tailoredData.basics.github                 = userLinks.github;
-      if (userLinks.portfolio)              tailoredData.basics.portfolio              = userLinks.portfolio;
-      if (userLinks.competitiveProgramming) tailoredData.basics.competitiveProgramming = userLinks.competitiveProgramming;
-    }
+    // ── Seed explicit basics as the sole source of truth ──
+    tailoredData.basics = {
+      name: `${dbUser.firstName} ${dbUser.lastName}`.trim(),
+      email: dbUser.email || "",
+      phone: dbUser.mobile || "",
+      location: "",
+      linkedin: userLinks?.linkedin || "",
+      github: userLinks?.github || "",
+      portfolio: userLinks?.portfolio || "",
+      leetcode: userLinks?.leetcode || "",
+      hackerrank: userLinks?.hackerrank || "",
+      codeforces: userLinks?.codeforces || "",
+      tagline: "",
+    };
 
     // Create the session in the DB
     const session = await ResumeSession.create({
@@ -265,8 +270,27 @@ resumeRouter.post("/generate-latex", verifyToken("student"), async (req, res) =>
     const resumeText = baseResume.rawText || baseResume.parsedText;
     const dbUser     = await User.findById(req.user.id).select("firstName lastName email mobile");
 
+    // Clone to avoid mutating
+    const protectedTailoredData = JSON.parse(JSON.stringify(tailoredData));
+    const userName = `${dbUser.firstName || ''} ${dbUser.lastName || ''}`.trim();
+
+    // Use explicit DB user name, and frontend explicit data for the rest.
+    protectedTailoredData.basics = {
+      name:      userName,
+      email:     tailoredData?.basics?.email     || dbUser?.email   || "",
+      phone:     tailoredData?.basics?.phone     || dbUser?.mobile  || "",
+      location:  tailoredData?.basics?.location  || "",
+      linkedin:  tailoredData?.basics?.linkedin  || "",
+      github:    tailoredData?.basics?.github    || "",
+      portfolio: tailoredData?.basics?.portfolio || "",
+      leetcode:  tailoredData?.basics?.leetcode  || "",
+      hackerrank: tailoredData?.basics?.hackerrank || "",
+      codeforces: tailoredData?.basics?.codeforces || "",
+      tagline:   tailoredData?.basics?.tagline   || "",
+    };
+
     // Prepare + normalize via resumeFormat (merges DB profile if basics blank)
-    const prepared = prepareResumeExport(tailoredData, { resumeText, user: dbUser });
+    const prepared = prepareResumeExport(protectedTailoredData, { resumeText, user: dbUser });
 
     const compiledLatex = await generateResumeLatex(prepared, template);
 
@@ -299,24 +323,21 @@ resumeRouter.post("/generate-pdf", verifyToken("student"), async (req, res) => {
 
     const resumeText = baseResume.rawText || baseResume.parsedText;
 
-    // FIX: resolve the candidate name from the resume text / AI-extracted basics first,
-    // falling back to the DB user profile. The old code read baseResume.basics.name which
-    // is not a persisted field on the Resume model, so it was always undefined and the
-    // name fell through to fallbackName (the logged-in user's name) every single time.
-    const resolvedName = resolveDisplayName(
-      tailoredData?.basics?.name || "",
-      resumeText,
-      dbUser
-    );
+    const userName = `${dbUser.firstName || ''} ${dbUser.lastName || ''}`.trim();
 
+    // FIX: Exclusively use the data provided by the frontend editor (the source of truth).
+    // Force the candidate name to always be the user's First + Last name from the DB.
     protectedTailoredData.basics = {
-      // Prefer what the AI extracted; fill gaps from DB user profile
-      name:      resolvedName,
+      name:      userName,
       email:     tailoredData?.basics?.email     || dbUser?.email   || "",
       phone:     tailoredData?.basics?.phone     || dbUser?.mobile  || "",
+      location:  tailoredData?.basics?.location  || "",
       linkedin:  tailoredData?.basics?.linkedin  || "",
       github:    tailoredData?.basics?.github    || "",
       portfolio: tailoredData?.basics?.portfolio || "",
+      leetcode:  tailoredData?.basics?.leetcode  || "",
+      hackerrank: tailoredData?.basics?.hackerrank || "",
+      codeforces: tailoredData?.basics?.codeforces || "",
       tagline:   tailoredData?.basics?.tagline   || "",
     };
 

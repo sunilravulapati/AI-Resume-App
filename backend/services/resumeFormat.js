@@ -44,7 +44,7 @@ function looksLikeBadName(name = "") {
   if (!n || n.length < 2) return true;
   if (n.length > 60) return true;
   if (/@|https?:|linkedin|github|www\.|\\.com\b/i.test(n)) return true;
-  if (/^\d|resume|curriculum vitae|^cv$/i.test(n)) return true;
+  if (/^\d|resume|curriculum vitae|^cv$|^summary$|^professional summary$|^objective$|^profile$|^unil$/i.test(n)) return true;
   if (/^(mr|mrs|ms|dr)\.?\s/i.test(n)) return false;
   const words = n.split(/\s+/);
   if (words.length > 6) return true;
@@ -61,13 +61,16 @@ export function trimWords(text = "", maxWords = 30) {
   return words.slice(0, maxWords).join(" ");
 }
 
-/**
- * Prefer the name found IN the resume text first, then fall back to the DB
- * user profile. This prevents the logged-in user's name from silently
- * overwriting the real candidate name when processing a sample/uploaded resume.
- */
 export function resolveDisplayName(basicsName = "", resumeText = "", user = null) {
-  // 1. Try to extract the name directly from the resume text (most reliable)
+  // 1. User profile name is the absolute source of truth
+  const profile = [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim();
+  if (profile.length >= 2 && !looksLikeBadName(profile)) return profile;
+
+  // 2. Fall back to what was explicitly provided (frontend/AI)
+  const fromBasics = (basicsName || "").trim();
+  if (fromBasics && !looksLikeBadName(fromBasics)) return fromBasics;
+
+  // 3. Last resort: Try to extract the name directly from the resume text
   const lines = (resumeText || "")
     .split(/\n/)
     .map((l) => l.trim())
@@ -81,15 +84,7 @@ export function resolveDisplayName(basicsName = "", resumeText = "", user = null
     if (/^[A-Z][a-z]+(?:\s+[A-Z][a-z.'\-]+){1,4}$/.test(line)) return line;
   }
 
-  // 2. Fall back to what the AI extracted from the resume JSON
-  const fromBasics = (basicsName || "").trim();
-  if (fromBasics && !looksLikeBadName(fromBasics)) return fromBasics;
-
-  // 3. Last resort: DB user profile name
-  const profile = [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim();
-  if (profile.length >= 2 && !looksLikeBadName(profile)) return profile;
-
-  return fromBasics || profile || "Candidate";
+  return "Candidate";
 }
 
 export function normalizeBasics(data, { user, resumeText } = {}) {

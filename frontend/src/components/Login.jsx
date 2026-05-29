@@ -91,7 +91,7 @@ function Login() {
                 <input
                   type="text"
                   placeholder="your@email.com"
-                  {...register("email", { required: "Email or username is required" })}
+                  {...register("email", { required: "Email or username is required", pattern: { value: /^[A-Za-z]/, message: "Must start with a letter" } })}
                   className="w-full bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl pl-10 pr-4 py-3 text-[#1d1d1f] text-sm placeholder:text-[#c7c7cc] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/15 transition-all duration-200"
                 />
               </div>

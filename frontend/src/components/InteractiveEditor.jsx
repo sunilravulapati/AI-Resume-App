@@ -175,6 +175,31 @@ function SectionHeading({ title, subtitle }) {
 }
 
 // ─── Memoized section components ──────────────────────────────────────────────
+
+export const PersonalInformationSection = memo(({ basics, updateBasics }) => (
+  <EditorCard>
+    <SectionHeading title="Personal Information" subtitle="Used as the header for your resume" />
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+      <input type="text" style={basicInputStyle} value={basics?.name || ''} onChange={(e) => updateBasics('name', e.target.value)} placeholder="Full Name" />
+      <input type="text" style={basicInputStyle} value={basics?.email || ''} onChange={(e) => updateBasics('email', e.target.value)} placeholder="Email" />
+      <input type="text" style={basicInputStyle} value={basics?.phone || ''} onChange={(e) => updateBasics('phone', e.target.value)} placeholder="Phone" />
+      <input type="text" style={basicInputStyle} value={basics?.location || ''} onChange={(e) => updateBasics('location', e.target.value)} placeholder="Location (City, State)" />
+      <input type="text" style={basicInputStyle} value={basics?.linkedin || ''} onChange={(e) => updateBasics('linkedin', e.target.value)} placeholder="LinkedIn URL" />
+      <input type="text" style={basicInputStyle} value={basics?.github || ''} onChange={(e) => updateBasics('github', e.target.value)} placeholder="GitHub URL" />
+      <input type="text" style={basicInputStyle} value={basics?.portfolio || ''} onChange={(e) => updateBasics('portfolio', e.target.value)} placeholder="Portfolio URL" />
+      <input type="text" style={basicInputStyle} value={basics?.leetcode || ''} onChange={(e) => updateBasics('leetcode', e.target.value)} placeholder="LeetCode Profile" />
+      <input type="text" style={basicInputStyle} value={basics?.hackerrank || ''} onChange={(e) => updateBasics('hackerrank', e.target.value)} placeholder="HackerRank Profile" />
+      <input type="text" style={basicInputStyle} value={basics?.codeforces || ''} onChange={(e) => updateBasics('codeforces', e.target.value)} placeholder="Codeforces Profile" />
+    </div>
+  </EditorCard>
+));
+PersonalInformationSection.displayName = 'PersonalInformationSection';
+
+const basicInputStyle = {
+  width: '100%', fontSize: '13px', fontWeight: 500, color: '#334155', background: '#F8FAFC',
+  border: '1px solid #E2E8F0', borderRadius: '8px', padding: '8px 12px', outline: 'none',
+  fontFamily: 'inherit', boxSizing: 'border-box', transition: 'border-color 0.15s'
+};
 export const SummarySection = memo(({ summary, updateSummary }) => (
   <EditorCard>
     <SectionHeading title="Professional Summary" subtitle="2–4 sentences tailored to the role" />
@@ -328,13 +353,32 @@ export const ProjectsSection = memo(({ projects, updateProjField, updateProjBull
 
           {/* Tech */}
           <input type="text"
-            style={{ width: '100%', fontSize: '11.5px', fontWeight: 500, color: '#4F46E5', background: 'transparent', border: 'none', borderBottom: '1px solid transparent', outline: 'none', fontFamily: 'inherit', padding: '1px 0', marginBottom: '10px' }}
+            style={{ width: '100%', fontSize: '11.5px', fontWeight: 500, color: '#4F46E5', background: 'transparent', border: 'none', borderBottom: '1px solid transparent', outline: 'none', fontFamily: 'inherit', padding: '1px 0', marginBottom: '6px' }}
             value={proj.tech || ''}
             onChange={(e) => updateProjField(i, 'tech', e.target.value)}
             onFocus={(e) => (e.target.style.borderBottomColor = '#4F46E5')}
             onBlur={(e) => (e.target.style.borderBottomColor = 'transparent')}
-            placeholder="Technologies (e.g. React, Node.js)"
+            placeholder="Technologies Used (e.g. React, Node.js)"
           />
+
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+             <input type="text"
+              style={{ flex: 1, fontSize: '11px', fontWeight: 500, color: '#64748B', background: '#fff', border: '1px solid #E2E8F0', borderRadius: '7px', padding: '4px 10px', outline: 'none', fontFamily: 'inherit' }}
+              value={proj.githubUrl || ''}
+              onChange={(e) => updateProjField(i, 'githubUrl', e.target.value)}
+              onFocus={(e) => (e.target.style.borderColor = '#4F46E5')}
+              onBlur={(e) => (e.target.style.borderColor = '#E2E8F0')}
+              placeholder="GitHub URL"
+            />
+             <input type="text"
+              style={{ flex: 1, fontSize: '11px', fontWeight: 500, color: '#64748B', background: '#fff', border: '1px solid #E2E8F0', borderRadius: '7px', padding: '4px 10px', outline: 'none', fontFamily: 'inherit' }}
+              value={proj.liveDemoUrl || ''}
+              onChange={(e) => updateProjField(i, 'liveDemoUrl', e.target.value)}
+              onFocus={(e) => (e.target.style.borderColor = '#4F46E5')}
+              onBlur={(e) => (e.target.style.borderColor = '#E2E8F0')}
+              placeholder="Live Demo URL"
+            />
+          </div>
 
           {/* Bullets */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -406,6 +450,14 @@ export default function InteractiveEditor({ initialData, onDataChange, sectionRe
   useEffect(() => { onDataChangeRef.current?.(formData); }, [formData]);
 
   // ── Update helpers ──────────────────────────────────────────────────────────
+  const updateBasics = useCallback((field, value) => {
+    setFormData((p) => {
+      const basics = { ...(p.basics || {}) };
+      basics[field] = value;
+      return { ...p, basics };
+    });
+  }, []);
+
   const updateSummary = useCallback((v) => {
     setFormData((p) => ({ ...p, summary: v }));
   }, []);
@@ -470,6 +522,10 @@ export default function InteractiveEditor({ initialData, onDataChange, sectionRe
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div ref={attachRef('basics')}>
+        <PersonalInformationSection basics={formData.basics || {}} updateBasics={updateBasics} />
+      </div>
+
       <div ref={attachRef('summary')}>
         <SummarySection summary={summary} updateSummary={updateSummary} />
       </div>

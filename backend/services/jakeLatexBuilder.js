@@ -159,14 +159,19 @@ export function buildHeader(basics = {}) {
   const name    = esc(basics.name    || "Candidate");
   const email   = basics.email    || "";
   const phone   = basics.phone    || "";
+  const location = basics.location || "";
   const linkedin = basics.linkedin || "";
   const github  = basics.github   || "";
   const portfolio = basics.portfolio || "";
+  const leetcode = basics.leetcode || "";
+  const hackerrank = basics.hackerrank || "";
+  const codeforces = basics.codeforces || "";
 
   // Build contact items (only non-empty)
   const contactItems = [];
   if (phone)     contactItems.push(esc(phone));
   if (email)     contactItems.push(`\\href{mailto:${email}}{${esc(email)}}`);
+  if (location)  contactItems.push(esc(location));
   if (linkedin) {
     const liDisplay = linkedin.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//i, "linkedin.com/in/");
     const liUrl = linkedin.startsWith("http") ? linkedin : `https://linkedin.com/in/${linkedin}`;
@@ -181,6 +186,21 @@ export function buildHeader(basics = {}) {
     const portDisplay = portfolio.replace(/^https?:\/\/(www\.)?/i, "");
     const portUrl = portfolio.startsWith("http") ? portfolio : `https://${portfolio}`;
     contactItems.push(`\\href{${portUrl}}{${esc(portDisplay)}}`);
+  }
+  if (leetcode) {
+    const lcDisplay = leetcode.replace(/^https?:\/\/(www\.)?leetcode\.com\//i, "leetcode.com/");
+    const lcUrl = leetcode.startsWith("http") ? leetcode : `https://leetcode.com/${leetcode}`;
+    contactItems.push(`\\href{${lcUrl}}{${esc(lcDisplay)}}`);
+  }
+  if (hackerrank) {
+    const hrDisplay = hackerrank.replace(/^https?:\/\/(www\.)?hackerrank\.com\//i, "hackerrank.com/");
+    const hrUrl = hackerrank.startsWith("http") ? hackerrank : `https://hackerrank.com/${hackerrank}`;
+    contactItems.push(`\\href{${hrUrl}}{${esc(hrDisplay)}}`);
+  }
+  if (codeforces) {
+    const cfDisplay = codeforces.replace(/^https?:\/\/(www\.)?codeforces\.com\/(profile\/)?/i, "codeforces.com/");
+    const cfUrl = codeforces.startsWith("http") ? codeforces : `https://codeforces.com/profile/${codeforces}`;
+    contactItems.push(`\\href{${cfUrl}}{${esc(cfDisplay)}}`);
   }
 
   const contactLine = contactItems.join(" $|$ ");
@@ -245,8 +265,15 @@ function buildProjects(projects = []) {
     const bulletLines = bullets.map((b) => `        \\resumeItem{${bullet(b)}}`).join("\n");
     const meta  = proj.meta  ? ` -- \\textit{\\small ${esc(proj.meta)}}` : "";
     const tech  = proj.tech  ? ` $|$ \\emph{\\small ${esc(proj.tech)}}` : "";
+    
+    // Add links if provided
+    const links = [];
+    if (proj.githubUrl) links.push(`\\href{${proj.githubUrl.startsWith('http') ? proj.githubUrl : 'https://' + proj.githubUrl}}{Github}`);
+    if (proj.liveDemoUrl) links.push(`\\href{${proj.liveDemoUrl.startsWith('http') ? proj.liveDemoUrl : 'https://' + proj.liveDemoUrl}}{Live Demo}`);
+    const linksDisplay = links.length ? ` $|$ ${links.join(" $|$ ")}` : "";
+
     return `    \\resumeProjectHeading
-        {\\textbf{${esc(proj.title)}}${tech}${meta}}{}
+        {\\textbf{${esc(proj.title)}}${linksDisplay}${tech}${meta}}{}
       \\resumeItemListStart
 ${bulletLines}
       \\resumeItemListEnd`;

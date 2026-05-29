@@ -699,7 +699,7 @@ export default function StudentDashboard() {
                                 {item.atsScore}
                               </span>
                             </div>
-                            <p className="text-xs text-slate-500 leading-relaxed line-clamp-3 flex-1">
+                            <p className="text-xs text-slate-500 leading-relaxed line-clamp-3 flex-1 pl-1">
                               {item.feedback?.summary || 'No summary available.'}
                             </p>
                           </div>
@@ -756,8 +756,13 @@ export default function StudentDashboard() {
                             </div>
                             <div className="flex flex-col items-end gap-1.5">
                               <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${scoreBadge(item.atsScore)}`}>
-                                {scoreLabel(item.atsScore)}
+                                ATS: {item.atsScore}
                               </span>
+                              {item.feedback?.matchScore != null && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: '#EEF2FF', color: 'var(--color-accent)' }}>
+                                  Role Match: {item.feedback.matchScore}%
+                                </span>
+                              )}
                             </div>
                           </div>
                           <div className="flex items-center gap-4 mb-4">

@@ -87,25 +87,54 @@ export default function Resume() {
                 </div>
               </>
             ) : (
-              <h1 className={`${headingClass} text-2xl`}>Detailed Resume Analysis</h1>
+              <div>
+                <h1 className={`${headingClass} text-2xl`}>Detailed Resume Analysis</h1>
+                {resume.analysisMode === 'targeted' && (resume.roleName || resume.company) && (
+                  <p className={`${mutedText} mt-1.5 text-sm`}>
+                    Targeted for <span className="font-semibold text-[#1d1d1f]">{resume.roleName || 'a role'}</span> at <span className="font-semibold text-[#1d1d1f]">{resume.company || 'a company'}</span>
+                  </p>
+                )}
+              </div>
             )}
           </div>
 
-          {/* Score panel */}
-          <div className={`flex items-center gap-4 px-5 py-4 rounded-2xl border ${badge.bg}`}>
-            <div className="text-right">
-              <p className={`${mutedText} text-[0.65rem] uppercase tracking-wider font-semibold mb-0.5`}>ATS Score</p>
-              <p className={`text-4xl font-black tracking-tight ${badge.text}`}>
-                {score}
-                <span className="text-base font-normal text-[#a1a1a6]">/100</span>
-              </p>
-            </div>
-            <div className="flex flex-col gap-1.5 min-w-25">
-              <span className={`text-xs font-semibold ${badge.text}`}>{badge.label}</span>
-              <div className="w-full bg-[#e8e8ed] rounded-full h-2 overflow-hidden">
-                <div className={`h-full rounded-full ${badge.bar}`} style={{ width: `${score}%` }} />
+          {/* Scores Container */}
+          <div className="flex flex-col sm:flex-row items-stretch gap-3">
+            {/* ATS Score panel */}
+            <div className={`flex items-center gap-4 px-5 py-4 rounded-2xl border ${badge.bg}`}>
+              <div className="text-right">
+                <p className={`${mutedText} text-[0.65rem] uppercase tracking-wider font-semibold mb-0.5`}>ATS Score</p>
+                <p className={`text-4xl font-black tracking-tight ${badge.text}`}>
+                  {score}
+                  <span className="text-base font-normal text-[#a1a1a6]">/100</span>
+                </p>
+              </div>
+              <div className="flex flex-col gap-1.5 min-w-25">
+                <span className={`text-xs font-semibold ${badge.text}`}>{badge.label}</span>
+                <div className="w-full bg-[#e8e8ed] rounded-full h-2 overflow-hidden">
+                  <div className={`h-full rounded-full ${badge.bar}`} style={{ width: `${score}%` }} />
+                </div>
               </div>
             </div>
+
+            {/* Role Match panel */}
+            {resume.feedback?.matchScore != null && (
+              <div className={`flex items-center gap-4 px-5 py-4 rounded-2xl border bg-[#0066cc]/5 border-[#0066cc]/10`}>
+                <div className="text-right">
+                  <p className={`${mutedText} text-[0.65rem] uppercase tracking-wider font-semibold mb-0.5 text-[#0066cc]`}>Role Match</p>
+                  <p className={`text-4xl font-black tracking-tight text-[#0066cc]`}>
+                    {resume.feedback.matchScore}
+                    <span className="text-base font-normal opacity-50">%</span>
+                  </p>
+                </div>
+                <div className="flex flex-col gap-1.5 min-w-25">
+                  <span className={`text-xs font-semibold text-[#0066cc]`}>Targeted Analysis</span>
+                  <div className="w-full bg-[#e8e8ed] rounded-full h-2 overflow-hidden">
+                    <div className={`h-full rounded-full bg-[#0066cc]`} style={{ width: `${resume.feedback.matchScore}%` }} />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
