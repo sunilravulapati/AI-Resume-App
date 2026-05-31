@@ -176,7 +176,7 @@ function ResultView({ result, file, onReset, onClose }) {
   );
 }
 
-// ─── MAIN UPLOAD MODAL ───────────────────────────────────────────────────────
+//MAIN UPLOAD MODAL
 export default function UploadModal({ onClose, onSuccess }) {
   const [mode, setMode]         = useState("general"); // "general" | "targeted"
   const [file, setFile]         = useState(null);
@@ -429,4 +429,4 @@ export default function UploadModal({ onClose, onSuccess }) {
       </div>
     </div>
   );
-}
+}

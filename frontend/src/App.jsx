@@ -14,7 +14,6 @@ import ErrorPage from "./components/ErrorPage";
 
 import useUserStore from "./store/userStore";
 
-// ─────────────────────────────────────────────────────────────────────────────
 function ProtectedRoute({ children, role }) {
   const { userRecord, loading } = useUserStore();
 
@@ -33,7 +32,7 @@ function ProtectedRoute({ children, role }) {
     );
   }
 
-  // No profile = not authenticated (cookie missing or expired)
+  // if the cookie is missing
   if (!userRecord) {
     return <Navigate to="/login" replace />;
   }
@@ -52,9 +51,7 @@ function ProtectedRoute({ children, role }) {
   return children;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Router
-// ─────────────────────────────────────────────────────────────────────────────
+// router
 const router = createBrowserRouter([
   {
     path: "/",

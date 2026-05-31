@@ -1,11 +1,6 @@
 import React, { memo } from 'react';
 
-/**
- * LiveResumePreview — Real-time A4-style resume preview.
- * Reads directly from formData (already in InteractiveEditor state).
- * Wrapped in React.memo — only re-renders when formData reference changes.
- * Supports template prop for future template switching.
- */
+// a live careerzenith-style resume preview component for the editing resumes
 const LiveResumePreview = memo(({ formData, user, template = 'jake-ryan' }) => {
   if (!formData || Object.keys(formData).length === 0) {
     return (

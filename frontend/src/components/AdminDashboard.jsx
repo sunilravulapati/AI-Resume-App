@@ -8,14 +8,14 @@ import {
   loadingClass, emptyStateClass,
 } from '../styles/common';
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
+// Helpers
 const fullName = (u) => [u?.firstName, u?.lastName].filter(Boolean).join(' ') || 'Unknown';
 const safeDate = (d) => {
   const date = new Date(d);
   return isNaN(date) ? '—' : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
 };
 
-// ─── Score helpers (mirrors StudentDashboard) ─────────────────────────────────
+// Score helpers (mirrors StudentDashboard)
 const scoreBadge = (score) => {
   if (score >= 75) return 'bg-[#34c759]/10 text-[#248a3d] border border-[#34c759]/20';
   if (score >= 50) return 'bg-[#ff9f0a]/10 text-[#b86e00] border border-[#ff9f0a]/20';
@@ -27,7 +27,7 @@ const scoreLabel = (score) => {
   return '❌ Needs Work';
 };
 
-// ─── Stat Card ────────────────────────────────────────────────────────────────
+// Stat Card
 function StatCard({ icon, label, value, accent = '#0066cc' }) {
   return (
     <div className="bg-white rounded-2xl border border-[#e8e8ed] shadow-sm px-5 py-4 flex items-center gap-4">
@@ -45,7 +45,7 @@ function StatCard({ icon, label, value, accent = '#0066cc' }) {
   );
 }
 
-// ─── User Detail Modal ────────────────────────────────────────────────────────
+// User Detail Modal
 function UserModal({ user, onClose, navigate }) {
   if (!user) return null;
 
@@ -148,7 +148,7 @@ function UserModal({ user, onClose, navigate }) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// Main Component
 export default function AdminDashboard() {
   const navigate = useNavigate();
 
@@ -159,7 +159,7 @@ export default function AdminDashboard() {
   const [sortBy,      setSortBy]      = useState('newest');
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // ── Fetch all users on mount ──────────────────────────────────────────────
+  // Fetch all users on mount
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -181,7 +181,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // ── Derived stats ─────────────────────────────────────────────────────────
+  // Derived stats
   const totalResumes    = users.reduce((sum, u) => sum + (u.resumes?.length || 0), 0);
   const avgScore        = (() => {
     const allScores = users.flatMap(u => u.resumes?.map(r => r.atsScore) || []);
@@ -191,7 +191,7 @@ export default function AdminDashboard() {
   const studentCount   = users.filter(u => u.role === 'student').length;
   const recruiterCount = users.filter(u => u.role === 'recruiter').length;
 
-  // ── Filtering & sorting ───────────────────────────────────────────────────
+  // Filtering & sorting
   const filtered = users
     .filter(u => {
       const q = search.toLowerCase();
@@ -213,7 +213,7 @@ export default function AdminDashboard() {
       return 0;
     });
 
-  // ─────────────────────────────────────────────────────────────────────────
+  // Main Content
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
 

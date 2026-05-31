@@ -411,13 +411,6 @@ export default function WorkspaceView({
         </div>
       </div>
 
-      {/* Inline style for mobile */}
-      <style>{`
-        @media (max-width: 900px) {
-          #workspace-mobile-fallback { display: flex !important; }
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import axios from 'axios';
 
 axios.defaults.withCredentials = true; 
 const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-// Clean up the URL: remove trailing slash and accidental trailing /api
+// remove trailing slash and accidental trailing /api
 const cleanUrl = rawUrl.replace(/\/+$/, '').replace(/\/api$/, '');
 axios.defaults.baseURL = cleanUrl;
 

@@ -7,11 +7,7 @@ const TEMPLATES = [
   { id: 'professional', name: 'Professional', available: false },
 ];
 
-/**
- * TemplatePicker — lightweight template selector chip bar.
- * Only "Jake Ryan" is active initially. Others show "Soon" badge.
- * Architecture allows future templates to be enabled by setting available: true.
- */
+// template picker, for now only jake's resume
 export default function TemplatePicker({ selected, onChange }) {
   return (
     <div className="flex items-center gap-2 flex-wrap">
