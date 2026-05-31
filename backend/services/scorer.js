@@ -1,8 +1,3 @@
-// scorer.js — Calibrated and Rigorous ATS Scoring Engine
-
-/* ------------------------------ */
-/* Structure Score (max 20)       */
-/* ------------------------------ */
 export function structureScore(text) {
   const sections = ["education", "skills", "projects", "experience", "certifications", "achievements"];
   let found = 0;
@@ -15,26 +10,22 @@ export function structureScore(text) {
   return Math.min(7.5 + (found - 3) * 2.5, 20);
 }
 
-/* ------------------------------ */
-/* Impact Score (max 20)          */
-/* ------------------------------ */
+//calculate the impact score
 export function impactScore(text) {
-  // Quantitative metrics check: looks for percentage signs or numbers related to outcomes
+  // looks for percentage signs or numbers related to outcomes
   const impactRegex = /\b\d+(\.\d+)?%|\b\d+\+?\s*(users?|customers?|clients?|requests?|ms|seconds?|hours?|days?|latency|accuracy|reduction|increase|growth|improvement)\b/gi;
   const matches = text.match(impactRegex);
   if (!matches) return 0;
   
   const count = new Set(matches).size;
-  // Scaled strictly to deflate scores: requires 8+ distinct metrics to hit near-perfect score
+  //requires 8+ distinct metrics to hit near-perfect score
   if (count <= 2) return count * 3; // max 6
   if (count <= 5) return 6 + (count - 2) * 2.5; // max 13.5
   if (count <= 8) return 13.5 + (count - 5) * 1.5; // max 18
   return Math.min(18 + (count - 8) * 0.5, 20);
 }
 
-/* ------------------------------ */
-/* Skill Alignment (max 20)       */
-/* ------------------------------ */
+// skill alignment
 export function skillAlignmentScore(text) {
   const skills = ["python", "java", "c++", "javascript", "react", "node", "mongodb", "aws", "docker", "fastapi", "sql", "nextjs", "tailwindcss", "kafka", "azure", "go"];
   const detected = new Set();
@@ -44,15 +35,13 @@ export function skillAlignmentScore(text) {
   });
   
   const count = detected.size;
-  // Calibrated alignment: requires wider set of foundational skills to scale high
+  // requires wider set of foundational skills to scale high
   if (count <= 4) return count * 2; // max 8
   if (count <= 8) return 8 + (count - 4) * 2; // max 16
   return Math.min(16 + (count - 8) * 0.8, 20);
 }
 
-/* ------------------------------ */
-/* Realism Penalty (calibrated)   */
-/* ------------------------------ */
+// check realism
 export function realismPenalty(text) {
   let penalty = 0;
 
@@ -76,30 +65,20 @@ export function realismPenalty(text) {
   return penalty;
 }
 
-/* ------------------------------ */
-/* Programmatic Score (max 50)    */
-/* ------------------------------ */
+//programmatic score
 export function calculateProgrammaticScore(text) {
-  const rawStructure  = structureScore(text);       // 0–20
-  const rawImpact     = impactScore(text);           // 0–20
-  const rawSkills     = skillAlignmentScore(text);   // 0–20
-  const penalty       = realismPenalty(text);        // 0–43
-
-  // Subtraction with calibrated penalty scaling, mapped to 50
+  const rawStructure  = structureScore(text);       
+  const rawImpact     = impactScore(text);           
+  const rawSkills     = skillAlignmentScore(text);  
+  const penalty       = realismPenalty(text);        
   const raw = rawStructure + rawImpact + rawSkills - penalty;
   const clamped = Math.max(0, raw);                  
   return Math.round((clamped / 60) * 50);            
 }
 
-/* ------------------------------ */
-/* Final Score Combiner           */
-/* ------------------------------ */
+//calculate final score
 export function calculateFinalScore(programmaticScore, semanticScore) {
-  // programmaticScore is 0-50
-  // semanticScore comes from AI as 0-30; scale to 45 (max 95)
   const scaledSemantic = Math.round((semanticScore / 30) * 45);
-  
-  // Total naturally sums up to 95; no free base points to avoid score inflation
   const total = programmaticScore + scaledSemantic;
   return Math.min(total, 100);
 }

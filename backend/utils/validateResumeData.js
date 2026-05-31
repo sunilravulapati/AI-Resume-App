@@ -1,10 +1,3 @@
-/**
- * Centralized resume validation — THE ONLY place where limits are enforced.
- * All other files must import this; no duplicated limit logic elsewhere.
- *
- * Operates on the CANONICAL schema (after normalizeResume).
- */
-
 const LIMITS = {
   MAX_SUMMARY_CHARS: 400,
   MAX_EXPERIENCES: 5,

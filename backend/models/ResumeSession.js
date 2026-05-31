@@ -11,7 +11,6 @@ const resumeSessionSchema = new Schema({
   atsScore: { type: Number, min: 0, max: 100 },
   roleMatchScore: { type: Number, min: 0, max: 100 },
   
-  // Normalized tailored workspace state: { summary, experience, projects, skills, education, awards, certifications, ... }
   tailoredData: { type: Schema.Types.Mixed },
   
   strengths: [String],

@@ -23,11 +23,10 @@ const themesBase = {
 };
 
 
-/**
- * SPACIOUS
- * Used for resumes with less content.
- * Expands layout naturally to fill page.
- */
+
+// SPACIOUS
+// Used for resumes with less content.
+// Expands layout naturally to fill page.
 const spaciousPreset = {
   baseFontSize: "11pt",
 
@@ -48,11 +47,9 @@ const spaciousPreset = {
 };
 
 
-/**
- * MODERATE
- * Default balanced layout.
- * Best for most resumes.
- */
+// MODERATE
+// Default balanced layout.
+// Best for most resumes.
 const moderatePreset = {
   baseFontSize: "11pt",
 
@@ -73,11 +70,9 @@ const moderatePreset = {
 };
 
 
-/**
- * COMPACT
- * Used ONLY for dense resumes.
- * Keeps one-page layout stable without over-compressing.
- */
+// COMPACT
+// Used ONLY for dense resumes.
+// Keeps one-page layout stable without over-compressing.
 const compactPreset = {
   baseFontSize: "10pt",
 
@@ -97,12 +92,10 @@ const compactPreset = {
   skillsSize: "\\small"
 };
 
-/**
- * Calculates total layout density from the tailored resume data structure.
- *
- * Uses weighted density scoring instead of raw line counts to provide a 
- * more accurate visual rhythm.
- */
+
+// Calculates total layout density from the tailored resume data structure.
+// Uses weighted density scoring instead of raw line counts to provide a 
+// more accurate visual rhythm.
 export function countResumeElements(data) {
   if (!data) return 0;
   let count = 0;
@@ -165,21 +158,16 @@ export function countResumeElements(data) {
   return count;
 }
 
-/**
- * Resolves the perfectly balanced design system tokens based on content density.
- */
+// Resolves the perfectly balanced design system tokens based on content density.
 export function getDesignTokens(themeName = "classic", totalElements = 0) {
   const base = themesBase[themeName] || themesBase.classic;
 
   let preset;
   if (totalElements <= 18) {
-    // Very sparse resume — use generous spacing to avoid a half-empty page
     preset = spaciousPreset;
   } else if (totalElements <= 38) {
-    // Medium-density resume — balanced spacing
     preset = moderatePreset;
   } else {
-    // Dense resume — compact to fit everything on one page without being unreadable
     preset = compactPreset;
   }
 

@@ -1,5 +1,4 @@
-// backend/utils/normalizeResume.js
-import { resolveDisplayName } from "../services/resumeFormat.js";
+// import { resolveDisplayName } from "../services/resumeFormat.js";
 
 function parseMeta(meta = "") {
     if (!meta) return { company: "", location: "", dates: "" };
@@ -45,13 +44,10 @@ export function normalizeResume(data) {
 
     const basics = data.basics || {};
 
-    // FIX: Verify extracted name isn't a structural section header text collision
     let rawName = (basics.name || data.name || "").trim();
     if (/professional\s+summary|resume|curriculum\s+vitae|cv/i.test(rawName) || !rawName) {
-        rawName = ""; // Forces down-funnel profile fallback checking natively
+        rawName = "";
     }
-
-    // Anchor-validated regex trim removes trailing structural space safely without dropping letters
     const cleanName = rawName.replace(/^[^a-zA-Z\s]+/g, "").trim();
 
     const normalized = {

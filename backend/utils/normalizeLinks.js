@@ -1,7 +1,4 @@
-/**
- * Safely normalizes and formats contact links.
- * Avoids duplicate protocols, ensures correct formats, and preserves raw usernames.
- */
+//this function is used to normalize the links
 export function normalizeLink(url, type) {
   if (!url || typeof url !== "string") return "";
   let clean = url.trim();

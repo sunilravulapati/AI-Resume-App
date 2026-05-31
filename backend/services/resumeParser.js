@@ -1,5 +1,3 @@
-// resumeParser.js
-
 export function parseResume(text) {
   const lowerText = text.toLowerCase();
   return {
@@ -14,9 +12,7 @@ export function parseResume(text) {
   };
 }
 
-/* ----------------------------- */
-/* SECTION DETECTION             */
-/* ----------------------------- */
+//detect the sections
 function detectSections(text) {
   const sectionKeywords = [
     "education", "skills", "technical skills", "projects",
@@ -27,9 +23,7 @@ function detectSections(text) {
   return sectionKeywords.filter(s => text.includes(s));
 }
 
-/* ----------------------------- */
-/* CONTACT EXTRACTION            */
-/* ----------------------------- */
+//detect the contacts
 function extractContacts(text) {
   return {
     email:    text.match(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i)?.[0] || null,
@@ -40,9 +34,7 @@ function extractContacts(text) {
   };
 }
 
-/* ----------------------------- */
-/* BULLET POINT DETECTION        */
-/* ----------------------------- */
+//detect bullet points
 function extractBulletPoints(text) {
   // Catches: •, -, –, *, >, numbered lists (1. 2.), and indented lines
   const bulletRegex = /(?:^|\n)\s*(?:[•\-–\*>]|\d+\.)\s+(.+)/g;
@@ -55,9 +47,7 @@ function extractBulletPoints(text) {
   return bullets;
 }
 
-/* ----------------------------- */
-/* SKILL EXTRACTION              */
-/* ----------------------------- */
+//extract skills
 function extractSkills(text) {
   const skills = [
     // Languages
@@ -90,9 +80,7 @@ function extractSkills(text) {
   });
 }
 
-/* ----------------------------- */
-/* METRIC DETECTION              */
-/* ----------------------------- */
+//extract metrics
 function extractMetrics(text) {
   const metricRegex =
     /\b\d+(\.\d+)?[KkMmBb]?\+?\s*(%|users?|customers?|clients?|requests?|ms|seconds?|hours?|days?|latency|accuracy|reduction|increase|growth|improvement|transactions?|downloads?|deployments?|repos?)\b/gi;
@@ -101,9 +89,7 @@ function extractMetrics(text) {
   return matches ? [...new Set(matches)] : [];
 }
 
-/* ----------------------------- */
-/* ACTION VERB DETECTION         */
-/* ----------------------------- */
+//extract action verbs
 function extractActionVerbs(text) {
   const strongVerbs = [
     "built", "designed", "developed", "implemented", "optimized",
@@ -115,9 +101,7 @@ function extractActionVerbs(text) {
   return strongVerbs.filter(v => new RegExp(`\\b${v}\\b`, "i").test(text));
 }
 
-/* ----------------------------- */
-/* WORD COUNT                    */
-/* ----------------------------- */
+//count words
 function countWords(text) {
   return text.trim().split(/\s+/).length;
 }

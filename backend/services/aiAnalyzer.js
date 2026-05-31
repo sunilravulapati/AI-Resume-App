@@ -1,4 +1,3 @@
-// aiAnalyzer.js
 import Groq from "groq-sdk";
 import "dotenv/config";
 import { prepareResumeExport, enforceLimits } from "./resumeFormat.js";
@@ -6,14 +5,6 @@ import { prepareResumeExport, enforceLimits } from "./resumeFormat.js";
 const groq      = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SHARED INFRASTRUCTURE
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Strip markdown code fences, then parse JSON.
- * Falls back to pulling the outermost {...} block via regex.
- */
 function parseJSONRobust(raw) {
   const cleaned = raw
     .replace(/^```(?:json)?\s*/im, "")
@@ -31,10 +22,6 @@ function parseJSONRobust(raw) {
   }
 }
 
-/**
- * If parseJSONRobust fails, make a second "repair" call asking the model
- * to return clean JSON from the malformed string.
- */
 async function repairJSON(malformedRaw) {
   const raw = await callGroq(
     [
@@ -51,11 +38,6 @@ async function repairJSON(malformedRaw) {
   return parseJSONRobust(raw);
 }
 
-/**
- * Central Groq API caller.
- * - Enables JSON mode (response_format) to reduce hallucinated prose.
- * - Retries automatically on 429 rate-limit with exponential back-off.
- */
 async function callGroq(
   messages,
   { temperature = 0.1, maxRetries = 2, jsonMode = true } = {}
@@ -90,10 +72,7 @@ function requireText(value, label) {
   }
 }
 
-
-// ─────────────────────────────────────────────────────────────────────────────
 // SCORING RUBRIC  (shared between both analysis functions)
-// ─────────────────────────────────────────────────────────────────────────────
 const SCORING_RUBRIC = `
 ══ SCORING RUBRIC ══════════════════════════════════════════════════
 Score all three dimensions independently. Sum them for semanticScore.
@@ -126,10 +105,7 @@ CALIBRATION ANCHORS (use these to normalise your scoring):
 ════════════════════════════════════════════════════════════════════
 `.trim();
 
-
-// ─────────────────────────────────────────────────────────────────────────────
-// GENERAL ANALYSIS
-// ─────────────────────────────────────────────────────────────────────────────
+// general analysis
 export async function analyzeResume(text) {
   requireText(text, "Resume text");
 
@@ -187,9 +163,7 @@ RULES:
 }
 
 
-// ─────────────────────────────────────────────────────────────────────────────
 // TARGETED ANALYSIS
-// ─────────────────────────────────────────────────────────────────────────────
 export async function analyzeResumeTargeted(
   resumeText,
   jobDescription,
@@ -288,10 +262,7 @@ OUTPUT FORMAT — return ONLY this JSON object, no markdown, no prose outside it
   return raw;
 }
 
-
-// ─────────────────────────────────────────────────────────────────────────────
 // TAILOR RESUME
-// ─────────────────────────────────────────────────────────────────────────────
 export async function tailorResume(resumeText, jobDescription) {
   requireText(resumeText,     "Resume text");
   requireText(jobDescription, "Job description");
@@ -413,31 +384,23 @@ Return ONLY a valid JSON object. No markdown fences, no explanatory prose.
     try {
       parsed = await repairJSON(raw);
     } catch (repairErr) {
-      // FIX: throw instead of silently returning raw string — callers expect an object
+      // throw instead of silently returning raw string — callers expect an object
       console.error("[aiAnalyzer] tailorResume: JSON parse + repair both failed.", repairErr.message);
       throw new Error(`tailorResume: could not produce valid JSON after repair. Original error: ${repairErr.message}`);
     }
   }
 
-  // If the parsed object contains original and tailoredPatches, run our robust merge engine
+  // If the parsed object contains original and tailoredPatches fails
   if (parsed && parsed.original && parsed.tailoredPatches) {
     const { mergeTailoredResume } = await import("./mergeTailoredResume.js");
     const mergedResume = mergeTailoredResume(parsed.original, parsed.tailoredPatches, jobDescription);
     return JSON.stringify(mergedResume);
   }
-
   // Hard-enforce structural limits even if the LLM ignored instructions
   return JSON.stringify(enforceLimits(parsed, jobDescription));
 }
 
-
-// ─────────────────────────────────────────────────────────────────────────────
-// STATIC TEMPLATE COMPILATION (Handled by renderLatex.js, not AI)
-// ─────────────────────────────────────────────────────────────────────────────
-
-// ─────────────────────────────────────────────────────────────────────────────
 // GENERATE COVER LETTER  (AI prompt → Tailored Cover Letter)
-// ─────────────────────────────────────────────────────────────────────────────
 export async function generateCoverLetterWithAI(resumeText, tailoredData, company = "Target Company", roleName = "Target Position", jobDescription = "") {
   const systemPrompt = `
 You are an expert executive resume writer. Your job is to output a highly compelling, professional, and custom-tailored cover letter on behalf of an applicant.
@@ -478,17 +441,15 @@ Output the custom-tailored cover letter now.
   return raw.trim();
 }
 
-/**
- * Recruiter Feature: AI-powered candidate ranker.
- * Screens all candidates against the provided job description/keywords in a single batched call.
- */
+// Recruiter Feature: AI-powered candidate ranker.
+// Screens all candidates against the provided job description/keywords in a single batched call.
 export async function rankCandidatesWithAI(candidates, jobDescription) {
   if (!candidates || candidates.length === 0) {
     return { matches: [] };
   }
 
   const candidatesData = candidates
-    // FIX: guard against docs without _id before calling .toString()
+    // guard against docs without _id before calling .toString()
     .filter(c => c && c._id)
     .map(c => ({
       id: c._id.toString(),
@@ -547,9 +508,7 @@ ${JSON.stringify(candidatesData, null, 2)}
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // ENHANCE TEXT INLINE (AI prompt -> specific bullet/section improvement)
-// ─────────────────────────────────────────────────────────────────────────────
 export async function enhanceTextWithAI(text, action, context = "") {
   let instruction = "";
   switch (action) {

@@ -1,36 +1,32 @@
-/**
- * Scores a bullet point based on recruitment value metrics.
- * Higher scores represent high-value signals (metrics, tech, scale, architecture, system design, leadership).
- * Lower scores represent vague filler phrases, low tech depth, or excessive brevity.
- */
+// scores bullet points based on recruitment value metrics
 export function scoreBullet(bullet = "", role = "general") {
   if (!bullet || typeof bullet !== "string") return 0;
 
   let score = 0;
   const lower = bullet.toLowerCase();
 
-  // 1. Length-based heuristic
+  // Length-based heuristic
   if (lower.length < 25) {
-    score -= 8; // Too short to contain meaningful details
+    score -= 8;
   } else if (lower.length > 25 && lower.length < 160) {
-    score += 4; // Sweet spot for readability and density
+    score += 4;
   }
 
-  // 2. Metrics & Numbers (Quantified Impact)
+  // Metrics & Numbers (Quantified Impact)
   if (/\b\d+(?:\.\d+)?%/.test(lower)) {
-    score += 10; // Percentage metrics are top tier
+    score += 10;
   }
   if (/\$\d+/.test(lower) || /\b\d+\s*(?:million|thousand|billion|k|m)\b/i.test(lower)) {
-    score += 8; // Monetary scale or large counts
+    score += 8;
   }
   if (/\b\d+\s*(?:users?|requests?|clients?|customers?|ms|seconds?|latency|reduction|increase|growth|improvement|transactions?|downloads?|deployments?|repos?)\b/i.test(lower)) {
-    score += 8; // User base, latency reduction, transaction counts
+    score += 8;
   }
   if (/\b\d+\s*\+\b/.test(lower)) {
-    score += 4; // Numeric boundaries (e.g., "50+")
+    score += 4;
   }
 
-  // 3. Technical Complexity & Architecture keywords
+  // Technical Complexity & Architecture keywords
   const techKeywords = [
     "architect", "design", "scalable", "scalability", "microservice", "distributed", 
     "concurrency", "multithread", "query optimization", "indexing", "auth", "jwt", 
@@ -42,7 +38,7 @@ export function scoreBullet(bullet = "", role = "general") {
     if (lower.includes(word)) score += 3;
   });
 
-  // 4. Strong past-tense action verbs at start of bullet
+  // Strong past-tense action verbs at start of bullet
   const strongVerbs = [
     "built", "designed", "developed", "implemented", "optimized", "architected",
     "reduced", "increased", "spearheaded", "automated", "migrated", "refactored",
@@ -54,7 +50,7 @@ export function scoreBullet(bullet = "", role = "general") {
     score += 5;
   }
 
-  // 5. Weak/filler phrases penalties
+  // Weak/filler phrases penalties
   const weakPhrases = [
     "worked on", "helped with", "responsible for", "assisted in", "handled", 
     "participated in", "contributed to", "involved in", "learned about",
@@ -64,7 +60,7 @@ export function scoreBullet(bullet = "", role = "general") {
     if (lower.includes(phrase)) score -= 8;
   });
 
-  // 6. Role-Aware Boost (Task 8)
+  // Role-Aware Boost
   if (role === "frontend") {
     const feKeywords = [
       "react", "vue", "angular", "tailwind", "css", "html", "ui", "ux", "responsive", 

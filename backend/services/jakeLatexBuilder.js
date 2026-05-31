@@ -60,10 +60,7 @@ function href(url = "", display = "") {
   return `\\href{${safeUrl}}{${esc(display || url)}}`;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LaTeX preamble — Jake's Resume style
-// ─────────────────────────────────────────────────────────────────────────────
-
+// latex preamble for jake's resume
 export function buildPreamble() {
   return String.raw`%---------------------------------------------------------------------------%
 % Jake's Resume – pdflatex-compatible template

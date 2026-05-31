@@ -1,13 +1,9 @@
-/**
- * Deduplicates resume content across all sections to prevent redundancies
- * (e.g. LeetCode stats repeated in achievements, duplicate project bullets, repeated skills).
- */
+//this function is used to deduplicate the resume content
 export function deduplicateResumeContent(resume) {
   if (!resume || typeof resume !== "object") return resume;
 
   const deduped = { ...resume };
 
-  // 1. Deduplicate Skills lists (value strings)
   if (Array.isArray(deduped.skills)) {
     const seenSkills = new Set();
     deduped.skills = deduped.skills.map(cat => {
@@ -36,8 +32,6 @@ export function deduplicateResumeContent(resume) {
     }).filter(cat => cat && cat.value && cat.value.trim().length > 0);
   }
 
-  // 2. Deduplicate DSA stats / profiles from achievements and awards
-  // Read DSA keywords or values
   const dsaStatLines = [
     ...(Array.isArray(deduped.dsaProfiles) ? deduped.dsaProfiles : []),
     ...(Array.isArray(deduped.dsaProficiency) ? deduped.dsaProficiency : [])
@@ -64,7 +58,7 @@ export function deduplicateResumeContent(resume) {
               }
               return false;
             });
-            if (hasDuplicateMetric) return false; // Remove from achievements since it is fully covered in DSA
+            if (hasDuplicateMetric) return false;
           }
           return true;
         });
@@ -94,7 +88,7 @@ export function deduplicateResumeContent(resume) {
     }
   }
 
-  // 3. Deduplicate duplicate bullet points between Work Experience and Projects
+  // Deduplicate duplicate bullet points between Work Experience and Projects
   if (Array.isArray(deduped.experience) && Array.isArray(deduped.projects)) {
     const seenBullets = new Set();
     deduped.experience.forEach(exp => {

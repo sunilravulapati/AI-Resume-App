@@ -13,30 +13,20 @@ function injectTemplate(basics, aiBody) {
   return `${preamble}\n\\begin{document}\n${header}\n${aiBody}\n${footer}`;
 }
 
-/**
- * Full AI-based PDF generation pipeline:
- *
- * 1. Normalize (AI output → canonical schema)
- * 2. Validate (enforce limits — single source)
- * 3. Generate LaTeX using Groq AI
- * 4. Debug (write debug.tex)
- * 5. Compile (LaTeX → PDF)
- */
 export async function generateResumePdf(data, template = "classic") {
   const startTime = Date.now();
   console.log(`[PDF] Starting AI-based generation`);
 
-  // 1. Normalize
+  // Normalize
   const normalized = normalizeResume(data);
   console.log(`[PDF] Normalized: ${normalized.experience?.length || 0} experiences, ${normalized.skills?.length || 0} skill rows`);
 
-  // 2. Validate
+  // Validate
   const validated = validateResumeData(normalized);
 
-  // 3. Generate LaTeX using Deterministic Template Builder
+  // Generate LaTeX using Deterministic Template Builder
   const texString = buildJakeLatex(validated);
 
-  // 4. Debug — always write debug.tex
   const debugPath = path.join(process.cwd(), "debug.tex");
   try {
     fs.writeFileSync(debugPath, texString, "utf8");
@@ -45,7 +35,7 @@ export async function generateResumePdf(data, template = "classic") {
     console.warn(`[PDF] Could not write debug.tex: ${err.message}`);
   }
 
-  // 5. Compile
+  // Compile
   const outputDir = path.join(process.cwd(), "generated");
   fs.mkdirSync(outputDir, { recursive: true });
   const outputPath = path.join(outputDir, "resume.pdf");
@@ -58,16 +48,11 @@ export async function generateResumePdf(data, template = "classic") {
   return { outputPath, texString };
 }
 
-/**
- * Generates the LaTeX string using Groq AI without PDF compilation.
- * Used by the /generate-latex endpoint.
- */
 export async function generateResumeLatex(data, template = "classic") {
   const normalized = normalizeResume(data);
   const validated = validateResumeData(normalized);
   const texString = buildJakeLatex(validated);
 
-  // Write debug.tex
   try {
     fs.writeFileSync(path.join(process.cwd(), "debug.tex"), texString, "utf8");
   } catch (err) {

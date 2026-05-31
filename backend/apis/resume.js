@@ -325,7 +325,6 @@ resumeRouter.post("/generate-pdf", verifyToken("student"), async (req, res) => {
 
     const userName = `${dbUser.firstName || ''} ${dbUser.lastName || ''}`.trim();
 
-    // FIX: Exclusively use the data provided by the frontend editor (the source of truth).
     // Force the candidate name to always be the user's First + Last name from the DB.
     protectedTailoredData.basics = {
       name:      userName,
@@ -341,7 +340,6 @@ resumeRouter.post("/generate-pdf", verifyToken("student"), async (req, res) => {
       tagline:   tailoredData?.basics?.tagline   || "",
     };
 
-    // Keep flattened compatibility aliases in sync
     protectedTailoredData.name  = protectedTailoredData.basics.name;
     protectedTailoredData.email = protectedTailoredData.basics.email;
     protectedTailoredData.phone = protectedTailoredData.basics.phone;
@@ -419,8 +417,6 @@ resumeRouter.post("/enhance", verifyToken("student"), async (req, res) => {
 
 
 // 6. GET SINGLE RESUME
-// FIX: /:id must stay last among GET routes — it acts as a catch-all wildcard.
-// Routes like /history and /all are already declared above it, which is correct.
 resumeRouter.get("/:id", verifyToken(), async (req, res) => {
   try {
     const resume = await Resume.findById(req.params.id).populate("userId", "firstName lastName email mobile username");
@@ -435,8 +431,6 @@ resumeRouter.get("/:id", verifyToken(), async (req, res) => {
 });
 
 // 7. RECRUITER: SCREEN CANDIDATES WITH AI (MATCH POOL)
-// FIX: this POST route is safe from the /:id GET wildcard since methods differ,
-// but keeping it after /:id for clarity that named POST routes don't conflict.
 resumeRouter.post("/match-pool", verifyToken("recruiter", "admin"), async (req, res) => {
   try {
     const { jobDescription } = req.body;

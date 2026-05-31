@@ -1,15 +1,4 @@
-/**
- * Shared resume formatting utilities: content limits, name normalization,
- * and data preparation for PDF export and AI LaTeX generation.
- *
- * NOTE: LaTeX generation is handled entirely by the AI prompt in aiAnalyzer.js.
- *       This file has NO LaTeX builder code — only data-shaping helpers.
- */
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PRIVATE HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
-
+// extract keywords from jd
 function extractJDKeywords(jd = "") {
   return (
     jd
@@ -51,26 +40,24 @@ function looksLikeBadName(name = "") {
   return false;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// EXPORTED UTILITIES
-// ─────────────────────────────────────────────────────────────────────────────
-
+//trim words
 export function trimWords(text = "", maxWords = 30) {
   const words = text.trim().split(/\s+/).filter(Boolean);
   if (words.length <= maxWords) return text.trim();
   return words.slice(0, maxWords).join(" ");
 }
 
-export function resolveDisplayName(basicsName = "", resumeText = "", user = null) {
-  // 1. User profile name is the absolute source of truth
+//resolve display name
+export function resolveDisplayName(basicsName = "", resumeText = "  ", user = null) {
+  // User profile name
   const profile = [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim();
   if (profile.length >= 2 && !looksLikeBadName(profile)) return profile;
 
-  // 2. Fall back to what was explicitly provided (frontend/AI)
+  // Fall back to what was explicitly provided (frontend/AI)
   const fromBasics = (basicsName || "").trim();
   if (fromBasics && !looksLikeBadName(fromBasics)) return fromBasics;
 
-  // 3. Last resort: Try to extract the name directly from the resume text
+  // Try to extract the name directly from the resume text
   const lines = (resumeText || "")
     .split(/\n/)
     .map((l) => l.trim())
@@ -97,16 +84,13 @@ export function normalizeBasics(data, { user, resumeText } = {}) {
   return data;
 }
 
-/**
- * Hard-enforce structural limits so content doesn't overflow a single page.
- * Limits are intentionally generous — the AI prompt handles finer trimming.
- */
+// hard-enforce structural limits so content doesn't overflow a single page.
 export function enforceLimits(data, jobDescription = "") {
   if (!data || typeof data !== "object") return data;
 
   const jdKeywords = extractJDKeywords(jobDescription);
 
-  // 1. Experience
+  // Experience
   if (Array.isArray(data.experience)) {
     data.experience = data.experience.slice(0, 5).map((entry) => ({
       ...entry,
@@ -120,18 +104,14 @@ export function enforceLimits(data, jobDescription = "") {
   }
 
   if (Array.isArray(data.tailoredExperience)) {
-    // Score for JD relevance but preserve ALL roles (don't silently drop chronological ones).
-    // Instead: sort most-relevant first, keep up to 5, always retain the most recent role.
     const scored = data.tailoredExperience.map((entry) => ({
       ...entry,
       __score: scoreProject(entry, jdKeywords),
     }));
-
-    // Always keep the first entry (most recent / senior) regardless of score
     const [first, ...rest] = scored;
     const topRest = rest
       .sort((a, b) => b.__score - a.__score)
-      .slice(0, 4); // keep up to 4 more
+      .slice(0, 4);
     const combined = first ? [first, ...topRest] : topRest;
 
     data.tailoredExperience = combined
@@ -145,7 +125,7 @@ export function enforceLimits(data, jobDescription = "") {
       }));
   }
 
-  // 2. Projects
+  // Projects
   if (Array.isArray(data.projects)) {
     data.projects = data.projects.slice(0, 4).map((entry) => ({
       ...entry,
@@ -156,7 +136,7 @@ export function enforceLimits(data, jobDescription = "") {
     }));
   }
 
-  // 3. Summary
+  //Summary
   if (data.summary) {
     data.summary = (data.summary || "").trim();
   }
@@ -164,7 +144,7 @@ export function enforceLimits(data, jobDescription = "") {
     data.tailoredSummary = (data.tailoredSummary || "").trim();
   }
 
-  // 4. Skills
+  //Skills
   if (Array.isArray(data.skills)) {
     data.skills = data.skills.slice(0, 8).map((row) => ({
       label: (row.label || "").trim(),
@@ -178,7 +158,7 @@ export function enforceLimits(data, jobDescription = "") {
     }));
   }
 
-  // 5. Education
+  // Education
   if (Array.isArray(data.education)) {
     data.education = data.education.slice(0, 2).map((edu) => ({
       ...edu,
@@ -188,7 +168,7 @@ export function enforceLimits(data, jobDescription = "") {
     }));
   }
 
-  // 6. Awards
+  // Awards
   if (Array.isArray(data.awards)) {
     data.awards = data.awards.slice(0, 3).map((a) => ({
       ...a,
@@ -197,7 +177,7 @@ export function enforceLimits(data, jobDescription = "") {
     }));
   }
 
-  // 7. Achievements
+  // Achievements
   if (Array.isArray(data.achievements)) {
     const allBullets = data.achievements
       .flatMap((a) => a.bullets || [])
@@ -208,7 +188,7 @@ export function enforceLimits(data, jobDescription = "") {
       : [];
   }
 
-  // 8. Certifications
+  // Certifications
   if (Array.isArray(data.certifications)) {
     data.certifications = data.certifications.slice(0, 3).map((c) => ({
       ...c,
@@ -216,7 +196,7 @@ export function enforceLimits(data, jobDescription = "") {
     }));
   }
 
-  // 9. DSA Proficiency
+  //DSA Proficiency
   if (Array.isArray(data.dsaProficiency)) {
     data.dsaProficiency = data.dsaProficiency
       .slice(0, 3)
@@ -228,7 +208,7 @@ export function enforceLimits(data, jobDescription = "") {
       .map((l) => (l || "").trim());
   }
 
-  // 10. Extracurricular
+  //Extracurricular
   if (Array.isArray(data.extracurricular)) {
     data.extracurricular = data.extracurricular.slice(0, 1).map((item) => ({
       ...item,
@@ -244,10 +224,7 @@ export function enforceLimits(data, jobDescription = "") {
   return data;
 }
 
-/**
- * Prepare data for export (PDF or LaTeX AI prompt).
- * Applies limit enforcement and name normalization.
- */
+//Prepare resume export
 export function prepareResumeExport(data, { jobDescription = "", user, resumeText } = {}) {
   let parsed = typeof data === "string" ? JSON.parse(data) : { ...data };
   parsed = enforceLimits(parsed, jobDescription);

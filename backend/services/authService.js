@@ -46,9 +46,6 @@ export const authenticateUser = async ({ loginIdentifier, password }) => {
         err.status = 401;
         throw err;
     }
-
-    // You can add the isActive check here later!
-
     const token = jwt.sign(
         { id: user._id, role: user.role },
         process.env.JWT_SECRET,

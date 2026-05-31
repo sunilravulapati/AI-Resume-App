@@ -1,8 +1,4 @@
-/**
- * textCleaner.js — Lightweight post-processing to improve bullet readability
- * by stripping overly verbose filler phrases while preserving metrics.
- */
-
+// lightweight post-processing to improve bullet readability
 const FILLER_PHRASES = [
   /\b(?:successfully )?responsible for\b/gi,
   /\btasked with(?: the responsibility to)?\b/gi,
@@ -26,19 +22,15 @@ export function cleanBulletVerbosity(bullet) {
   let cleaned = String(bullet);
   
   FILLER_PHRASES.forEach(regex => {
-    // Replace with empty string, but handle spacing
     cleaned = cleaned.replace(regex, "").trim();
   });
-
-  // Capitalize first letter after cleanup if it was lowercased
+  //capitalise the first word
   if (cleaned.length > 0) {
     cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
   }
-
-  // Remove double spaces
+  //remove extra spaces
   cleaned = cleaned.replace(/\s{2,}/g, " ");
 
-  // Ensure it ends with a period if it doesn't already, for consistency
   if (cleaned.length > 0 && !/[.!?]$/.test(cleaned)) {
     cleaned += ".";
   }
