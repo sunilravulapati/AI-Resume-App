@@ -278,8 +278,8 @@ export default function UploadModal({ onClose, onSuccess }) {
         <div className="px-8 pt-5 pb-5 border-b border-[var(--border)] shrink-0">
           <div className="flex items-start justify-between mb-5">
             <div>
-              <h2 className="font-display text-2xl font-bold text-[var(--text)] leading-tight">Analyze Resume</h2>
-              <p className="text-sm text-[var(--text-secondary)] mt-1 font-medium">Choose your analysis path below</p>
+              <h2 className="font-display text-2xl font-bold text-[var(--text)] leading-tight">Choose Analysis Type</h2>
+              <p className="text-sm text-[var(--text-secondary)] mt-1 font-medium">Select how you want to evaluate your resume</p>
             </div>
             <button onClick={onClose}
               className="w-8 h-8 rounded-full bg-[var(--bg-muted)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--border)] hover:text-[var(--text)] transition-colors text-sm shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]">
@@ -292,12 +292,12 @@ export default function UploadModal({ onClose, onSuccess }) {
             <button
               onClick={() => { setMode("general"); setError(""); }}
               className={`flex-1 text-sm font-bold px-4 py-2.5 rounded-xl transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${mode === "general" ? "bg-[var(--text)] text-[var(--bg-elevated)] shadow-sm" : "text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--border)]"}`}>
-              ⚡ General Analysis
+              ⚡ A. General Resume Analysis
             </button>
             <button
               onClick={() => { setMode("targeted"); setError(""); }}
               className={`flex-1 text-sm font-bold px-4 py-2.5 rounded-xl transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${mode === "targeted" ? "bg-[var(--text)] text-[var(--bg-elevated)] shadow-sm" : "text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--border)]"}`}>
-              🎯 Match My Resume
+              🎯 B. Job Description Analysis
             </button>
           </div>
           
@@ -388,7 +388,7 @@ export default function UploadModal({ onClose, onSuccess }) {
           {/* error */}
           {error && (
             <div className="bg-[var(--danger-soft)] border border-[var(--danger)]/20 rounded-xl px-5 py-4 animate-fade-up">
-              <p className="text-sm text-[var(--danger)] font-bold flex items-center gap-2"><span>⚠️</span> {error}</p>
+              <p className="text-sm text-[var(--danger)] font-bold flex items-start gap-2 whitespace-pre-line"><span className="mt-0.5">⚠️</span> {error}</p>
             </div>
           )}
 

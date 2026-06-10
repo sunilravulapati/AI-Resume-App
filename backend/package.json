@@ -25,6 +25,7 @@
     "mongoose": "^9.3.0",
     "multer": "^2.1.1",
     "node-latex": "^3.1.0",
+    "pdf-parse": "^2.4.5",
     "pdf2json": "^4.0.2"
   }
 }

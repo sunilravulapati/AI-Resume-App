@@ -106,8 +106,11 @@ function TopActionBar({ contextTitle, selectedResume, saveStatus, onBack, onGene
         <div style={{ width: '1px', height: '22px', background: '#E2E8F0', flexShrink: 0 }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', minWidth: 0 }}>
           <div style={{ minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '8px' }}>
               {contextTitle}
+              <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: '#F1F5F9', color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase', border: '1px solid #E2E8F0' }}>
+                Advanced Feature
+              </span>
             </p>
           </div>
         </div>

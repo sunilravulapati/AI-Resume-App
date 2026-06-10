@@ -1,7 +1,7 @@
 import fs from "fs";
 import express from "express";
 import multer from "multer";
-import PDFParser from "pdf2json";
+import pdfParse from "../utils/pdfParser.js";
 import { Resume } from "../models/Resume.js";
 import { ResumeSession } from "../models/ResumeSession.js";
 import User from "../models/User.js";
@@ -12,6 +12,7 @@ import { prepareResumeExport, resolveDisplayName } from "../services/resumeForma
 import { extractJSON } from "../utils/jsonExtractor.js";
 import { verifyToken } from "../middleware/auth.js";
 import { parseResume } from "../services/resumeParser.js";
+import { validateResume } from "../utils/resumeValidator.js";
 import { uploadToCloudinary } from "../config/cloudinaryUpload.js";
 
 export const resumeRouter = express.Router();
@@ -22,105 +23,112 @@ const upload = multer({ storage });
 
 // 1. UPLOAD & ANALYZE
 resumeRouter.post("/upload", verifyToken("student"), upload.single("resume"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "No resume uploaded" });
+
+    let fileUrl;
     try {
-      if (!req.file) return res.status(400).json({ error: "No resume uploaded" });
+      const uploadResult = await uploadToCloudinary(req.file.buffer);
+      fileUrl = uploadResult.secure_url;
+    } catch (uploadError) {
+      console.error("Cloudinary Upload Error:", uploadError);
+      return res.status(500).json({ error: "Failed to upload resume to Cloudinary" });
+    }
 
-      let fileUrl;
-      try {
-        const uploadResult = await uploadToCloudinary(req.file.buffer);
-        fileUrl = uploadResult.secure_url;
-      } catch (uploadError) {
-        console.error("Cloudinary Upload Error:", uploadError);
-        return res.status(500).json({ error: "Failed to upload resume to Cloudinary" });
+    const analysisMode = req.body.analysisMode || "general";
+    const jobDescription = req.body.jobDescription || "";
+    const company = req.body.company || "";
+    const roleName = req.body.roleName || "";
+
+    if (analysisMode === "targeted" && !jobDescription.trim()) {
+      return res.status(400).json({ error: "Job description is required for Targeted Analysis." });
+    }
+
+    let pdfData;
+    try {
+      pdfData = await pdfParse(req.file.buffer);
+    } catch (parseErr) {
+      console.error("PDF Parse Error:", parseErr);
+      return res.status(500).json({ error: "Failed to parse PDF" });
+    }
+
+    try {
+      const rawText = pdfData.text;
+      const extractedText = rawText.replace(/\s+/g, " ").trim();
+      
+      const validation = await validateResume(extractedText);
+      if (!validation.isResume) {
+        return res.status(400).json({ error: "Upload Failed\n\nThis document does not appear to be a resume.\n\nPlease upload a resume containing sections such as:\n• Education\n• Experience\n• Skills\n• Projects\n\nSupported format:\nPDF" });
       }
 
-      const analysisMode   = req.body.analysisMode   || "general";
-      const jobDescription = req.body.jobDescription || "";
-      const company        = req.body.company        || "";
-      const roleName       = req.body.roleName       || "";
+      parseResume(extractedText);
 
-      if (analysisMode === "targeted" && !jobDescription.trim()) {
-        return res.status(400).json({ error: "Job description is required for Targeted Analysis." });
+      const programmaticScore = calculateProgrammaticScore(extractedText);
+
+      let aiResponse;
+      if (analysisMode === "targeted") {
+        aiResponse = await analyzeResumeTargeted(extractedText, jobDescription, company, roleName);
+      } else {
+        aiResponse = await analyzeResume(extractedText);
       }
 
-      const pdfParser = new PDFParser(null, 1);
-      pdfParser.on("pdfParser_dataError", () => res.status(500).json({ error: "Failed to parse PDF" }));
+      const analysisData = extractJSON(aiResponse) || {};
+      const finalScore = calculateFinalScore(programmaticScore, analysisData.semanticScore || 0);
 
-      pdfParser.on("pdfParser_dataReady", async () => {
-        try {
-          const rawText       = pdfParser.getRawTextContent();
-          const extractedText = rawText.replace(/\s+/g, " ").trim();
-          parseResume(extractedText);
+      const rawStruct = structureScore(extractedText);
+      const rawImp = impactScore(extractedText);
+      const rawSkills = skillAlignmentScore(extractedText);
+      const aiScores = analysisData.scores || {};
 
-          const programmaticScore = calculateProgrammaticScore(extractedText);
-
-          let aiResponse;
-          if (analysisMode === "targeted") {
-            aiResponse = await analyzeResumeTargeted(extractedText, jobDescription, company, roleName);
-          } else {
-            aiResponse = await analyzeResume(extractedText);
+      const newResume = await Resume.create({
+        userId: req.user.id, parsedText: extractedText, rawText, atsScore: finalScore, fileUrl, analysisMode,
+        ...(analysisMode === "targeted" && { jobDescription, company: company || undefined, roleName: roleName || undefined }),
+        feedback: {
+          strengths: analysisData.strengths || [], improvements: analysisData.improvements || [], summary: analysisData.summary || "",
+          ...(analysisMode === "targeted" && { matchScore: analysisData.matchScore ?? undefined, keywordMatchRate: analysisData.keywordMatchRate ?? undefined, missingSkills: analysisData.missingSkills || [], experienceGap: analysisData.experienceGap || undefined }),
+          studentFeedback: {
+            strengths: (analysisData.studentFeedback && analysisData.studentFeedback.strengths) || analysisData.strengths || [],
+            improvements: (analysisData.studentFeedback && analysisData.studentFeedback.improvements) || analysisData.improvements || [],
+            summary: (analysisData.studentFeedback && analysisData.studentFeedback.summary) || analysisData.summary || "",
+          },
+          recruiterFeedback: {
+            greenFlags: (analysisData.recruiterFeedback && analysisData.recruiterFeedback.greenFlags) || [],
+            redFlags: (analysisData.recruiterFeedback && analysisData.recruiterFeedback.redFlags) || [],
+            recruiterSummary: (analysisData.recruiterFeedback && analysisData.recruiterFeedback.recruiterSummary) || "",
           }
-
-          const analysisData = extractJSON(aiResponse) || {};
-          const finalScore   = calculateFinalScore(programmaticScore, analysisData.semanticScore || 0);
-
-          const rawStruct = structureScore(extractedText);
-          const rawImp    = impactScore(extractedText);
-          const rawSkills = skillAlignmentScore(extractedText);
-          const aiScores  = analysisData.scores || {};
-
-          const newResume = await Resume.create({
-            userId: req.user.id, parsedText: extractedText, rawText, atsScore: finalScore, fileUrl, analysisMode,
-            ...(analysisMode === "targeted" && { jobDescription, company: company || undefined, roleName: roleName || undefined }),
-            feedback: {
-              strengths: analysisData.strengths || [], improvements: analysisData.improvements || [], summary: analysisData.summary || "",
-              ...(analysisMode === "targeted" && { matchScore: analysisData.matchScore ?? undefined, keywordMatchRate: analysisData.keywordMatchRate ?? undefined, missingSkills: analysisData.missingSkills || [], experienceGap: analysisData.experienceGap || undefined }),
-              studentFeedback: {
-                strengths: (analysisData.studentFeedback && analysisData.studentFeedback.strengths) || analysisData.strengths || [],
-                improvements: (analysisData.studentFeedback && analysisData.studentFeedback.improvements) || analysisData.improvements || [],
-                summary: (analysisData.studentFeedback && analysisData.studentFeedback.summary) || analysisData.summary || "",
-              },
-              recruiterFeedback: {
-                greenFlags: (analysisData.recruiterFeedback && analysisData.recruiterFeedback.greenFlags) || [],
-                redFlags: (analysisData.recruiterFeedback && analysisData.recruiterFeedback.redFlags) || [],
-                recruiterSummary: (analysisData.recruiterFeedback && analysisData.recruiterFeedback.recruiterSummary) || "",
-              }
-            },
-            subScores: {
-              structure: rawStruct,
-              impact: rawImp,
-              skillAlignment: rawSkills,
-              complexity: aiScores.complexity || 0,
-              professionalism: aiScores.professionalism || 0,
-              skillProjectFit: aiScores.skillProjectFit || 0
-            }
-          });
-
-          // push new resume
-          await User.findByIdAndUpdate(req.user.id, { $push: { resumes: newResume._id } });
-
-          return res.status(200).json({
-            message: "Analyzed successfully",
-            analysis: {
-              atsScore: finalScore, strengths: analysisData.strengths || [], improvements: analysisData.improvements || [], summary: analysisData.summary || "",
-              studentFeedback: newResume.feedback.studentFeedback,
-              recruiterFeedback: newResume.feedback.recruiterFeedback,
-              subScores: newResume.subScores,
-              ...(analysisMode === "targeted" && { matchScore: analysisData.matchScore ?? null, keywordMatchRate: analysisData.keywordMatchRate ?? null, missingSkills: analysisData.missingSkills || [], experienceGap: analysisData.experienceGap || null, roleName: roleName || null }),
-            },
-          });
-        } catch (err) {
-          console.error("AI Analysis Error:", err);
-          return res.status(500).json({ error: "AI analysis failed" });
+        },
+        subScores: {
+          structure: rawStruct,
+          impact: rawImp,
+          skillAlignment: rawSkills,
+          complexity: aiScores.complexity || 0,
+          professionalism: aiScores.professionalism || 0,
+          skillProjectFit: aiScores.skillProjectFit || 0
         }
       });
 
-      pdfParser.parseBuffer(req.file.buffer);
+      // push new resume
+      await User.findByIdAndUpdate(req.user.id, { $push: { resumes: newResume._id } });
+
+      return res.status(200).json({
+        message: "Analyzed successfully",
+        analysis: {
+          atsScore: finalScore, strengths: analysisData.strengths || [], improvements: analysisData.improvements || [], summary: analysisData.summary || "",
+          studentFeedback: newResume.feedback.studentFeedback,
+          recruiterFeedback: newResume.feedback.recruiterFeedback,
+          subScores: newResume.subScores,
+          ...(analysisMode === "targeted" && { matchScore: analysisData.matchScore ?? null, keywordMatchRate: analysisData.keywordMatchRate ?? null, missingSkills: analysisData.missingSkills || [], experienceGap: analysisData.experienceGap || null, roleName: roleName || null }),
+        },
+      });
     } catch (err) {
-      console.error("Upload Route Error:", err);
-      return res.status(500).json({ error: "Server error" });
+      console.error("AI Analysis Error:", err);
+      return res.status(500).json({ error: "AI analysis failed" });
     }
+  } catch (err) {
+    console.error("Upload Route Error:", err);
+    return res.status(500).json({ error: "Server error" });
   }
+}
 );
 
 
@@ -170,11 +178,29 @@ resumeRouter.post("/tailor", verifyToken("student"), async (req, res) => {
     const baseResume = await Resume.findOne({ _id: resumeId, userId: req.user.id });
     if (!baseResume) return res.status(404).json({ error: "Resume not found" });
 
-    const aiResponse   = await tailorResume(baseResume.parsedText, jobDescription);
-    let tailoredData   = extractJSON(aiResponse);
+    const [aiResponse, targetedAnalysisRaw] = await Promise.all([
+      tailorResume(baseResume.parsedText, jobDescription),
+      analyzeResumeTargeted(baseResume.parsedText, jobDescription, "Target Company", "Target Role")
+    ]);
+
+    let tailoredData = extractJSON(aiResponse);
+    let targetedAnalysis = extractJSON(targetedAnalysisRaw) || {};
 
     if (!tailoredData)
       return res.status(500).json({ error: "AI returned invalid data. Please try again." });
+
+    const programmaticScore = calculateProgrammaticScore(baseResume.parsedText);
+    const finalScore = calculateFinalScore(programmaticScore, targetedAnalysis.semanticScore || 0);
+
+    tailoredData.atsScore = finalScore;
+    tailoredData.matchScore = targetedAnalysis.matchScore || null;
+    tailoredData.keywordMatchRate = targetedAnalysis.keywordMatchRate || null;
+    tailoredData.missingSkills = targetedAnalysis.missingSkills || [];
+    tailoredData.matchedSkills = targetedAnalysis.matchedSkills || [];
+    tailoredData.experienceGap = targetedAnalysis.experienceGap || null;
+    tailoredData.strengths = targetedAnalysis.strengths || [];
+    tailoredData.improvements = targetedAnalysis.improvements || [];
+    tailoredData.analysisSummary = targetedAnalysis.summary || "";
 
     const dbUser = await User.findById(req.user.id).select("firstName lastName email mobile");
     const resumeText = baseResume.rawText || baseResume.parsedText;
@@ -184,7 +210,7 @@ resumeRouter.post("/tailor", verifyToken("student"), async (req, res) => {
       resumeText,
     });
 
-    // ── Seed explicit basics as the sole source of truth ──
+    // Seed explicit basics as the sole source of truth
     tailoredData.basics = {
       name: `${dbUser.firstName} ${dbUser.lastName}`.trim(),
       email: dbUser.email || "",
@@ -206,18 +232,29 @@ resumeRouter.post("/tailor", verifyToken("student"), async (req, res) => {
       jobDescription,
       company: tailoredData?.basics?.company || "Target Company",
       roleName: tailoredData?.basics?.roleName || "Target Role",
-      atsScore: tailoredData?.atsScore || 0,
-      roleMatchScore: tailoredData?.matchScore || null,
+      atsScore: tailoredData.atsScore,
+      roleMatchScore: tailoredData.matchScore,
       tailoredData: tailoredData,
-      strengths: tailoredData?.strengths || [],
-      weaknesses: tailoredData?.improvements || [],
+      strengths: tailoredData.strengths,
+      weaknesses: tailoredData.improvements,
     });
 
     return res.status(200).json({
-      message:        "Resume tailored successfully",
-      sessionId:      session._id,
+      message: "Resume tailored successfully",
+      sessionId: session._id,
       tailoredResume: tailoredData,
-      parsedText:     baseResume.rawText || baseResume.parsedText,
+      parsedText: baseResume.rawText || baseResume.parsedText,
+      analysis: {
+        atsScore: tailoredData.atsScore,
+        matchScore: tailoredData.matchScore,
+        keywordMatchRate: tailoredData.keywordMatchRate,
+        missingSkills: tailoredData.missingSkills,
+        matchedSkills: tailoredData.matchedSkills,
+        experienceGap: tailoredData.experienceGap,
+        strengths: tailoredData.strengths,
+        improvements: tailoredData.improvements,
+        summary: tailoredData.analysisSummary
+      }
     });
   } catch (err) {
     console.error("Tailoring Error:", err);
@@ -268,7 +305,7 @@ resumeRouter.post("/generate-latex", verifyToken("student"), async (req, res) =>
     if (!baseResume) return res.status(404).json({ error: "Resume not found." });
 
     const resumeText = baseResume.rawText || baseResume.parsedText;
-    const dbUser     = await User.findById(req.user.id).select("firstName lastName email mobile");
+    const dbUser = await User.findById(req.user.id).select("firstName lastName email mobile");
 
     // Clone to avoid mutating
     const protectedTailoredData = JSON.parse(JSON.stringify(tailoredData));
@@ -276,17 +313,17 @@ resumeRouter.post("/generate-latex", verifyToken("student"), async (req, res) =>
 
     // Use explicit DB user name, and frontend explicit data for the rest.
     protectedTailoredData.basics = {
-      name:      userName,
-      email:     tailoredData?.basics?.email     || dbUser?.email   || "",
-      phone:     tailoredData?.basics?.phone     || dbUser?.mobile  || "",
-      location:  tailoredData?.basics?.location  || "",
-      linkedin:  tailoredData?.basics?.linkedin  || "",
-      github:    tailoredData?.basics?.github    || "",
+      name: userName,
+      email: tailoredData?.basics?.email || dbUser?.email || "",
+      phone: tailoredData?.basics?.phone || dbUser?.mobile || "",
+      location: tailoredData?.basics?.location || "",
+      linkedin: tailoredData?.basics?.linkedin || "",
+      github: tailoredData?.basics?.github || "",
       portfolio: tailoredData?.basics?.portfolio || "",
-      leetcode:  tailoredData?.basics?.leetcode  || "",
+      leetcode: tailoredData?.basics?.leetcode || "",
       hackerrank: tailoredData?.basics?.hackerrank || "",
       codeforces: tailoredData?.basics?.codeforces || "",
-      tagline:   tailoredData?.basics?.tagline   || "",
+      tagline: tailoredData?.basics?.tagline || "",
     };
 
     // Prepare + normalize via resumeFormat (merges DB profile if basics blank)
@@ -327,20 +364,20 @@ resumeRouter.post("/generate-pdf", verifyToken("student"), async (req, res) => {
 
     // Force the candidate name to always be the user's First + Last name from the DB.
     protectedTailoredData.basics = {
-      name:      userName,
-      email:     tailoredData?.basics?.email     || dbUser?.email   || "",
-      phone:     tailoredData?.basics?.phone     || dbUser?.mobile  || "",
-      location:  tailoredData?.basics?.location  || "",
-      linkedin:  tailoredData?.basics?.linkedin  || "",
-      github:    tailoredData?.basics?.github    || "",
+      name: userName,
+      email: tailoredData?.basics?.email || dbUser?.email || "",
+      phone: tailoredData?.basics?.phone || dbUser?.mobile || "",
+      location: tailoredData?.basics?.location || "",
+      linkedin: tailoredData?.basics?.linkedin || "",
+      github: tailoredData?.basics?.github || "",
       portfolio: tailoredData?.basics?.portfolio || "",
-      leetcode:  tailoredData?.basics?.leetcode  || "",
+      leetcode: tailoredData?.basics?.leetcode || "",
       hackerrank: tailoredData?.basics?.hackerrank || "",
       codeforces: tailoredData?.basics?.codeforces || "",
-      tagline:   tailoredData?.basics?.tagline   || "",
+      tagline: tailoredData?.basics?.tagline || "",
     };
 
-    protectedTailoredData.name  = protectedTailoredData.basics.name;
+    protectedTailoredData.name = protectedTailoredData.basics.name;
     protectedTailoredData.email = protectedTailoredData.basics.email;
     protectedTailoredData.phone = protectedTailoredData.basics.phone;
 

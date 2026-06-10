@@ -162,6 +162,31 @@ RULES:
   return raw;
 }
 
+// RESUME VALIDATION (AI Verification)
+export async function verifyResumeWithAI(text) {
+  const systemPrompt = `
+You are a document classifier. Determine whether the provided document text is a professional resume or curriculum vitae (CV).
+
+Return ONLY a valid JSON object. No markdown, no prose outside the JSON.
+{
+  "isResume": <boolean>,
+  "confidence": <integer 0-100>,
+  "reason": "<short explanation>"
+}
+`.trim();
+
+  const userPrompt = `Document:\n\n${text.slice(0, 3000)}`;
+
+  const raw = await callGroq(
+    [
+      { role: "system", content: systemPrompt },
+      { role: "user",   content: userPrompt   },
+    ],
+    { temperature: 0.1, jsonMode: true }
+  );
+
+  return parseJSONRobust(raw);
+}
 
 // TARGETED ANALYSIS
 export async function analyzeResumeTargeted(

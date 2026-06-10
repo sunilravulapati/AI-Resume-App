@@ -17,6 +17,11 @@ const LiveResumePreview = memo(({ formData, user, template = 'jake-ryan' }) => {
   const experience = formData.experience ?? [];
   const projects   = formData.projects ?? [];
   const education  = formData.education ?? [];
+  const awards     = formData.awards ?? [];
+  const achievements = formData.achievements ?? [];
+  const dsaLines   = formData.dsa ?? formData.dsaProficiency ?? formData.dsaLines ?? [];
+  const certs      = formData.certifications ?? formData.certs ?? [];
+  const extracurricular = formData.extracurriculars ?? formData.extracurricular ?? [];
 
   const name    = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '';
   const email   = user?.email   ?? '';
@@ -168,8 +173,123 @@ const LiveResumePreview = memo(({ formData, user, template = 'jake-ryan' }) => {
         </PreviewSection>
       )}
 
+      {/* ── Awards & Achievements ── */}
+      {(awards.length > 0 || achievements.length > 0) && (
+        <PreviewSection title="Awards & Achievements">
+          {awards.map((award, i) => (
+            <div key={`award-${i}`} style={{ marginBottom: '9px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px', flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
+                  <span style={{ fontWeight: '700', fontSize: '11px', fontFamily: '"Arial", sans-serif', color: '#0F172A' }}>
+                    {award.title}
+                  </span>
+                  {award.org && (
+                    <span style={{ fontSize: '10px', color: '#64748B' }}>— {award.org}</span>
+                  )}
+                </div>
+                {award.date && (
+                  <span style={{ fontSize: '9.5px', color: '#64748B', flexShrink: 0, fontFamily: '"Arial", sans-serif' }}>
+                    {award.date}
+                  </span>
+                )}
+              </div>
+              {award.desc && (
+                <p style={{ fontSize: '9.5px', color: '#64748B', margin: '1px 0 3px' }}>
+                  {award.desc}
+                </p>
+              )}
+            </div>
+          ))}
+
+          {achievements.map((ach, i) => (
+            <div key={`ach-${i}`} style={{ marginBottom: '9px' }}>
+              {ach.category && (
+                <div style={{ fontWeight: '700', fontSize: '10px', fontFamily: '"Arial", sans-serif', color: '#0F172A', marginBottom: '2px' }}>
+                  {ach.category}
+                </div>
+              )}
+              {(ach.bullets || []).map((bullet, j) => (
+                bullet ? (
+                  <div key={j} style={{ display: 'flex', gap: '6px', marginBottom: '2px' }}>
+                    <span style={{ flexShrink: 0, marginTop: '1px', color: '#475569' }}>•</span>
+                    <span style={{ fontSize: '10px', lineHeight: 1.5, color: '#1e293b' }}>{bullet}</span>
+                  </div>
+                ) : null
+              ))}
+            </div>
+          ))}
+        </PreviewSection>
+      )}
+
+      {/* ── DSA Proficiency ── */}
+      {dsaLines.length > 0 && (
+        <PreviewSection title="DSA Proficiency">
+          {dsaLines.map((line, i) => (
+            line ? (
+              <div key={i} style={{ display: 'flex', gap: '6px', marginBottom: '2px' }}>
+                <span style={{ flexShrink: 0, marginTop: '1px', color: '#475569' }}>•</span>
+                <span style={{ fontSize: '10px', lineHeight: 1.5, color: '#1e293b' }}>{line}</span>
+              </div>
+            ) : null
+          ))}
+        </PreviewSection>
+      )}
+
+      {/* ── Certifications ── */}
+      {certs.length > 0 && (
+        <PreviewSection title="Certifications">
+          {certs.map((cert, i) => (
+            <div key={i} style={{ marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8px' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ fontWeight: '700', fontSize: '11px', fontFamily: '"Arial", sans-serif', color: '#0F172A' }}>
+                  {cert.title}
+                </span>
+                {cert.org && (
+                  <span style={{ fontSize: '10px', color: '#64748B' }}> — {cert.org}</span>
+                )}
+                {cert.url && (
+                  <span style={{ fontSize: '10px', color: '#3b82f6', marginLeft: '5px' }}>
+                    <a href={cert.url.startsWith('http') ? cert.url : `https://${cert.url}`} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>
+                      [Link]
+                    </a>
+                  </span>
+                )}
+              </div>
+              {cert.dates && (
+                <span style={{ fontSize: '9.5px', color: '#64748B', flexShrink: 0, fontFamily: '"Arial", sans-serif' }}>
+                  {cert.dates}
+                </span>
+              )}
+            </div>
+          ))}
+        </PreviewSection>
+      )}
+
+      {/* ── Extracurricular Activities ── */}
+      {extracurricular.length > 0 && (
+        <PreviewSection title="Extracurricular Activities">
+          {extracurricular.map((item, i) => (
+            <div key={i} style={{ marginBottom: '9px' }}>
+              {item.title && (
+                <div style={{ fontWeight: '700', fontSize: '10px', fontFamily: '"Arial", sans-serif', color: '#0F172A', marginBottom: '2px' }}>
+                  {item.title}
+                </div>
+              )}
+              {(item.bullets || []).map((bullet, j) => (
+                bullet ? (
+                  <div key={j} style={{ display: 'flex', gap: '6px', marginBottom: '2px' }}>
+                    <span style={{ flexShrink: 0, marginTop: '1px', color: '#475569' }}>•</span>
+                    <span style={{ fontSize: '10px', lineHeight: 1.5, color: '#1e293b' }}>{bullet}</span>
+                  </div>
+                ) : null
+              ))}
+            </div>
+          ))}
+        </PreviewSection>
+      )}
+
       {/* ── Empty state ── */}
-      {!summary && skills.length === 0 && experience.length === 0 && projects.length === 0 && education.length === 0 && (
+      {!summary && skills.length === 0 && experience.length === 0 && projects.length === 0 && education.length === 0 && awards.length === 0 && achievements.length === 0 && dsaLines.length === 0 && certs.length === 0 && extracurricular.length === 0 && (
         <div style={{ padding: '48px 0', textAlign: 'center' }}>
           <p style={{ fontSize: '12px', color: '#94A3B8', fontFamily: 'Inter, sans-serif' }}>
             Your edited content will appear here in real time
