@@ -1,5 +1,7 @@
-import * as pdfParse from "pdf-parse";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
 
-console.log(pdfParse);
+// pdf-parse tries to read a test file on import — bypass it
+const pdfParse = require("pdf-parse/lib/pdf-parse.js");
 
 export default pdfParse;
