@@ -182,7 +182,6 @@ export default function RecruiterDashboard() {
           className="w-full flex items-center justify-between font-semibold text-[#1d1d1f] hover:text-[#0066cc] transition text-left focus:outline-none"
         >
           <div className="flex items-center gap-2">
-            <span className="text-lg">🤖</span>
             <span>AI Job Description Matching & Candidate Screening</span>
             {Object.keys(aiMatches).length > 0 && (
               <span className="bg-[#34c759] text-white text-xs px-2.5 py-0.5 rounded-full font-bold">

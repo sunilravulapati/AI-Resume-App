@@ -355,7 +355,6 @@ export default function StudentDashboard() {
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
               >
-                <span className="text-lg">{tab.icon}</span>
                 {tab.label}
               </button>
             ))}
@@ -363,7 +362,7 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      {/* ── Mobile Tab Navigation (fallback) ── */}
+      {/* ── Mobile Tab Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t z-40 flex justify-around p-2 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
         {TABS.map((tab) => (
           <button
@@ -372,7 +371,6 @@ export default function StudentDashboard() {
             className={`flex flex-col items-center p-2 text-[10px] font-semibold rounded-xl ${activeTab === tab.key && tab.key !== 'upload' ? 'text-[var(--color-accent)]' : 'text-slate-500'
               }`}
           >
-            <span className="text-xl mb-1">{tab.icon}</span>
             {tab.label}
           </button>
         ))}

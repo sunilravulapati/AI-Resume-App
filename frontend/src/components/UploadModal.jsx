@@ -292,12 +292,12 @@ export default function UploadModal({ onClose, onSuccess }) {
             <button
               onClick={() => { setMode("general"); setError(""); }}
               className={`flex-1 text-sm font-bold px-4 py-2.5 rounded-xl transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${mode === "general" ? "bg-[var(--text)] text-[var(--bg-elevated)] shadow-sm" : "text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--border)]"}`}>
-              ⚡ A. General Resume Analysis
+              A. General Resume Analysis
             </button>
             <button
               onClick={() => { setMode("targeted"); setError(""); }}
               className={`flex-1 text-sm font-bold px-4 py-2.5 rounded-xl transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${mode === "targeted" ? "bg-[var(--text)] text-[var(--bg-elevated)] shadow-sm" : "text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--border)]"}`}>
-              🎯 B. Job Description Analysis
+              B. JD-based Analysis
             </button>
           </div>
           
