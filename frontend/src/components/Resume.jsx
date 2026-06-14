@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import {
   loadingClass, headingClass, cardClass,
   primaryBtn, secondaryBtn, mutedText, bodyText, divider
 } from '../styles/common';
 import useUserStore from '../store/userStore';
+import RecruiterResumeView from './RecruiterResumeView';
 
 export default function Resume() {
   const { id } = useParams();
@@ -15,6 +17,8 @@ export default function Resume() {
   const [resume, setResume] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pdfFailed, setPdfFailed] = useState(false);
+  const analysisRef = useRef(null);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     const fetchResume = async () => {
@@ -45,6 +49,41 @@ export default function Resume() {
   const isRecruiter = userRecord?.role === 'recruiter';
   const student = resume.userId;
   const score = resume.atsScore;
+
+  if (isRecruiter) {
+    return <RecruiterResumeView resume={resume} onClose={() => navigate(-1)} />;
+  }
+
+  const handleDownloadOriginal = async () => {
+    const toastId = toast.loading("Downloading original resume...");
+    try {
+      const res = await axios.get(`/api/resume/${id}/download`, {
+        responseType: 'blob',
+        withCredentials: true
+      });
+      const blob = new Blob([res.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', resume.title ? `${resume.title}.pdf` : 'resume.pdf');
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success("Resume downloaded successfully!", { id: toastId });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to download original resume", { id: toastId });
+    }
+  };
+
+  const handleTailorRedirect = () => {
+    navigate('/student-dashboard', { state: { tab: 'tailor', resumeId: id } });
+  };
+
+  const scrollToAnalysis = () => {
+    analysisRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   const scoreBadge = () => {
     if (score >= 75) return { bg: 'bg-[#34c759]/10 border-[#34c759]/20', text: 'text-[#248a3d]', bar: 'bg-[#34c759]', label: '✅ Strong Match' };
@@ -139,8 +178,51 @@ export default function Resume() {
         </div>
       </div>
 
+      {/* RESUME INFORMATION & QUICK ACTIONS */}
+      <div className="bg-[#f5f5f7] border border-[#e8e8ed] rounded-2xl p-6 mb-8 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-4 flex-1">
+          <div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Resume Name</p>
+            <p className="text-sm font-semibold text-[#1d1d1f] truncate max-w-[180px]">{resume.title || "My Resume"}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Upload Date</p>
+            <p className="text-sm font-semibold text-[#1d1d1f]">{new Date(resume.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Analysis Type</p>
+            <p className="text-sm font-semibold text-[#1d1d1f] capitalize">{resume.analysisMode || "general"}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">ATS Score</p>
+            <p className="text-sm font-semibold text-[#1d1d1f]">{resume.atsScore}/100</p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2.5 w-full md:w-auto">
+          <button
+            onClick={handleDownloadOriginal}
+            className={`${secondaryBtn} flex-1 md:flex-none justify-center py-2 px-4 whitespace-nowrap`}
+          >
+            📥 Download Original
+          </button>
+          <button
+            onClick={handleTailorRedirect}
+            className={`${primaryBtn} flex-1 md:flex-none justify-center py-2 px-4 bg-[#0066cc] whitespace-nowrap`}
+          >
+            🪄 Tailor Resume
+          </button>
+          <button
+            onClick={scrollToAnalysis}
+            className={`${secondaryBtn} flex-1 md:flex-none justify-center py-2 px-4 whitespace-nowrap`}
+          >
+            👁️ View Analysis
+          </button>
+        </div>
+      </div>
+
       {/* SPLIT LAYOUT */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div ref={analysisRef} className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-up">
 
         {/* LEFT: PDF / Text Preview */}
         <div className="bg-[#f5f5f7] rounded-2xl border border-[#e8e8ed] overflow-hidden flex flex-col h-[800px] shadow-sm">

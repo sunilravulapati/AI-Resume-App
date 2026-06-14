@@ -14,7 +14,9 @@ import {
   enhanceText,
   getSingleResume,
   matchPool,
-  inviteCandidate
+  inviteCandidate,
+  downloadOriginalResume,
+  deleteResume
 } from "../controller/resumeController.js";
 
 export const resumeRouter = express.Router();
@@ -54,6 +56,12 @@ resumeRouter.post("/enhance", verifyToken("student"), enhanceText);
 
 // 6. GET SINGLE RESUME
 resumeRouter.get("/:id", verifyToken(), getSingleResume);
+
+// 6.1 DOWNLOAD ORIGINAL RESUME
+resumeRouter.get("/:id/download", verifyToken(), downloadOriginalResume);
+
+// 6.2 DELETE RESUME (Soft Delete)
+resumeRouter.delete("/:id", verifyToken(), deleteResume);
 
 // 7. RECRUITER: SCREEN CANDIDATES WITH AI (MATCH POOL)
 resumeRouter.post("/match-pool", verifyToken("recruiter", "admin"), matchPool);

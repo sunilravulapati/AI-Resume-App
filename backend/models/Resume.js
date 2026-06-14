@@ -15,6 +15,7 @@ const resumeSchema = new Schema({
   jobDescription: { type: String },
   company:        { type: String },
   roleName:       { type: String },
+  isDeleted:      { type: Boolean, default: false },
   feedback: {
     strengths:    [String],
     improvements: [String],
@@ -22,6 +23,7 @@ const resumeSchema = new Schema({
     matchScore:       { type: Number, min: 0, max: 100 },
     keywordMatchRate: { type: Number, min: 0, max: 100 },
     missingSkills:    [String],
+    matchedSkills:    [String],
     experienceGap:    String,
     studentFeedback: {
       strengths:    [String],

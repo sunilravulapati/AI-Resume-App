@@ -1,4 +1,5 @@
 import fs from "fs";
+import { Readable } from "stream";
 import pdfParse from "../utils/pdfParser.js";
 import { Resume } from "../models/Resume.js";
 import { ResumeSession } from "../models/ResumeSession.js";
@@ -76,7 +77,7 @@ export const uploadAndAnalyze = async (req, res) => {
         ...(analysisMode === "targeted" && { jobDescription, company: company || undefined, roleName: roleName || undefined }),
         feedback: {
           strengths: analysisData.strengths || [], improvements: analysisData.improvements || [], summary: analysisData.summary || "",
-          ...(analysisMode === "targeted" && { matchScore: analysisData.matchScore ?? undefined, keywordMatchRate: analysisData.keywordMatchRate ?? undefined, missingSkills: analysisData.missingSkills || [], experienceGap: analysisData.experienceGap || undefined }),
+          ...(analysisMode === "targeted" && { matchScore: analysisData.matchScore ?? undefined, keywordMatchRate: analysisData.keywordMatchRate ?? undefined, missingSkills: analysisData.missingSkills || [], matchedSkills: analysisData.matchedSkills || [], experienceGap: analysisData.experienceGap || undefined }),
           studentFeedback: {
             strengths: (analysisData.studentFeedback && analysisData.studentFeedback.strengths) || analysisData.strengths || [],
             improvements: (analysisData.studentFeedback && analysisData.studentFeedback.improvements) || analysisData.improvements || [],
@@ -108,7 +109,7 @@ export const uploadAndAnalyze = async (req, res) => {
           studentFeedback: newResume.feedback.studentFeedback,
           recruiterFeedback: newResume.feedback.recruiterFeedback,
           subScores: newResume.subScores,
-          ...(analysisMode === "targeted" && { matchScore: analysisData.matchScore ?? null, keywordMatchRate: analysisData.keywordMatchRate ?? null, missingSkills: analysisData.missingSkills || [], experienceGap: analysisData.experienceGap || null, roleName: roleName || null }),
+          ...(analysisMode === "targeted" && { matchScore: analysisData.matchScore ?? null, keywordMatchRate: analysisData.keywordMatchRate ?? null, missingSkills: analysisData.missingSkills || [], matchedSkills: analysisData.matchedSkills || [], experienceGap: analysisData.experienceGap || null, roleName: roleName || null }),
         },
       });
     } catch (err) {
@@ -124,7 +125,7 @@ export const uploadAndAnalyze = async (req, res) => {
 // 2. GET RESUME HISTORY (Base Resumes)
 export const getHistory = async (req, res) => {
   try {
-    const history = await Resume.find({ userId: req.user.id }).sort({ createdAt: -1 });
+    const history = await Resume.find({ userId: req.user.id, isDeleted: { $ne: true } }).sort({ createdAt: -1 });
     res.status(200).json(history);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch history" });
@@ -146,7 +147,7 @@ export const getSessions = async (req, res) => {
 // 3. GET ALL RESUMES (Recruiters & Admins)
 export const getAllResumes = async (req, res) => {
   try {
-    const resumes = await Resume.find().sort({ atsScore: -1 }).populate("userId", "firstName lastName email mobile username");
+    const resumes = await Resume.find({ isDeleted: { $ne: true } }).sort({ atsScore: -1 }).populate("userId", "firstName lastName email mobile username");
     res.status(200).json(resumes);
   } catch (error) {
     console.error("Error fetching all resumes:", error);
@@ -439,7 +440,7 @@ export const enhanceText = async (req, res) => {
 export const getSingleResume = async (req, res) => {
   try {
     const resume = await Resume.findById(req.params.id).populate("userId", "firstName lastName email mobile username");
-    if (!resume) return res.status(404).json({ error: "Resume not found" });
+    if (!resume || resume.isDeleted) return res.status(404).json({ error: "Resume not found" });
     if (req.user.role === "student" && resume.userId._id.toString() !== req.user.id)
       return res.status(403).json({ error: "Access denied. You do not own this resume." });
     res.status(200).json(resume);
@@ -457,12 +458,67 @@ export const matchPool = async (req, res) => {
       return res.status(400).json({ error: "Job description is required" });
     }
 
-    const resumes = await Resume.find().populate("userId", "firstName lastName email mobile username");
+    const resumes = await Resume.find({ isDeleted: { $ne: true } }).populate("userId", "firstName lastName email mobile username");
     const aiRankings = await rankCandidatesWithAI(resumes, jobDescription);
     return res.status(200).json(aiRankings);
   } catch (err) {
     console.error("Match Pool Error:", err);
     return res.status(500).json({ error: "Failed to screen candidate pool", details: err.message });
+  }
+};
+
+// 7.1 DOWNLOAD ORIGINAL RESUME
+export const downloadOriginalResume = async (req, res) => {
+  try {
+    const resume = await Resume.findById(req.params.id);
+    if (!resume || resume.isDeleted) return res.status(404).json({ error: "Resume not found" });
+
+    // Students can only download their own resumes. Recruiters/Admins can download any candidate's resume they can view.
+    if (req.user.role === "student" && resume.userId.toString() !== req.user.id) {
+      return res.status(403).json({ error: "Access denied. You do not own this resume." });
+    }
+
+    if (!resume.fileUrl) {
+      return res.status(404).json({ error: "Resume file URL not found" });
+    }
+
+    // Stream download from Cloudinary using native fetch
+    const response = await fetch(resume.fileUrl);
+    if (!response.ok) {
+      return res.status(500).json({ error: "Failed to fetch resume from storage provider" });
+    }
+
+    const safeTitle = (resume.title || "resume").replace(/[^a-zA-Z0-9_\-]/g, "_");
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${safeTitle}.pdf"`);
+
+    const nodeStream = Readable.fromWeb(response.body);
+    nodeStream.pipe(res);
+  } catch (error) {
+    console.error("Download Resume Error:", error);
+    res.status(500).json({ error: "Failed to download resume" });
+  }
+};
+
+// 7.2 DELETE RESUME (Soft Delete)
+export const deleteResume = async (req, res) => {
+  try {
+    const resume = await Resume.findById(req.params.id);
+    if (!resume || resume.isDeleted) return res.status(404).json({ error: "Resume not found" });
+
+    // Verify ownership (students can only delete their own resumes, admins can delete any)
+    if (req.user.role === "student" && resume.userId.toString() !== req.user.id) {
+      return res.status(403).json({ error: "Access denied. You do not own this resume." });
+    }
+
+    // Perform soft delete
+    resume.isDeleted = true;
+    await resume.save();
+
+    res.status(200).json({ message: "Resume soft deleted successfully" });
+  } catch (error) {
+    console.error("Delete Resume Error:", error);
+    res.status(500).json({ error: "Failed to delete resume" });
   }
 };
 

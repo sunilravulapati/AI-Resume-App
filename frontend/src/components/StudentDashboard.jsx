@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import useUserStore from '../store/userStore';
@@ -103,6 +103,7 @@ function Card({ children, className = '' }) {
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function StudentDashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('dashboard');
   const { userRecord } = useUserStore();
 
@@ -141,6 +142,52 @@ export default function StudentDashboard() {
   useEffect(() => {
     fetchHistory();
   }, []);
+
+  // Check navigation redirect state (e.g. from Resume details tailor shortcut)
+  useEffect(() => {
+    if (location.state?.tab) {
+      setActiveTab(location.state.tab);
+    }
+    if (location.state?.resumeId) {
+      setSelectedResumeId(location.state.resumeId);
+    }
+  }, [location.state]);
+
+  const handleDownloadOriginal = async (resumeId, title) => {
+    const toastId = toast.loading("Downloading original resume...");
+    try {
+      const response = await axios.get(`/api/resume/${resumeId}/download`, {
+        responseType: "blob",
+        withCredentials: true
+      });
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", title ? `${title}.pdf` : "resume.pdf");
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success("Download complete!", { id: toastId });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to download original resume", { id: toastId });
+    }
+  };
+
+  const handleDeleteResume = async (resumeId) => {
+    if (!window.confirm("Are you sure you want to delete this resume? This action cannot be undone.")) return;
+    const toastId = toast.loading("Deleting resume...");
+    try {
+      await axios.delete(`/api/resume/${resumeId}`, { withCredentials: true });
+      toast.success("Resume deleted successfully!", { id: toastId });
+      fetchHistory();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete resume", { id: toastId });
+    }
+  };
 
   useEffect(() => {
     if (tailoredData) setTailorView('output');
@@ -682,16 +729,15 @@ export default function StudentDashboard() {
                           <div>
                             <h2 className="section-title-accent text-slate-800 font-semibold text-base">Uploaded Resumes</h2>
                             <p className="text-xs text-slate-500 mt-1">
-                              {baseResumes.length} document{baseResumes.length !== 1 ? 's' : ''} — click any card to view detailed analysis
+                              {baseResumes.length} document{baseResumes.length !== 1 ? 's' : ''} — select an action to view analysis, download, or delete
                             </p>
                           </div>
                         </div>
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                           {baseResumes.map((item, index) => (
-                            <button
+                            <div
                               key={item._id}
-                              onClick={() => navigate(`/resume/${item._id}`)}
-                              className="group w-full text-left rounded-2xl p-5 transition-all duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+                              className="group w-full text-left rounded-2xl p-5 transition-all duration-200"
                               style={{ background: '#fff', border: '1.5px solid #E2E8F0', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.borderColor = 'var(--color-accent)';
@@ -704,14 +750,12 @@ export default function StudentDashboard() {
                             >
                               <div className="flex items-start justify-between gap-3 mb-4">
                                 <div>
-                                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                                    Resume {baseResumes.length - index}
+                                  <p className="text-[11px] font-bold text-slate-800 truncate max-w-[160px] mb-1">
+                                    {item.title || `Resume ${baseResumes.length - index}`}
                                   </p>
-                                  {item.jobDescription && (
-                                    <p className="text-xs font-semibold truncate max-w-[140px]" style={{ color: 'var(--color-accent)' }}>
-                                      Targeted Match
-                                    </p>
-                                  )}
+                                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                    Type: <span className="text-[var(--color-accent)]">{item.analysisMode || "general"}</span>
+                                  </p>
                                 </div>
                                 <div className="flex flex-col items-end gap-1.5">
                                   <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${scoreBadge(item.atsScore)}`}>
@@ -738,15 +782,32 @@ export default function StudentDashboard() {
                                   {item.feedback?.studentFeedback?.summary || item.feedback?.summary || 'No summary available.'}
                                 </p>
                               </div>
-                              <div className="flex items-center justify-between pt-3" style={{ borderTop: '1px solid #F1F5F9' }}>
-                                <span className="text-[10px] text-slate-400 font-medium">
-                                  {new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                </span>
-                                <span className="text-xs font-semibold" style={{ color: 'var(--color-accent)' }}>
-                                  View analysis →
-                                </span>
+                              <div className="pt-3 border-t border-slate-100 mt-3 space-y-3">
+                                <div className="flex items-center justify-between text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                                  <span>Uploaded: {new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2">
+                                  <button
+                                    onClick={() => navigate(`/resume/${item._id}`)}
+                                    className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-[11px] font-bold text-white bg-[var(--color-accent)] hover:bg-[#3b3dbb] transition-all cursor-pointer whitespace-nowrap active:scale-95 shadow-xs"
+                                  >
+                                    👁️ View
+                                  </button>
+                                  <button
+                                    onClick={() => handleDownloadOriginal(item._id, item.title || `Resume_${baseResumes.length - index}`)}
+                                    className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-all cursor-pointer whitespace-nowrap active:scale-95"
+                                  >
+                                    📥 Download
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteResume(item._id)}
+                                    className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-[11px] font-bold text-rose-600 bg-rose-50/50 border border-rose-100 hover:bg-rose-100/80 transition-all cursor-pointer whitespace-nowrap active:scale-95"
+                                  >
+                                    🗑️ Delete
+                                  </button>
+                                </div>
                               </div>
-                            </button>
+                            </div>
                           ))}
                         </div>
                       </div>
