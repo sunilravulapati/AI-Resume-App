@@ -4,7 +4,7 @@ import User from '../models/User.js';
 import { Resume } from '../models/Resume.js';
 import { verifyToken } from '../middleware/auth.js';
 
-import { getUsers } from '../controller/adminController.js';
+import { getUsers, getAdminStats } from '../controller/adminController.js';
 
 export const adminRouter = express.Router();
 
@@ -20,3 +20,4 @@ function requireAdmin(req, res, next) {
 }
 
 adminRouter.get('/users', requireAdmin, getUsers);
+adminRouter.get('/stats', requireAdmin, getAdminStats);

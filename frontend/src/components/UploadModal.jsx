@@ -130,7 +130,7 @@ function ResultView({ result, file, onReset, onClose }) {
           {/* ── AI Summary ── */}
           <div className="bg-white border-l-4 border-[var(--color-accent)] pl-6 pr-5 py-5 rounded-r-2xl shadow-sm border border-[var(--border)] border-l-[var(--color-accent)]">
             <h4 className="text-xs font-bold text-[var(--color-accent)] uppercase tracking-wider mb-2.5 flex items-center gap-2">
-              <span className="text-base">🤖</span> AI Assessment
+              AI Assessment
             </h4>
             <p className="text-sm text-[var(--text)] leading-relaxed font-medium">{result.summary}</p>
           </div>
@@ -138,7 +138,7 @@ function ResultView({ result, file, onReset, onClose }) {
           {/* ── Strengths + Improvements ── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="bg-[var(--success-soft)] border border-[var(--success)]/20 rounded-2xl p-6">
-              <h4 className="text-xs font-bold text-[var(--success)] uppercase tracking-wider mb-4 flex items-center gap-1.5">🟢 Key Strengths</h4>
+              <h4 className="text-xs font-bold text-[var(--success)] uppercase tracking-wider mb-4">Key Strengths</h4>
               <ul className="space-y-3">
                 {result.strengths?.map((s,i)=>(
                   <li key={i} className="flex items-start gap-2.5 text-sm text-[var(--text)] leading-relaxed font-medium">
@@ -148,7 +148,7 @@ function ResultView({ result, file, onReset, onClose }) {
               </ul>
             </div>
             <div className="bg-[var(--danger-soft)] border border-[var(--danger)]/20 rounded-2xl p-6">
-              <h4 className="text-xs font-bold text-[var(--danger)] uppercase tracking-wider mb-4 flex items-center gap-1.5">🔴 Areas to Fix</h4>
+              <h4 className="text-xs font-bold text-[var(--danger)] uppercase tracking-wider mb-4">Areas to Fix</h4>
               <ul className="space-y-3">
                 {result.improvements?.map((s,i)=>(
                   <li key={i} className="flex items-start gap-2.5 text-sm text-[var(--text)] leading-relaxed font-medium">
@@ -422,7 +422,7 @@ export default function UploadModal({ onClose, onSuccess }) {
                 ${mode === "general"
                   ? "bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] focus-visible:ring-[var(--color-accent)]"
                   : "bg-[var(--text)] text-white hover:bg-[var(--text-secondary)] focus-visible:ring-[var(--text)]"}`}>
-              {mode === "general" ? "⚡ Analyze Resume" : "🎯 Match to Job"}
+              {mode === "general" ? "Analyze Resume" : "Match to Job"}
             </button>
           </div>
         )}

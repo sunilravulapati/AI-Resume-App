@@ -16,7 +16,8 @@ import {
   matchPool,
   inviteCandidate,
   downloadOriginalResume,
-  deleteResume
+  deleteResume,
+  getCandidateInsights
 } from "../controller/resumeController.js";
 
 export const resumeRouter = express.Router();
@@ -65,6 +66,9 @@ resumeRouter.delete("/:id", verifyToken(), deleteResume);
 
 // 7. RECRUITER: SCREEN CANDIDATES WITH AI (MATCH POOL)
 resumeRouter.post("/match-pool", verifyToken("recruiter", "admin"), matchPool);
+
+// 7.3 RECRUITER: GENERATE ON-DEMAND AI INSIGHTS FOR A SINGLE RESUME VERSION
+resumeRouter.post("/:id/insights", verifyToken("recruiter", "admin"), getCandidateInsights);
 
 // 8. RECRUITER: INVITE CANDIDATE (SIMULATED VIA EMAIL)
 resumeRouter.post("/invite-candidate", verifyToken("recruiter", "admin"), inviteCandidate);

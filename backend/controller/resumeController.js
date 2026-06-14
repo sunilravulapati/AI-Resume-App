@@ -5,7 +5,7 @@ import { Resume } from "../models/Resume.js";
 import { ResumeSession } from "../models/ResumeSession.js";
 import User from "../models/User.js";
 import { calculateProgrammaticScore, calculateFinalScore, structureScore, impactScore, skillAlignmentScore } from "../services/scorer.js";
-import { analyzeResume, analyzeResumeTargeted, tailorResume, generateCoverLetterWithAI, rankCandidatesWithAI, enhanceTextWithAI } from "../services/aiAnalyzer.js";
+import { analyzeResume, analyzeResumeTargeted, tailorResume, generateCoverLetterWithAI, rankCandidatesWithAI, generateSingleCandidateInsights, enhanceTextWithAI } from "../services/aiAnalyzer.js";
 import { generateResumePdf, generateResumeLatex } from "../services/generateResumePdf.js";
 import { prepareResumeExport, resolveDisplayName } from "../services/resumeFormat.js";
 import { extractJSON } from "../utils/jsonExtractor.js";
@@ -147,8 +147,53 @@ export const getSessions = async (req, res) => {
 // 3. GET ALL RESUMES (Recruiters & Admins)
 export const getAllResumes = async (req, res) => {
   try {
-    const resumes = await Resume.find({ isDeleted: { $ne: true } }).sort({ atsScore: -1 }).populate("userId", "firstName lastName email mobile username");
-    res.status(200).json(resumes);
+    const resumes = await Resume.find({ isDeleted: { $ne: true } }).populate("userId", "firstName lastName email mobile username");
+    
+    // Group resumes by student (userId)
+    const groups = {};
+    resumes.forEach(r => {
+      if (!r.userId) return;
+      const uid = r.userId._id.toString();
+      if (!groups[uid]) {
+        groups[uid] = {
+          userId: r.userId,
+          resumes: []
+        };
+      }
+      groups[uid].resumes.push(r);
+    });
+
+    const candidatesList = Object.values(groups).map(g => {
+      const sorted = [...g.resumes].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      const latestResume = sorted[0];
+      const bestResume = [...g.resumes].sort((a, b) => b.atsScore - a.atsScore)[0];
+
+      return {
+        candidateId: g.userId._id.toString(),
+        firstName: g.userId.firstName,
+        lastName: g.userId.lastName,
+        email: g.userId.email,
+        mobile: g.userId.mobile,
+        username: g.userId.username,
+        resumesCount: g.resumes.length,
+        latestAtsScore: latestResume ? latestResume.atsScore : 0,
+        bestAtsScore: bestResume ? bestResume.atsScore : 0,
+        latestUploadDate: latestResume ? latestResume.createdAt : null,
+        resumes: sorted.map(r => ({
+          _id: r._id,
+          title: r.title,
+          atsScore: r.atsScore,
+          createdAt: r.createdAt,
+          fileUrl: r.fileUrl
+        })),
+        defaultResumeId: latestResume ? latestResume._id.toString() : null
+      };
+    });
+
+    // Sort by latestUploadDate descending by default
+    candidatesList.sort((a, b) => new Date(b.latestUploadDate) - new Date(a.latestUploadDate));
+
+    res.status(200).json(candidatesList);
   } catch (error) {
     console.error("Error fetching all resumes:", error);
     res.status(500).json({ error: "Failed to fetch candidate pool" });
@@ -253,7 +298,7 @@ export const tailorResumeAction = async (req, res) => {
 // 4.1 AUTO-SAVE SESSION
 export const autoSaveSession = async (req, res) => {
   try {
-    const { tailoredData } = req.body;
+    const { tailoredData, status } = req.body;
     if (!tailoredData || typeof tailoredData !== 'object') {
       return res.status(400).json({ error: "Invalid tailoredData" });
     }
@@ -264,16 +309,25 @@ export const autoSaveSession = async (req, res) => {
     if (tailoredData.projects && !Array.isArray(tailoredData.projects)) tailoredData.projects = [];
     if (tailoredData.education && !Array.isArray(tailoredData.education)) tailoredData.education = [];
     if (tailoredData.skills && !Array.isArray(tailoredData.skills)) tailoredData.skills = [];
+    if (tailoredData.achievements && !Array.isArray(tailoredData.achievements)) tailoredData.achievements = [];
+    if (tailoredData.certifications && !Array.isArray(tailoredData.certifications)) tailoredData.certifications = [];
+    if (tailoredData.awards && !Array.isArray(tailoredData.awards)) tailoredData.awards = [];
+
+    const updatePayload = { tailoredData };
+    // Allow status transitions: draft → generated → exported
+    if (status && ["draft", "generated", "exported"].includes(status)) {
+      updatePayload.status = status;
+    }
 
     const session = await ResumeSession.findOneAndUpdate(
       { _id: req.params.id, userId: req.user.id },
-      { $set: { tailoredData } },
+      { $set: updatePayload },
       { new: true }
     );
 
     if (!session) return res.status(404).json({ error: "Session not found" });
 
-    return res.status(200).json({ message: "Saved" });
+    return res.status(200).json({ message: "Saved", status: session.status });
   } catch (err) {
     console.error("Auto-save Error:", err);
     return res.status(500).json({ error: "Failed to save session", details: err.message });
@@ -443,24 +497,187 @@ export const getSingleResume = async (req, res) => {
     if (!resume || resume.isDeleted) return res.status(404).json({ error: "Resume not found" });
     if (req.user.role === "student" && resume.userId._id.toString() !== req.user.id)
       return res.status(403).json({ error: "Access denied. You do not own this resume." });
-    res.status(200).json(resume);
+
+    // If recruiter or admin, also fetch all other resumes of this student to allow switching
+    let candidateResumes = [];
+    if (req.user.role === "recruiter" || req.user.role === "admin") {
+      candidateResumes = await Resume.find({ 
+        userId: resume.userId._id, 
+        isDeleted: { $ne: true } 
+      }).sort({ createdAt: -1 }).select("_id title atsScore createdAt fileUrl parsedText");
+    }
+
+    const result = resume.toObject();
+    result.candidateResumes = candidateResumes;
+
+    res.status(200).json(result);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to fetch resume details" });
   }
 };
 
+// Helper to check if a resume contains a skill
+const containsSkill = (text, skill) => {
+  if (!text || !skill) return false;
+  const textLower = text.toLowerCase();
+  const skillLower = skill.toLowerCase();
+  
+  // Escaping special regex characters
+  const escaped = skillLower.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  
+  // If skill contains special characters (like .NET, C++, C#), do a safe substring match
+  if (/[+#.]/.test(skillLower)) {
+    return textLower.includes(skillLower);
+  } else {
+    // Enforce word boundaries for normal alphanumeric skills to prevent substring false positives
+    const regex = new RegExp(`\\b${escaped}\\b`, 'i');
+    return regex.test(textLower);
+  }
+};
+
+// Helper to calculate project relevance keyword matching score (0-100)
+const calculateProjectRelevance = (parsedText, roleName, requiredSkills, preferredSkills) => {
+  if (!parsedText) return 0;
+  const text = parsedText.toLowerCase();
+  let score = 0;
+
+  // 1. Role name keyword matching (up to 50 points)
+  if (roleName) {
+    const cleanRole = roleName.toLowerCase().replace(/[^a-z0-9\s]/g, "");
+    const roleWords = cleanRole.split(/\s+/).filter(w => w && !["developer", "engineer", "junior", "senior", "intern", "role", "position"].includes(w));
+    
+    if (roleWords.length > 0) {
+      let matchedWords = 0;
+      roleWords.forEach(word => {
+        if (text.includes(word)) matchedWords++;
+      });
+      // Percentage of role words matched * 50
+      score += Math.round((matchedWords / roleWords.length) * 50);
+    } else {
+      if (text.includes(cleanRole)) {
+        score += 50;
+      }
+    }
+
+    // Exact phrase match bonus (10 points)
+    if (text.includes(cleanRole)) {
+      score += 10;
+    }
+  }
+
+  // 2. Skills appearance count (up to 40 points)
+  const allSkills = [...requiredSkills, ...preferredSkills];
+  if (allSkills.length > 0) {
+    let skillOccurrences = 0;
+    allSkills.forEach(skill => {
+      if (containsSkill(text, skill)) {
+        skillOccurrences++;
+      }
+    });
+    score += Math.round((skillOccurrences / allSkills.length) * 40);
+  }
+
+  return Math.min(100, score);
+};
+
 // 7. RECRUITER: SCREEN CANDIDATES WITH AI (MATCH POOL)
 export const matchPool = async (req, res) => {
   try {
-    const { jobDescription } = req.body;
-    if (!jobDescription || !jobDescription.trim()) {
-      return res.status(400).json({ error: "Job description is required" });
-    }
+    const { jobDescription, roleName, requiredSkills, preferredSkills, experienceLevel } = req.body;
 
     const resumes = await Resume.find({ isDeleted: { $ne: true } }).populate("userId", "firstName lastName email mobile username");
-    const aiRankings = await rankCandidatesWithAI(resumes, jobDescription);
-    return res.status(200).json(aiRankings);
+
+    // If it's the old job description matching
+    if (jobDescription && !roleName) {
+      const aiRankings = await rankCandidatesWithAI(resumes, jobDescription);
+      return res.status(200).json(aiRankings);
+    }
+
+    // New role-based screening
+    if (!roleName || !roleName.trim()) {
+      return res.status(400).json({ error: "Role Name is required" });
+    }
+    if (!requiredSkills) {
+      return res.status(400).json({ error: "Required Skills are required" });
+    }
+
+    const reqSkillsArr = Array.isArray(requiredSkills)
+      ? requiredSkills
+      : requiredSkills.split(",").map(s => s.trim()).filter(Boolean);
+    const prefSkillsArr = Array.isArray(preferredSkills)
+      ? preferredSkills
+      : (preferredSkills ? preferredSkills.split(",").map(s => s.trim()).filter(Boolean) : []);
+
+    // Group resumes by student (userId)
+    const groups = {};
+    resumes.forEach(r => {
+      if (!r.userId) return;
+      const uid = r.userId._id.toString();
+      if (!groups[uid]) {
+        groups[uid] = {
+          userId: r.userId,
+          resumes: []
+        };
+      }
+      groups[uid].resumes.push(r);
+    });
+
+    const matches = Object.values(groups).map(g => {
+      const sorted = [...g.resumes].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      const latestResume = sorted[0];
+      if (!latestResume) return null;
+
+      const parsedText = latestResume.parsedText || "";
+
+      // Calculate matching skills
+      const matchedRequired = reqSkillsArr.filter(skill => containsSkill(parsedText, skill));
+      const matchedPreferred = prefSkillsArr.filter(skill => containsSkill(parsedText, skill));
+
+      const reqScore = reqSkillsArr.length > 0 ? (matchedRequired.length / reqSkillsArr.length) * 100 : 100;
+      const prefScore = prefSkillsArr.length > 0 ? (matchedPreferred.length / prefSkillsArr.length) * 100 : 100;
+
+      // Project relevance keyword score (0-100)
+      const projectRelevance = calculateProjectRelevance(parsedText, roleName, reqSkillsArr, prefSkillsArr);
+
+      // ATS Score (0-100)
+      const atsScore = latestResume.atsScore || 0;
+
+      // Resume Quality (using sub-scores professional score or fallback)
+      const resumeQuality = latestResume.subScores?.professionalism * 20 || atsScore;
+
+      // Formula: 40% Required Skill Match, 25% Preferred Skill Match, 20% ATS Score, 15% Project Relevance
+      const matchScore = Math.round(
+        (reqScore * 0.40) +
+        (prefScore * 0.25) +
+        (atsScore * 0.20) +
+        (projectRelevance * 0.15)
+      );
+
+      let recommendation = "Low Match";
+      if (matchScore >= 80) recommendation = "Strong Match";
+      else if (matchScore >= 60) recommendation = "Potential Match";
+      else if (matchScore >= 40) recommendation = "Needs Review";
+
+      const matchedSkills = [...matchedRequired, ...matchedPreferred];
+      const missingSkills = reqSkillsArr.filter(skill => !matchedRequired.includes(skill));
+
+      return {
+        id: g.userId._id.toString(),
+        matchScore,
+        atsScore,
+        recommendation,
+        explanation: `Matches ${matchedRequired.length}/${reqSkillsArr.length} required skills and ${matchedPreferred.length}/${prefSkillsArr.length || 1} preferred skills.`,
+        whyMatches: matchedRequired.map(skill => `${skill} experience`),
+        missingSkills,
+        matchedSkills,
+        skillMatchScore: Math.round((reqScore + prefScore) / 2),
+        projectRelevanceScore: projectRelevance,
+        resumeQualityScore: resumeQuality,
+      };
+    }).filter(Boolean);
+
+    return res.status(200).json({ matches });
   } catch (err) {
     console.error("Match Pool Error:", err);
     return res.status(500).json({ error: "Failed to screen candidate pool", details: err.message });
@@ -547,5 +764,38 @@ export const inviteCandidate = async (req, res) => {
   } catch (err) {
     console.error("Invite Candidate Error:", err);
     return res.status(500).json({ error: "Failed to send interview invitation", details: err.message });
+  }
+};
+
+// 7.3 RECRUITER: GENERATE ON-DEMAND AI INSIGHTS FOR A SINGLE RESUME VERSION
+export const getCandidateInsights = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { roleName, requiredSkills, preferredSkills, experienceLevel } = req.body;
+
+    const resume = await Resume.findById(id);
+    if (!resume || resume.isDeleted) {
+      return res.status(404).json({ error: "Resume not found" });
+    }
+
+    const reqSkillsArr = requiredSkills
+      ? (Array.isArray(requiredSkills) ? requiredSkills : requiredSkills.split(",").map(s => s.trim()).filter(Boolean))
+      : [];
+    const prefSkillsArr = preferredSkills
+      ? (Array.isArray(preferredSkills) ? preferredSkills : preferredSkills.split(",").map(s => s.trim()).filter(Boolean))
+      : [];
+
+    const insights = await generateSingleCandidateInsights(
+      resume.parsedText || "",
+      roleName || "",
+      reqSkillsArr,
+      prefSkillsArr,
+      experienceLevel || "Student"
+    );
+
+    return res.status(200).json(insights);
+  } catch (err) {
+    console.error("Get Candidate Insights Error:", err);
+    return res.status(500).json({ error: "Failed to generate AI candidate insights", details: err.message });
   }
 };

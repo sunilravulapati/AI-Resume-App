@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useNavigate, NavLink } from 'react-router';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { AlertTriangleIcon } from './icons';
 
 function Register() {
   const navigate = useNavigate();
@@ -44,7 +45,7 @@ function Register() {
 
           {error && (
             <div className="mb-5 flex items-center gap-2.5 bg-[#ff3b30]/6 border border-[#ff3b30]/15 rounded-xl px-4 py-3">
-              <span className="text-sm shrink-0">⚠️</span>
+              <AlertTriangleIcon size={16} className="shrink-0" />
               <p className="text-sm text-[#cc2f26]">{error}</p>
             </div>
           )}

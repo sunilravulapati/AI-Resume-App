@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import TailoredPDF from './TailoredPDF';
+import { fetchLatexExport } from '../utils/latexExport';
 
 // ─── Score helpers ─────────────────────────────────────────────────────────────
 const scoreBadge = (score) => {
@@ -50,14 +51,33 @@ function Card({ children, className = '' }) {
   );
 }
 
-export default function QuickAIImprovementView({ tailoredData, parsedText, user, userLinks, analysis, onBack }) {
+export default function QuickAIImprovementView({ tailoredData, parsedText, user, userLinks, analysis, resumeId, activeSessionId, onBack, onOpenWorkspace, onExport }) {
   const [copied, setCopied] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [latexModal, setLatexModal] = useState({ open: false, content: '' });
+  const [latexCopied, setLatexCopied] = useState(false);
+  const [latexLoading, setLatexLoading] = useState(false);
 
   const handleCopy = () => {
     const dataStr = JSON.stringify(tailoredData, null, 2);
     navigator.clipboard.writeText(dataStr);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+    onExport?.();
+  };
+
+  const handleLatexExport = async () => {
+    setLatexLoading(true);
+    setExportOpen(false);
+    try {
+      const code = await fetchLatexExport({ resumeId, tailoredData });
+      setLatexModal({ open: true, content: code });
+      onExport?.();
+    } catch (err) {
+      alert('LaTeX export failed: ' + (err.message || 'Unknown error'));
+    } finally {
+      setLatexLoading(false);
+    }
   };
 
   return (
@@ -67,12 +87,29 @@ export default function QuickAIImprovementView({ tailoredData, parsedText, user,
         className="sticky top-0 z-30 flex items-center justify-between px-6 py-4"
         style={{ background: 'rgba(248,250,252,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #E2E8F0' }}
       >
-        <button
-          onClick={onBack}
-          className="text-sm font-semibold text-slate-500 hover:text-slate-700 flex items-center gap-2"
-        >
-          <span>←</span> Back
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="text-sm font-semibold text-slate-500 hover:text-slate-700 flex items-center gap-2"
+          >
+            <span>←</span> Back
+          </button>
+          {onOpenWorkspace && (
+            <>
+              <div style={{ width: '1px', height: '20px', background: '#E2E8F0' }} />
+              <button
+                onClick={onOpenWorkspace}
+                className="px-4 py-2 text-xs font-bold rounded-xl border transition-all flex items-center gap-1.5"
+                style={{ background: '#F8FAFC', borderColor: '#E2E8F0', color: '#475569' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#4F46E5'; e.currentTarget.style.color = '#4F46E5'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.color = '#475569'; }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                Back to Workspace
+              </button>
+            </>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           <button
             onClick={handleCopy}
@@ -91,16 +128,71 @@ export default function QuickAIImprovementView({ tailoredData, parsedText, user,
             fileName={`Improved_Resume_${user?.firstName || 'Resume'}.pdf`}
             className="px-4 py-2 text-xs font-bold rounded-xl text-white transition-all hover:opacity-90"
             style={{ background: 'var(--color-accent)' }}
+            onClick={() => onExport?.()}
           >
             {({ loading }) => (loading ? 'Generating PDF...' : 'Download PDF')}
           </PDFDownloadLink>
+
+          <div className="relative">
+            <button
+              onClick={() => setExportOpen((o) => !o)}
+              disabled={latexLoading}
+              className="px-4 py-2 text-xs font-semibold rounded-xl border transition-all"
+              style={{ background: '#F8FAFC', borderColor: '#E2E8F0', color: '#475569' }}
+            >
+              {latexLoading ? 'Generating…' : 'Export ▾'}
+            </button>
+            {exportOpen && (
+              <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg py-1 min-w-[140px] z-50">
+                <button
+                  onClick={handleLatexExport}
+                  className="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  LaTeX
+                </button>
+                <button
+                  onClick={() => { handleCopy(); setExportOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  JSON
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {latexModal.open && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <h3 className="text-base font-semibold text-slate-800">LaTeX Export</h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(latexModal.content);
+                    setLatexCopied(true);
+                    setTimeout(() => setLatexCopied(false), 2000);
+                  }}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg border"
+                  style={{ background: latexCopied ? '#D1FAE5' : '#EEF2FF', borderColor: latexCopied ? '#34D399' : '#C7D2FE', color: latexCopied ? '#065F46' : '#4F46E5' }}
+                >
+                  {latexCopied ? 'Copied' : 'Copy'}
+                </button>
+                <button onClick={() => setLatexModal({ open: false, content: '' })} className="text-slate-400 hover:text-slate-600 px-2">×</button>
+              </div>
+            </div>
+            <div className="p-5 overflow-y-auto flex-1">
+              <pre className="text-xs font-mono text-slate-700 whitespace-pre-wrap break-words bg-slate-50 p-4 rounded-xl border border-slate-200">{latexModal.content}</pre>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-8 space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 mb-2 flex items-center gap-2">
-            <span className="text-3xl">✨</span> Your Improved Resume
+            Your Improved Resume
           </h1>
           <p className="text-slate-500 text-sm">
             We've generated an ATS-optimized, keyword-rich version of your resume aligned with your target role.
@@ -223,11 +315,11 @@ export default function QuickAIImprovementView({ tailoredData, parsedText, user,
               {analysis.improvements?.length > 0 && (
                 <Card>
                   <div className="p-6 h-full" style={{ background: '#EEF2FF' }}>
-                    <h2 className="text-sm font-bold text-indigo-700 uppercase tracking-wider mb-4">💡 Recommendations</h2>
+                    <h2 className="text-sm font-bold text-indigo-700 uppercase tracking-wider mb-4">Recommendations</h2>
                     <ul className="space-y-3">
                       {analysis.improvements.map((s, i) => (
                         <li key={i} className="text-sm text-slate-700 flex items-start gap-2 leading-relaxed">
-                          <span className="text-indigo-600 shrink-0 font-bold mt-0.5">💡</span> {s}
+                          <span className="text-indigo-600 shrink-0 font-bold mt-0.5">•</span> {s}
                         </li>
                       ))}
                     </ul>
@@ -239,7 +331,7 @@ export default function QuickAIImprovementView({ tailoredData, parsedText, user,
               {analysis.experienceGap && (
                 <Card>
                   <div className="p-6 h-full" style={{ background: '#FFFBEB' }}>
-                    <h2 className="text-sm font-bold text-amber-700 uppercase tracking-wider mb-4">⚠️ Weaknesses</h2>
+                    <h2 className="text-sm font-bold text-amber-700 uppercase tracking-wider mb-4">Weaknesses</h2>
                     <p className="text-sm text-amber-900 leading-relaxed whitespace-pre-line">{analysis.experienceGap}</p>
                   </div>
                 </Card>

@@ -1,4 +1,8 @@
 import { NavLink } from "react-router";
+import {
+  ZapIcon, TargetIcon, TrendingUpIcon, SearchIcon,
+  UsersIcon, MessageSquareIcon, MonitorIcon,
+} from "./icons";
 
 const steps = [
   { n: "01", title: "Upload & choose mode", desc: "Drop your PDF. Pick General for a best-practices scan, or Targeted to match a specific role." },
@@ -7,16 +11,16 @@ const steps = [
 ];
 
 const studentFeatures = [
-  { icon: "⚡", title: "Two-path analysis", desc: "General ATS scan or deep Targeted Match — with role fit score, keyword gap, and seniority alignment." },
-  { icon: "🎯", title: "Zero-hallucination tailoring", desc: "Rewrites your experience using the STAR method — without inventing fake credentials." },
-  { icon: "📈", title: "Version history", desc: "Every upload is saved with its score. Watch your ATS number climb as you iterate." },
-  { icon: "🔍", title: "Keyword gap analysis", desc: "See exactly which skills from the JD are missing — listed as chips, not vague advice." },
+  { Icon: ZapIcon, title: "Two-path analysis", desc: "General ATS scan or deep Targeted Match — with role fit score, keyword gap, and seniority alignment." },
+  { Icon: TargetIcon, title: "Zero-hallucination tailoring", desc: "Rewrites your experience using the STAR method — without inventing fake credentials." },
+  { Icon: TrendingUpIcon, title: "Version history", desc: "Every upload is saved with its score. Watch your ATS number climb as you iterate." },
+  { Icon: SearchIcon, title: "Keyword gap analysis", desc: "See exactly which skills from the JD are missing — listed as chips, not vague advice." },
 ];
 
 const recruiterFeatures = [
-  { icon: "🏊", title: "Instant talent pool", desc: "Candidates ranked by verified ATS score the moment they upload." },
-  { icon: "💬", title: "Objective summaries", desc: "Biggest technical asset + most glaring red flag. No fluff." },
-  { icon: "🖥️", title: "Split-screen review", desc: "Original PDF side-by-side with the AI's breakdown. Everything in one screen." },
+  { Icon: UsersIcon, title: "Instant talent pool", desc: "Candidates ranked by verified ATS score the moment they upload." },
+  { Icon: MessageSquareIcon, title: "Objective summaries", desc: "Biggest technical asset + most glaring red flag. No fluff." },
+  { Icon: MonitorIcon, title: "Split-screen review", desc: "Original PDF side-by-side with the AI's breakdown. Everything in one screen." },
 ];
 
 export default function Home() {
@@ -82,7 +86,7 @@ export default function Home() {
             {/* General */}
             <div className="mode-card general">
               <div className="mode-tag-row">
-                <span className="mode-tag general"><span>⚡</span> General analysis</span>
+                <span className="mode-tag general"><ZapIcon size={12} /> General analysis</span>
               </div>
               <h3 style={{ fontSize: 22, fontFamily: "'Instrument Serif', serif", marginBottom: 12, lineHeight: 1.2 }}>Best-practices baseline scan</h3>
               <p style={{ fontSize: 13, color: "#6B6B62", lineHeight: 1.7, marginBottom: 28 }}>
@@ -103,7 +107,7 @@ export default function Home() {
               <div style={{ position: "absolute", top: -40, right: -40, width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle, rgba(26,92,255,0.3) 0%, transparent 70%)", pointerEvents: "none" }} />
               <div style={{ position: "relative" }}>
                 <div className="mode-tag-row">
-                  <span className="mode-tag targeted"><span>🎯</span> Match my resume</span>
+                  <span className="mode-tag targeted"><TargetIcon size={12} /> Match my resume</span>
                   <span className="new-badge">New</span>
                 </div>
                 <h3 style={{ fontSize: 22, fontFamily: "'Instrument Serif', serif", marginBottom: 12, lineHeight: 1.2, color: "#FAFAF8" }}>Deep JD match analysis</h3>
@@ -138,7 +142,7 @@ export default function Home() {
             <div className="feature-grid">
               {studentFeatures.map((f, i) => (
                 <div className="feature-card" key={i}>
-                  <span className="feature-icon">{f.icon}</span>
+                  <span className="feature-icon"><f.Icon size={20} /></span>
                   <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 10, color: "#0F0F0D" }}>{f.title}</h3>
                   <p style={{ fontSize: 13, color: "#6B6B62", lineHeight: 1.7 }}>{f.desc}</p>
                 </div>
@@ -155,7 +159,7 @@ export default function Home() {
             <div className="feature-grid">
               {recruiterFeatures.map((f, i) => (
                 <div className="feature-card" key={i}>
-                  <span className="feature-icon">{f.icon}</span>
+                  <span className="feature-icon"><f.Icon size={20} /></span>
                   <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 10, color: "#0F0F0D" }}>{f.title}</h3>
                   <p style={{ fontSize: 13, color: "#6B6B62", lineHeight: 1.7 }}>{f.desc}</p>
                 </div>

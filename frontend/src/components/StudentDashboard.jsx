@@ -6,6 +6,11 @@ import useUserStore from '../store/userStore';
 import UploadModal from './UploadModal';
 import WorkspaceView from './WorkspaceView';
 import QuickAIImprovementView from './QuickAIImprovementView';
+import {
+  HomeIcon, ZapIcon, FolderIcon, SparklesIcon, FileTextIcon, TrendingUpIcon,
+  TrophyIcon, TargetIcon, EyeIcon, DownloadIcon, TrashIcon, InboxIcon,
+  PenLineIcon, KeyIcon, BuildingIcon, ICON_MAP,
+} from './icons';
 
 // ─── Score helpers ─────────────────────────────────────────────────────────────
 const scoreBadge = (score) => {
@@ -58,7 +63,14 @@ function ScoreBreakdownCard({ item }) {
       onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#E2E8F0')}
     >
       <div className="flex items-center gap-3 mb-3">
-        <span className="text-base shrink-0" aria-hidden="true">{item.icon}</span>
+        {(() => {
+          const IconComp = ICON_MAP[item.iconKey] || FileTextIcon;
+          return (
+            <span className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 text-slate-500">
+              <IconComp size={15} />
+            </span>
+          );
+        })()}
         <div className="flex-1 min-w-0">
           <p className="text-xs font-semibold text-slate-800 truncate">{item.name}</p>
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{item.type}</p>
@@ -110,6 +122,7 @@ export default function StudentDashboard() {
   const [showModal, setShowModal] = useState(false);
   const [selectedMode, setSelectedMode] = useState('quick');
   const [tailorAnalysis, setTailorAnalysis] = useState(null);
+  const [sessionStatus, setSessionStatus] = useState('draft'); // 'draft' | 'generated' | 'exported'
 
   const [sessions, setSessions] = useState([]);
   const [baseResumes, setBaseResumes] = useState([]);
@@ -189,9 +202,8 @@ export default function StudentDashboard() {
     }
   };
 
-  useEffect(() => {
-    if (tailoredData) setTailorView('output');
-  }, [tailoredData]);
+  // Removed: auto-redirect to output view when tailoredData exists.
+  // Navigation is now controlled by sessionStatus.
 
   const fetchHistory = async () => {
     setLoadingHistory(true);
@@ -211,7 +223,7 @@ export default function StudentDashboard() {
   };
 
   const handleAnalysisComplete = () => {
-    setBaseResumes([]); // Clear to refetch on next tab visit
+    fetchHistory();
     toast.success('Analysis complete!');
   };
 
@@ -265,12 +277,13 @@ export default function StudentDashboard() {
         { withCredentials: true }
       );
       setTailoredData(res.data.tailoredResume);
+      setEditedData(res.data.tailoredResume);
       setParsedText(res.data.parsedText || '');
       setTailorAnalysis(res.data.analysis || null);
+      setSessionStatus('draft');
       // Refetch sessions since we created a new one
       fetchHistory();
       // Set the active session ID so auto-save knows where to save
-      // We will add activeSessionId state
       setActiveSessionId(res.data.sessionId);
       toast.success('Resume tailored successfully!');
     } catch (err) {
@@ -289,10 +302,53 @@ export default function StudentDashboard() {
     setSaveStatus('saved');
     setTailorView('inputs');
     setActiveSessionId(null);
+    setSessionStatus('draft');
   }, []);
+
+  // Switch from QuickAI (Improved Resume) back to the workspace editor
+  const handleOpenWorkspaceFromQuick = useCallback(() => {
+    setSelectedMode('advanced');
+    setSessionStatus('draft');
+  }, []);
+
+  const handleGenerateAI = useCallback(async () => {
+    if (!activeSessionId) return toast.error('No active session to generate');
+    const toastId = toast.loading('Generating AI resume...');
+    try {
+      const dataToSave = editedData || tailoredData;
+      await axios.put(`/api/resume/session/${activeSessionId}`, { 
+        tailoredData: dataToSave,
+        status: 'generated'
+      }, { withCredentials: true });
+      
+      setTailoredData(dataToSave);
+      setEditedData(dataToSave);
+      setSessionStatus('generated');
+      setSelectedMode('quick');
+      toast.success('Resume generated successfully!', { id: toastId });
+      fetchHistory();
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to generate resume', { id: toastId });
+    }
+  }, [activeSessionId, editedData, tailoredData]);
+
+  const handleExport = useCallback(async () => {
+    if (!activeSessionId) return;
+    try {
+      await axios.put(`/api/resume/session/${activeSessionId}`, { 
+        status: 'exported'
+      }, { withCredentials: true });
+      setSessionStatus('exported');
+      fetchHistory();
+    } catch (err) {
+      console.error('Failed to mark session as exported', err);
+    }
+  }, [activeSessionId]);
 
   const handleOpenSession = (session) => {
     setTailoredData(session.tailoredData);
+    setEditedData(session.tailoredData);
     setJobDescription(session.jobDescription);
     setSelectedResumeId(session.baseResumeId);
     setActiveSessionId(session._id);
@@ -304,8 +360,17 @@ export default function StudentDashboard() {
       strengths: session.strengths,
       improvements: session.weaknesses,
     });
+    const status = session.status || 'draft';
+    setSessionStatus(status);
     setTailorView('output');
-    setSelectedMode('quick');
+    // Route based on session status:
+    // - draft → Advanced Workspace editor
+    // - generated/exported → Quick AI Improved Resume view
+    if (status === 'draft') {
+      setSelectedMode('advanced');
+    } else {
+      setSelectedMode('quick');
+    }
   };
 
   const userLinks = {
@@ -319,10 +384,10 @@ export default function StudentDashboard() {
   const selectedResume = sessions.find((s) => s._id === activeSessionId) || baseResumes.find((h) => h._id === selectedResumeId);
 
   const TABS = [
-    { key: 'dashboard', icon: '🏠', label: 'Dashboard' },
-    { key: 'upload', icon: '⚡', label: 'Analyze' },
-    { key: 'history', icon: '📁', label: 'History' },
-    { key: 'tailor', icon: '✨', label: 'Tailor' },
+    { key: 'dashboard', label: 'Dashboard' },
+    { key: 'upload', label: 'Analyze' },
+    { key: 'history', label: 'History' },
+    { key: 'tailor', label: 'Tailor' },
   ];
 
   const bestScore = baseResumes.length
@@ -336,12 +401,12 @@ export default function StudentDashboard() {
     const ats = analysis.atsScore || 0;
 
     const defs = [
-      { name: 'Formatting & layout', max: 20, key: 'structure', icon: '📝', type: 'Programmatic', barColor: '#6366F1', desc: 'Checks structure and formatting standards.' },
-      { name: 'Impact & metrics', max: 20, key: 'impact', icon: '📈', type: 'Programmatic', barColor: '#10B981', desc: 'Checks presence of measurable results.' },
-      { name: 'Skill alignment', max: 20, key: 'skillAlignment', icon: '🔑', type: 'Programmatic', barColor: '#F59E0B', desc: 'Keyword alignment against expected tech terms.' },
-      { name: 'Technical complexity', max: 15, key: 'complexity', icon: '🏗️', type: 'AI Cognitive', barColor: '#8B5CF6', desc: 'Depth of roles, infrastructure, and tools.' },
-      { name: 'Professional phrasing', max: 5, key: 'professionalism', icon: '✍️', type: 'AI Cognitive', barColor: '#EF4444', desc: 'Usage of active words and formal phrasing.' },
-      { name: 'Skill–project match', max: 10, key: 'skillProjectFit', icon: '🎯', type: 'AI Cognitive', barColor: '#059669', desc: 'Verification that skills are proven in roles.' },
+      { name: 'Formatting & layout', max: 20, key: 'structure', iconKey: 'structure', type: 'Programmatic', barColor: '#6366F1', desc: 'Checks structure and formatting standards.' },
+      { name: 'Impact & metrics', max: 20, key: 'impact', iconKey: 'impact', type: 'Programmatic', barColor: '#10B981', desc: 'Checks presence of measurable results.' },
+      { name: 'Skill alignment', max: 20, key: 'skillAlignment', iconKey: 'skillAlignment', type: 'Programmatic', barColor: '#F59E0B', desc: 'Keyword alignment against expected tech terms.' },
+      { name: 'Technical complexity', max: 15, key: 'complexity', iconKey: 'complexity', type: 'AI Cognitive', barColor: '#8B5CF6', desc: 'Depth of roles, infrastructure, and tools.' },
+      { name: 'Professional phrasing', max: 5, key: 'professionalism', iconKey: 'professionalism', type: 'AI Cognitive', barColor: '#EF4444', desc: 'Usage of active words and formal phrasing.' },
+      { name: 'Skill–project match', max: 10, key: 'skillProjectFit', iconKey: 'skillProjectFit', type: 'AI Cognitive', barColor: '#059669', desc: 'Verification that skills are proven in roles.' },
     ];
 
     return defs.map((d) => ({
@@ -351,25 +416,29 @@ export default function StudentDashboard() {
   };
 
   // If a tailored resume is active and we are not currently generating one,
-  // take over the screen with the WorkspaceView.
+  // take over the screen with the appropriate view based on selectedMode.
   if (tailoredData && !isTailoring) {
     if (selectedMode === 'quick') {
       return (
         <QuickAIImprovementView
-          tailoredData={tailoredData}
+          tailoredData={editedData || tailoredData}
           parsedText={parsedText}
           user={userRecord}
           userLinks={userLinks}
           analysis={tailorAnalysis}
+          resumeId={selectedResumeId}
+          activeSessionId={activeSessionId}
           onBack={handleBackFromWorkspace}
+          onOpenWorkspace={handleOpenWorkspaceFromQuick}
+          onExport={handleExport}
         />
       );
     }
 
-    // Default to advanced
+    // Default to advanced workspace editor
     return (
       <WorkspaceView
-        tailoredData={tailoredData}
+        tailoredData={editedData || tailoredData}
         onDataChange={handleDataChange}
         user={userRecord}
         selectedResume={selectedResume}
@@ -378,6 +447,11 @@ export default function StudentDashboard() {
         userLinks={userLinks}
         onBack={handleBackFromWorkspace}
         saveStatus={saveStatus}
+        sessionStatus={sessionStatus}
+        activeSessionId={activeSessionId}
+        onStatusChange={setSessionStatus}
+        onGenerateAI={handleGenerateAI}
+        onExport={handleExport}
       />
     );
   }
@@ -434,7 +508,7 @@ export default function StudentDashboard() {
                 {/* Greeting & Header */}
                 <div className="mb-8">
                   <h1 className="text-2xl font-bold text-slate-800">
-                    {userRecord?.firstName ? `Hey, ${userRecord.firstName} 👋` : 'Welcome to your Dashboard 👋'}
+                    {userRecord?.firstName ? `Welcome back, ${userRecord.firstName}` : 'Welcome to your Dashboard'}
                   </h1>
                   <p className="text-sm text-slate-500 mt-1">
                     Here's a quick overview of your resume improvement progress.
@@ -448,15 +522,24 @@ export default function StudentDashboard() {
                       label: 'Latest Score', 
                       value: [...baseResumes, ...sessions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]?.atsScore || '--', 
                       subtext: 'Most recent ATS scan',
-                      icon: '📈', color: '#10B981' 
+                      Icon: TrendingUpIcon, color: '#10B981',
+                      onClick: () => setActiveTab('history'),
                     },
-                    { label: 'Best Score', value: bestScore || '--', subtext: 'Highest achieved', icon: '🏆', color: '#F59E0B' },
-                    { label: 'Analyzed', value: baseResumes.length, subtext: 'Total base uploads', icon: '📄', color: '#6366F1' },
-                    { label: 'Tailored', value: sessions.length, subtext: 'Targeted versions', icon: '✨', color: '#8B5CF6' }
+                    { label: 'Best Score', value: bestScore || '--', subtext: 'Highest achieved', Icon: TrophyIcon, color: '#F59E0B', onClick: () => setActiveTab('history') },
+                    { label: 'Analyzed', value: baseResumes.length, subtext: 'Total base uploads', Icon: FileTextIcon, color: '#6366F1', onClick: () => setActiveTab('history') },
+                    { label: 'Tailored', value: sessions.length, subtext: 'Targeted versions', Icon: SparklesIcon, color: '#8B5CF6', onClick: () => setActiveTab('history') }
                   ].map((stat, i) => (
-                    <Card key={i} className="p-5 flex flex-col justify-between hover:shadow-md transition-all border border-slate-100/60 bg-white">
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={stat.onClick}
+                      className="text-left w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] rounded-2xl"
+                    >
+                    <Card className="p-5 flex flex-col justify-between hover:shadow-md transition-all border border-slate-100/60 bg-white cursor-pointer h-full">
                       <div className="flex items-start justify-between mb-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-slate-50 border border-slate-100 shadow-sm">{stat.icon}</div>
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-slate-50 border border-slate-100 shadow-sm" style={{ color: stat.color }}>
+                          <stat.Icon size={18} />
+                        </div>
                       </div>
                       <div>
                         <h3 className="text-3xl font-black text-slate-800 tracking-tight">{stat.value}</h3>
@@ -464,6 +547,7 @@ export default function StudentDashboard() {
                         <p className="text-[11px] font-medium text-slate-500 mt-0.5">{stat.subtext}</p>
                       </div>
                     </Card>
+                    </button>
                   ))}
                 </div>
 
@@ -485,7 +569,9 @@ export default function StudentDashboard() {
                       <div className="p-0">
                         {baseResumes.length === 0 && sessions.length === 0 ? (
                           <div className="p-8 text-center">
-                            <p className="text-sm text-slate-500">No activity yet. Upload a resume to get started.</p>
+                            <InboxIcon size={32} className="mx-auto mb-3 text-slate-300" />
+                            <p className="text-sm font-medium text-slate-700 mb-1">No activity yet</p>
+                            <p className="text-sm text-slate-500">Upload a resume to start receiving ATS feedback.</p>
                           </div>
                         ) : (
                           <div className="divide-y divide-slate-100/80">
@@ -510,8 +596,8 @@ export default function StudentDashboard() {
                                     
                                     {/* Title Column */}
                                     <div className="flex items-center gap-4 flex-1 min-w-0 pr-4">
-                                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 transition-transform group-hover:scale-105 shadow-sm border border-white ${isSession ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]' : 'bg-[var(--success-soft)] text-[var(--success)]'}`}>
-                                        {isSession ? '✨' : '📄'}
+                                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 shadow-sm border border-white ${isSession ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]' : 'bg-[var(--success-soft)] text-[var(--success)]'}`}>
+                                        {isSession ? <SparklesIcon size={16} /> : <FileTextIcon size={16} />}
                                       </div>
                                       <div className="min-w-0">
                                         <p className="text-sm font-bold text-slate-800 truncate group-hover:text-[var(--color-accent)] transition-colors">
@@ -573,7 +659,7 @@ export default function StudentDashboard() {
                           if (itemsWithMatch.length === 0) {
                             return (
                               <div className="text-center py-5">
-                                <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-xl mx-auto mb-3">🎯</div>
+                                <TargetIcon size={28} className="mx-auto mb-3 text-slate-300" />
                                 <p className="text-sm font-medium text-slate-600">No targeted analysis results yet.</p>
                                 <button onClick={() => setShowModal(true)} className="text-xs font-bold text-[var(--color-accent)] mt-2 hover:underline focus-visible:outline-none">
                                   Run a targeted match →
@@ -635,19 +721,24 @@ export default function StudentDashboard() {
                     </div>
                   </div>
                 ) : sessions.length === 0 && baseResumes.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <div
-                      className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-4"
-                      style={{ background: '#F1F5F9', border: '1px solid #E2E8F0' }}
-                    >
-                      📭
+                  <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto">
+                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 bg-slate-50 border border-slate-200 text-slate-400">
+                      <InboxIcon size={28} />
                     </div>
-                    <p className="font-semibold text-base text-slate-800 mb-1">No history yet</p>
-                    <p className="text-sm text-slate-500">Go to the Analyze or Tailor tabs to get started.</p>
+                    <p className="font-semibold text-base text-slate-800 mb-2">No resumes found</p>
+                    <p className="text-sm text-slate-500 leading-relaxed">
+                      Upload your first resume to start receiving ATS feedback and optimization suggestions.
+                    </p>
+                    <button
+                      onClick={() => setShowModal(true)}
+                      className="mt-5 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[var(--color-accent)] hover:bg-[#3b3dbb] transition-colors"
+                    >
+                      Upload Resume
+                    </button>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {sessions.length > 0 && (
+                    {sessions.length > 0 ? (
                       <div>
                         <div className="flex items-center justify-between mb-5">
                           <div>
@@ -675,9 +766,24 @@ export default function StudentDashboard() {
                             >
                               <div className="flex items-start justify-between gap-3 mb-4">
                                 <div>
-                                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                                    Session {sessions.length - index}
-                                  </p>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                      Session {sessions.length - index}
+                                    </p>
+                                    {(() => {
+                                      const st = item.status || 'draft';
+                                      const cfg = {
+                                        draft:     { bg: '#FEF3C7', color: '#92400E', border: '#FCD34D', label: 'Draft' },
+                                        generated: { bg: '#D1FAE5', color: '#065F46', border: '#6EE7B7', label: 'Generated' },
+                                        exported:  { bg: '#EEF2FF', color: '#3730A3', border: '#A5B4FC', label: 'Exported' },
+                                      }[st];
+                                      return (
+                                        <span style={{ fontSize: '9px', fontWeight: 700, padding: '1px 7px', borderRadius: '999px', background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                          {cfg.label}
+                                        </span>
+                                      );
+                                    })()}
+                                  </div>
                                   {item.roleName && (
                                     <p className="text-xs font-semibold truncate max-w-[140px]" style={{ color: 'var(--color-accent)' }}>
                                       {item.company ? `${item.company} · ` : ''}{item.roleName}
@@ -721,6 +827,15 @@ export default function StudentDashboard() {
                           ))}
                         </div>
                       </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-10 text-center border border-dashed border-slate-200 rounded-2xl bg-slate-50/50 h-full min-h-[200px]">
+                        <SparklesIcon size={28} className="mb-3 text-slate-400" />
+                        <p className="font-semibold text-sm text-slate-800 mb-1">No tailoring sessions yet</p>
+                        <p className="text-xs text-slate-500 px-4">Create a tailored resume for a target role to get started.</p>
+                        <button onClick={() => setActiveTab('tailor')} className="mt-4 text-xs font-bold text-[var(--color-accent)] hover:underline">
+                          Go to Tailor →
+                        </button>
+                      </div>
                     )}
 
                     {baseResumes.length > 0 && (
@@ -754,7 +869,7 @@ export default function StudentDashboard() {
                                     {item.title || `Resume ${baseResumes.length - index}`}
                                   </p>
                                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                    Type: <span className="text-[var(--color-accent)]">{item.analysisMode || "general"}</span>
+                                    Analysis: <span className="text-[var(--color-accent)] capitalize">{item.analysisMode === 'targeted' ? 'JD Match' : 'General'}</span>
                                   </p>
                                 </div>
                                 <div className="flex flex-col items-end gap-1.5">
@@ -786,24 +901,30 @@ export default function StudentDashboard() {
                                 <div className="flex items-center justify-between text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
                                   <span>Uploaded: {new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                                 </div>
-                                <div className="grid grid-cols-3 gap-2">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                   <button
                                     onClick={() => navigate(`/resume/${item._id}`)}
-                                    className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-[11px] font-bold text-white bg-[var(--color-accent)] hover:bg-[#3b3dbb] transition-all cursor-pointer whitespace-nowrap active:scale-95 shadow-xs"
+                                    className="flex items-center justify-center gap-1 py-2 px-2 rounded-xl text-[11px] font-bold text-white bg-[var(--color-accent)] hover:bg-[#3b3dbb] transition-all cursor-pointer whitespace-nowrap active:scale-95"
                                   >
-                                    👁️ View
+                                    <EyeIcon size={12} />
                                   </button>
                                   <button
                                     onClick={() => handleDownloadOriginal(item._id, item.title || `Resume_${baseResumes.length - index}`)}
-                                    className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-all cursor-pointer whitespace-nowrap active:scale-95"
+                                    className="flex items-center justify-center gap-1 py-2 px-2 rounded-xl text-[11px] font-bold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-all cursor-pointer whitespace-nowrap active:scale-95"
                                   >
-                                    📥 Download
+                                    <DownloadIcon size={12} />
+                                  </button>
+                                  <button
+                                    onClick={() => { setSelectedResumeId(item._id); setActiveTab('tailor'); }}
+                                    className="flex items-center justify-center gap-1 py-2 px-2 rounded-xl text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 transition-all cursor-pointer whitespace-nowrap active:scale-95"
+                                  >
+                                    <SparklesIcon size={12} />
                                   </button>
                                   <button
                                     onClick={() => handleDeleteResume(item._id)}
-                                    className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl text-[11px] font-bold text-rose-600 bg-rose-50/50 border border-rose-100 hover:bg-rose-100/80 transition-all cursor-pointer whitespace-nowrap active:scale-95"
+                                    className="flex items-center justify-center gap-1 py-2 px-2 rounded-xl text-[11px] font-bold text-rose-600 bg-rose-50/50 border border-rose-100 hover:bg-rose-100/80 transition-all cursor-pointer whitespace-nowrap active:scale-95"
                                   >
-                                    🗑️ Delete
+                                    <TrashIcon size={12} />
                                   </button>
                                 </div>
                               </div>
@@ -824,7 +945,9 @@ export default function StudentDashboard() {
                 {/* Compact explanatory content */}
                 {!tailoredData && !isTailoring && (
                   <div className="mb-6 p-5 rounded-2xl flex items-start gap-4" style={{ background: '#EEF2FF', border: '1px solid #C7D2FE' }}>
-                    <div className="text-3xl">🪄</div>
+                    <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0 text-indigo-600">
+                      <SparklesIcon size={18} />
+                    </div>
                     <div>
                       <h3 className="text-sm font-bold text-indigo-900 mb-1">How AI tailoring works</h3>
                       <p className="text-xs text-indigo-700 leading-relaxed mb-3">
@@ -992,7 +1115,9 @@ export default function StudentDashboard() {
                                   }`}
                               >
                                 <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-xl">⭐</span>
+                                  <span className={`w-8 h-8 rounded-lg flex items-center justify-center ${selectedMode === 'quick' ? 'bg-[var(--color-accent)] text-white' : 'bg-slate-100 text-slate-500'}`}>
+                                    <SparklesIcon size={14} />
+                                  </span>
                                   <span className={`font-bold text-sm ${selectedMode === 'quick' ? 'text-[var(--color-accent)]' : 'text-slate-800'}`}>
                                     Resume Improvement
                                   </span>
@@ -1014,7 +1139,9 @@ export default function StudentDashboard() {
                                   }`}
                               >
                                 <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-xl">⚡</span>
+                                  <span className={`w-8 h-8 rounded-lg flex items-center justify-center ${selectedMode === 'advanced' ? 'bg-[var(--color-accent)] text-white' : 'bg-slate-100 text-slate-500'}`}>
+                                    <ZapIcon size={14} />
+                                  </span>
                                   <span className={`font-bold text-sm ${selectedMode === 'advanced' ? 'text-[var(--color-accent)]' : 'text-slate-800'}`}>
                                     Advanced Workspace
                                   </span>
@@ -1033,7 +1160,7 @@ export default function StudentDashboard() {
                             disabled={!jobDescription.trim()}
                             className="premium-btn w-full justify-center py-3.5 mt-2"
                           >
-                            {selectedMode === 'quick' ? '✨ Generate Improved Resume' : '✨ Open Advanced Workspace'}
+                            {selectedMode === 'quick' ? 'Generate Improved Resume' : 'Open Advanced Workspace'}
                           </button>
                         </>
                       )}

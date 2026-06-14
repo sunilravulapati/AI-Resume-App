@@ -8,6 +8,8 @@ const resumeSessionSchema = new Schema({
   company: { type: String },
   roleName: { type: String },
   
+  status: { type: String, enum: ["draft", "generated", "exported"], default: "draft" },
+  
   atsScore: { type: Number, min: 0, max: 100 },
   roleMatchScore: { type: Number, min: 0, max: 100 },
   

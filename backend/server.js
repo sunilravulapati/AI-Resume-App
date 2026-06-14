@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser'
 import {resumeRouter} from './apis/resume.js';
 import {userRouter} from './apis/user.js'
 import { adminRouter } from './apis/admin.js';
+import { invitationsRouter } from './apis/invitations.js';
 import path from 'path';
 config()
 
@@ -33,6 +34,7 @@ app.use(cookieParser());
 app.use("/api/resume", resumeRouter);
 app.use("/api/user", userRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/invitations", invitationsRouter);
 const connectDB = async () => {
     try{
         await connect(process.env.DB_URL)
@@ -46,11 +48,7 @@ const connectDB = async () => {
 }
 connectDB()
 
-//test
-app.get("/users",async (req,res) => {
-    console.log("success!")
-    res.status(200).json({message:"success!"})
-})
+//test route removed for production readiness
 
 
 //dealing with invalid paths

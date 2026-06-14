@@ -95,6 +95,7 @@ export function buildPreamble() {
 \addtolength{\topmargin}{-.5in}
 \addtolength{\textheight}{1.0in}
 
+\linespread{1.18}
 \urlstyle{same}
 \raggedbottom
 \raggedright
@@ -102,8 +103,8 @@ export function buildPreamble() {
 
 % Section formatting
 \titleformat{\section}{
-  \vspace{-4pt}\scshape\raggedright\large
-}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
+  \vspace{10pt}\scshape\raggedright\large\bfseries
+}{}{0em}{}[\color{black}\titlerule \vspace{-1pt} \vspace{4pt}]
 
 \pdfgentounicode=1
 
@@ -111,30 +112,30 @@ export function buildPreamble() {
 % Custom commands
 %---------------------------------------------------------------------------%
 \newcommand{\resumeItem}[1]{
-  \item\small{#1 \vspace{-2pt}}
+  \item\small{#1 \vspace{1pt}}
 }
 
 \newcommand{\resumeSubheading}[4]{
-  \vspace{-2pt}\item
+  \vspace{4pt}\item
     \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
       \textbf{#1} & #2 \\
       \textit{\small#3} & \textit{\small #4} \\
-    \end{tabular*}\vspace{-7pt}
+    \end{tabular*}\vspace{-2pt}
 }
 
 \newcommand{\resumeSubheadingThree}[3]{
-  \vspace{-2pt}\item
+  \vspace{4pt}\item
     \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
       \textbf{#1} & \textit{\small #2} \\
       \textit{\small#3} \\
-    \end{tabular*}\vspace{-7pt}
+    \end{tabular*}\vspace{-2pt}
 }
 
 \newcommand{\resumeProjectHeading}[2]{
-    \item
+    \vspace{4pt}\item
     \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
       \small#1 & #2 \\
-    \end{tabular*}\vspace{-7pt}
+    \end{tabular*}\vspace{-2pt}
 }
 
 \newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-4pt}}
@@ -144,7 +145,7 @@ export function buildPreamble() {
 \newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.15in, label={}]}
 \newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
 \newcommand{\resumeItemListStart}{\begin{itemize}}
-\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{0pt}}
 `;
 }
 
@@ -293,7 +294,7 @@ function buildSkills(skills = []) {
     .map((s) => {
       const label = s.label || "";
       const value = s.value || "";
-      return `     \\textbf{${esc(label)}}{: ${esc(value)}} \\\\`;
+      return `     \\textbf{${esc(label)}}{: ${esc(value)}} \\\\[2pt]`;
     });
 
   if (!rows.length) return "";

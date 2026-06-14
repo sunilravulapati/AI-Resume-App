@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router';
+import { useParams, useNavigate, useLocation } from 'react-router';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
@@ -13,6 +13,9 @@ export default function Resume() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { userRecord } = useUserStore();
+
+  const location = useLocation();
+  const matchDetails = location.state?.matchDetails;
 
   const [resume, setResume] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -51,7 +54,7 @@ export default function Resume() {
   const score = resume.atsScore;
 
   if (isRecruiter) {
-    return <RecruiterResumeView resume={resume} onClose={() => navigate(-1)} />;
+    return <RecruiterResumeView resume={resume} matchDetails={matchDetails} onClose={() => navigate(-1)} />;
   }
 
   const handleDownloadOriginal = async () => {
@@ -86,9 +89,9 @@ export default function Resume() {
   };
 
   const scoreBadge = () => {
-    if (score >= 75) return { bg: 'bg-[#34c759]/10 border-[#34c759]/20', text: 'text-[#248a3d]', bar: 'bg-[#34c759]', label: '✅ Strong Match' };
-    if (score >= 50) return { bg: 'bg-[#ff9f0a]/10 border-[#ff9f0a]/20', text: 'text-[#b86e00]', bar: 'bg-[#ff9f0a]', label: '⚠️ Average' };
-    return { bg: 'bg-[#ff3b30]/10 border-[#ff3b30]/20', text: 'text-[#cc2f26]', bar: 'bg-[#ff3b30]', label: '❌ Needs Work' };
+    if (score >= 75) return { bg: 'bg-[#34c759]/10 border-[#34c759]/20', text: 'text-[#248a3d]', bar: 'bg-[#34c759]', label: 'Strong Match' };
+    if (score >= 50) return { bg: 'bg-[#ff9f0a]/10 border-[#ff9f0a]/20', text: 'text-[#b86e00]', bar: 'bg-[#ff9f0a]', label: 'Average' };
+    return { bg: 'bg-[#ff3b30]/10 border-[#ff3b30]/20', text: 'text-[#cc2f26]', bar: 'bg-[#ff3b30]', label: 'Needs Work' };
   };
 
   const badge = scoreBadge();
@@ -204,19 +207,19 @@ export default function Resume() {
             onClick={handleDownloadOriginal}
             className={`${secondaryBtn} flex-1 md:flex-none justify-center py-2 px-4 whitespace-nowrap`}
           >
-            📥 Download Original
+            Download Original
           </button>
           <button
             onClick={handleTailorRedirect}
             className={`${primaryBtn} flex-1 md:flex-none justify-center py-2 px-4 bg-[#0066cc] whitespace-nowrap`}
           >
-            🪄 Tailor Resume
+            Tailor Resume
           </button>
           <button
             onClick={scrollToAnalysis}
             className={`${secondaryBtn} flex-1 md:flex-none justify-center py-2 px-4 whitespace-nowrap`}
           >
-            👁️ View Analysis
+            View Analysis
           </button>
         </div>
       </div>
@@ -251,7 +254,7 @@ export default function Resume() {
           {/* Candid AI Summary */}
           <div className="bg-white border-l-4 border-[#0066cc] pl-5 pr-5 py-5 rounded-r-2xl shadow-sm border border-[#e8e8ed]">
             <h3 className={`${mutedText} text-[0.65rem] uppercase tracking-wider font-semibold mb-3 flex items-center gap-2`}>
-              <span>🤖</span> {isRecruiter ? 'Recruiter Fit Assessment' : 'Candid AI Assessment'}
+              {isRecruiter ? 'Recruiter Fit Assessment' : 'Candid AI Assessment'}
             </h3>
             <p className={`${bodyText} text-sm leading-relaxed`}>
               {isRecruiter
@@ -264,7 +267,7 @@ export default function Resume() {
           {/* Interactive Score Breakdown Panel */}
           <div className={`${cardClass} shadow-sm border border-[#e8e8ed]`}>
             <h3 className="text-[0.65rem] font-bold text-[#0066cc] uppercase tracking-wider mb-4 flex items-center gap-2">
-              <span>📊</span> Interactive Score Breakdown
+              Interactive Score Breakdown
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -338,7 +341,7 @@ export default function Resume() {
           {/* Strengths / Green Flags */}
           <div className={`${cardClass} shadow-sm border border-[#e8e8ed]`}>
             <h3 className={`text-[0.65rem] font-bold ${isRecruiter ? 'text-[#0066cc]' : 'text-[#248a3d]'} uppercase tracking-wider mb-4 flex items-center gap-2`}>
-              <span>🟢</span> {isRecruiter ? 'Candidate Green Flags' : 'Key Strengths'}
+              {isRecruiter ? 'Candidate Green Flags' : 'Key Strengths'}
             </h3>
             <ul className="space-y-3">
               {(isRecruiter
@@ -356,7 +359,7 @@ export default function Resume() {
           {/* Areas of Concern / Red Flags */}
           <div className={`${cardClass} shadow-sm border border-[#e8e8ed]`}>
             <h3 className="text-[0.65rem] font-bold text-[#cc2f26] uppercase tracking-wider mb-4 flex items-center gap-2">
-              <span>🔴</span> {isRecruiter ? 'Candidate Red Flags' : 'Areas of Concern'}
+              {isRecruiter ? 'Candidate Red Flags' : 'Areas of Concern'}
             </h3>
             <ul className="space-y-3">
               {(isRecruiter
@@ -378,7 +381,7 @@ export default function Resume() {
                 href={`mailto:${student?.email}`}
                 className={`${primaryBtn} flex-1 text-center py-3`}
               >
-                ✉️ Email Candidate
+                Email Candidate
               </a>
               {student?.mobile && (
                 <a

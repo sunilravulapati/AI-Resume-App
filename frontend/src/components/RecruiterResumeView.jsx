@@ -1,13 +1,43 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import useUserStore from '../store/userStore';
 import {
   headingClass, cardClass, mutedText, bodyText,
   primaryBtn, secondaryBtn, divider
 } from '../styles/common';
 
 // Dynamic Recruiter Recommendation Builder
-const getRecommendation = (resume) => {
+const getRecommendation = (resume, matchDetails) => {
+  if (matchDetails) {
+    const label = matchDetails.recommendation || "Needs Review";
+    if (label === "Strong Match") {
+      return {
+        label: "Strong Match",
+        cls: "bg-emerald-50 text-emerald-700 border-emerald-200",
+        desc: "Highly qualified candidate. Excellent alignment with role requirements, strong project complexity, and minimal keyword gaps."
+      };
+    } else if (label === "Potential Match") {
+      return {
+        label: "Potential Match",
+        cls: "bg-indigo-50 text-indigo-700 border-indigo-200",
+        desc: "Good candidate fit. Suitable skills match with moderate complexity. Review projects for specific stack exposure."
+      };
+    } else if (label === "Needs Review") {
+      return {
+        label: "Needs Review",
+        cls: "bg-amber-50 text-amber-700 border-amber-200",
+        desc: "Requires further validation. Re-examine projects and credentials for transferable skill alignment."
+      };
+    } else {
+      return {
+        label: "Low Match",
+        cls: "bg-rose-50 text-rose-700 border-rose-200",
+        desc: "Candidate skills or experience do not match the minimum requirements of this role."
+      };
+    }
+  }
+
   const ats = resume.atsScore || 0;
   const match = resume.feedback?.matchScore ?? null;
   const missingCount = resume.feedback?.missingSkills?.length ?? 0;
@@ -89,20 +119,106 @@ function ScoreRing({ score, size = 64, strokeWidth = 6, color = "#0066cc" }) {
   );
 }
 
-export default function RecruiterResumeView({ resume, onClose }) {
+export default function RecruiterResumeView({ resume, matchDetails, onClose }) {
+  const [currentResume, setCurrentResume] = useState(resume);
   const [activeTab, setActiveTab] = useState('pdf'); // 'pdf' | 'parsed'
   const [downloading, setDownloading] = useState(false);
+  const [insights, setInsights] = useState(null);
+  const [loadingInsights, setLoadingInsights] = useState(true);
 
-  const student = resume.userId;
-  const recommendation = getRecommendation(resume);
+  const { userRecord } = useUserStore();
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [roleName, setRoleName] = useState(matchDetails?.roleName || '');
+  const [companyName, setCompanyName] = useState(matchDetails?.companyName || matchDetails?.company || '');
+  const [customMessage, setCustomMessage] = useState(
+    `We recently reviewed your tailored resume in our Talent Pool and were exceptionally impressed with your technical experience and achievements. We would love to invite you for an interview to discuss our open positions.`
+  );
+  const [sendingInvite, setSendingInvite] = useState(false);
 
-  // Dynamic Skill matching parser fallback
+  const handleSendInvite = async (e) => {
+    e.preventDefault();
+    const recruiterName = userRecord ? `${userRecord.firstName} ${userRecord.lastName}`.trim() : 'Recruiter';
+    const recruiterEmail = userRecord?.email || '';
+    const candidateName = student ? `${student.firstName} ${student.lastName}`.trim() : 'Candidate';
+    const candidateEmail = student?.email || '';
+
+    if (!roleName.trim()) return toast.error('Please enter a Role Name.');
+    if (!companyName.trim()) return toast.error('Please enter a Company Name.');
+
+    setSendingInvite(true);
+    const toastId = toast.loading('Sending email invitation...');
+    try {
+      await axios.post('/api/invitations/send', {
+        recruiterName,
+        recruiterEmail,
+        candidateName,
+        candidateEmail,
+        roleName: roleName.trim(),
+        companyName: companyName.trim(),
+        customMessage: customMessage.trim()
+      }, { withCredentials: true });
+      toast.success('Interview invitation sent successfully!', { id: toastId });
+      setShowInviteModal(false);
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.error || 'Failed to send interview invitation.', { id: toastId });
+    } finally {
+      setSendingInvite(false);
+    }
+  };
+
+  const student = currentResume.userId;
+  const recommendation = getRecommendation(currentResume, matchDetails);
+
+  useEffect(() => {
+    const fetchInsights = async () => {
+      setLoadingInsights(true);
+      try {
+        const res = await axios.post(`/api/resume/${currentResume._id}/insights`, {
+          roleName: matchDetails?.roleName || "",
+          requiredSkills: matchDetails?.requiredSkills || "",
+          preferredSkills: matchDetails?.preferredSkills || "",
+          experienceLevel: matchDetails?.experienceLevel || ""
+        }, { withCredentials: true });
+        setInsights(res.data);
+      } catch (err) {
+        console.error("Failed to load insights", err);
+        setInsights({
+          summary: currentResume.feedback?.summary || "No assessment available.",
+          whyMatches: matchDetails?.whyMatches || currentResume.feedback?.strengths || ["General candidate profile matched."],
+          strengths: currentResume.feedback?.strengths || [],
+          concerns: currentResume.feedback?.improvements || []
+        });
+      } finally {
+        setLoadingInsights(false);
+      }
+    };
+    fetchInsights();
+  }, [currentResume._id]);
+
+  const switchVersion = async (targetId) => {
+    const toastId = toast.loading("Loading resume version...");
+    try {
+      const res = await axios.get(`/api/resume/${targetId}`, {
+        withCredentials: true
+      });
+      setCurrentResume(res.data);
+      toast.success("Loaded resume version successfully!", { id: toastId });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load resume version", { id: toastId });
+    }
+  };
+
   const getMatchedSkills = () => {
-    if (resume.feedback?.matchedSkills && resume.feedback.matchedSkills.length > 0) {
-      return resume.feedback.matchedSkills;
+    if (matchDetails && matchDetails.matchedSkills) {
+      return matchDetails.matchedSkills;
+    }
+    if (currentResume.feedback?.matchedSkills && currentResume.feedback.matchedSkills.length > 0) {
+      return currentResume.feedback.matchedSkills;
     }
     // Programmatic fallback: search text for common skills
-    const text = (resume.parsedText || "").toLowerCase();
+    const text = (currentResume.parsedText || "").toLowerCase();
     const commonSkills = [
       "react", "node.js", "node", "express", "mongodb", "mysql", "postgresql", "redis",
       "typescript", "javascript", "python", "java", "c++", "c#", "go", "rust",
@@ -116,14 +232,21 @@ export default function RecruiterResumeView({ resume, onClose }) {
     return found.map(s => s.charAt(0).toUpperCase() + s.slice(1));
   };
 
+  const getMissingSkills = () => {
+    if (matchDetails && matchDetails.missingSkills) {
+      return matchDetails.missingSkills;
+    }
+    return currentResume.feedback?.missingSkills || [];
+  };
+
   const matchedSkills = getMatchedSkills();
-  const missingSkills = resume.feedback?.missingSkills || [];
+  const missingSkills = getMissingSkills();
 
   const handleDownload = async () => {
     setDownloading(true);
-    const toastId = toast.loading("Downloading original PDF resume...");
+    const toastId = toast.loading("Downloading PDF resume...");
     try {
-      const res = await axios.get(`/api/resume/${resume._id}/download`, {
+      const res = await axios.get(`/api/resume/${currentResume._id}/download`, {
         responseType: 'blob',
         withCredentials: true
       });
@@ -131,7 +254,7 @@ export default function RecruiterResumeView({ resume, onClose }) {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', resume.title ? `${resume.title}.pdf` : `${student?.firstName || 'candidate'}_resume.pdf`);
+      link.setAttribute('download', currentResume.title ? `${currentResume.title}.pdf` : `${student?.firstName || 'candidate'}_resume.pdf`);
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);
@@ -139,7 +262,7 @@ export default function RecruiterResumeView({ resume, onClose }) {
       toast.success("Resume downloaded successfully!", { id: toastId });
     } catch (err) {
       console.error(err);
-      toast.error("Failed to download original resume", { id: toastId });
+      toast.error("Failed to download resume", { id: toastId });
     } finally {
       setDownloading(false);
     }
@@ -174,6 +297,22 @@ export default function RecruiterResumeView({ resume, onClose }) {
                 </>
               )}
             </p>
+            {resume.candidateResumes && resume.candidateResumes.length > 1 && (
+              <div className="mt-3 flex items-center gap-2">
+                <span className="text-xs font-semibold text-[#6e6e73]">Select Resume Version:</span>
+                <select
+                  value={currentResume._id}
+                  onChange={(e) => switchVersion(e.target.value)}
+                  className="bg-white border border-[#d2d2d7] rounded-lg px-2.5 py-1 text-xs text-[#1d1d1f] focus:outline-none focus:border-[#0066cc]"
+                >
+                  {resume.candidateResumes.map((v, index) => (
+                    <option key={v._id} value={v._id}>
+                      {v.title || `Resume V${resume.candidateResumes.length - index}`} (ATS: {v.atsScore}%) - {new Date(v.createdAt).toLocaleDateString()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         </div>
 
@@ -183,14 +322,14 @@ export default function RecruiterResumeView({ resume, onClose }) {
             disabled={downloading}
             className={`${secondaryBtn} flex items-center gap-1.5`}
           >
-            📥 Download Original PDF
+            Download Selected PDF
           </button>
-          <a
-            href={`mailto:${student?.email}`}
+          <button
+            onClick={() => setShowInviteModal(true)}
             className={`${primaryBtn} flex items-center gap-1.5`}
           >
-            ✉️ Email Candidate
-          </a>
+            Invite Candidate
+          </button>
         </div>
       </div>
 
@@ -256,11 +395,7 @@ export default function RecruiterResumeView({ resume, onClose }) {
           {/* 1. Recruiter Recommendation Card */}
           <div className={`p-5 rounded-2xl border ${recommendation.cls} shadow-sm transition-all duration-300`}>
             <p className="text-[10px] font-bold uppercase tracking-wider opacity-70 mb-1">Recruiter Recommendation</p>
-            <h3 className="text-2xl font-black tracking-tight flex items-center gap-2 mb-2">
-              {recommendation.label === "Strong Match" && "🏆"}
-              {recommendation.label === "Potential Match" && "✨"}
-              {recommendation.label === "Needs Review" && "🔍"}
-              {recommendation.label === "Low Match" && "⚠️"}
+            <h3 className="text-2xl font-black tracking-tight mb-2">
               {recommendation.label}
             </h3>
             <p className="text-xs leading-relaxed opacity-95 font-medium">
@@ -271,16 +406,16 @@ export default function RecruiterResumeView({ resume, onClose }) {
           {/* 2. Candidate Match Score Panel */}
           <div className="bg-white border border-[#e8e8ed] rounded-2xl p-5 shadow-sm">
             <h3 className="text-xs font-bold text-[#0066cc] uppercase tracking-wider mb-4 flex items-center gap-1.5">
-              <span>📊</span> Score Diagnostics
+              Score Diagnostics
             </h3>
             
             <div className="grid grid-cols-3 gap-3">
               {/* Role Match % */}
               <div className="flex flex-col items-center text-center p-3 bg-slate-50 rounded-xl border border-slate-100">
                 <div className="relative flex items-center justify-center mb-2">
-                  <ScoreRing score={resume.feedback?.matchScore ?? 0} color="#0066cc" />
+                  <ScoreRing score={matchDetails ? (matchDetails.matchScore ?? 0) : (resume.feedback?.matchScore ?? 0)} color="#0066cc" />
                   <span className="absolute text-xs font-black text-slate-800">
-                    {resume.feedback?.matchScore != null ? `${resume.feedback.matchScore}%` : "—"}
+                    {matchDetails ? `${matchDetails.matchScore}%` : (resume.feedback?.matchScore != null ? `${resume.feedback.matchScore}%` : "—")}
                   </span>
                 </div>
                 <p className="text-[10px] font-bold text-slate-700 uppercase tracking-wide">Role Match</p>
@@ -297,15 +432,15 @@ export default function RecruiterResumeView({ resume, onClose }) {
                 <p className="text-[9px] text-slate-400 mt-0.5 leading-none">Structure & Format</p>
               </div>
 
-              {/* Keyword Match % */}
+              {/* Keyword Match % / Skill Match Score */}
               <div className="flex flex-col items-center text-center p-3 bg-slate-50 rounded-xl border border-slate-100">
                 <div className="relative flex items-center justify-center mb-2">
-                  <ScoreRing score={resume.feedback?.keywordMatchRate ?? 0} color="#F59E0B" />
+                  <ScoreRing score={matchDetails ? (matchDetails.skillMatchScore ?? 0) : (resume.feedback?.keywordMatchRate ?? 0)} color="#F59E0B" />
                   <span className="absolute text-xs font-black text-slate-800">
-                    {resume.feedback?.keywordMatchRate != null ? `${resume.feedback.keywordMatchRate}%` : "—"}
+                    {matchDetails ? `${matchDetails.skillMatchScore}%` : (resume.feedback?.keywordMatchRate != null ? `${resume.feedback.keywordMatchRate}%` : "—")}
                   </span>
                 </div>
-                <p className="text-[10px] font-bold text-slate-700 uppercase tracking-wide">Keywords</p>
+                <p className="text-[10px] font-bold text-slate-700 uppercase tracking-wide">Skill Fit</p>
                 <p className="text-[9px] text-slate-400 mt-0.5 leading-none">Skills Match Rate</p>
               </div>
             </div>
@@ -314,59 +449,102 @@ export default function RecruiterResumeView({ resume, onClose }) {
           {/* 3. Candidate Summary */}
           <div className="bg-white border border-[#e8e8ed] rounded-2xl p-5 shadow-sm">
             <h3 className="text-xs font-bold text-[#0066cc] uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-              <span>🤖</span> Candidate Summary
+              Candidate Summary
             </h3>
-            <p className="text-xs text-slate-700 leading-relaxed font-medium italic bg-slate-50/50 border border-slate-100 p-3 rounded-xl">
-              "{resume.feedback?.recruiterFeedback?.recruiterSummary || resume.feedback?.summary || 'No summary assessment parsed for this candidate.'}"
-            </p>
+            {loadingInsights ? (
+              <div className="h-10 bg-slate-100 rounded animate-pulse" />
+            ) : (
+              <p className="text-xs text-slate-700 leading-relaxed font-medium italic bg-slate-50/50 border border-slate-100 p-3 rounded-xl">
+                "{insights?.summary || 'No summary assessment parsed for this candidate.'}"
+              </p>
+            )}
           </div>
+
+          {/* 3.1 Why Recommended Section */}
+          {matchDetails && (
+            <div className="bg-white border border-[#e8e8ed] rounded-2xl p-5 shadow-sm border-l-4 border-emerald-500">
+              <h3 className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <span>✓</span> Why Recommended
+              </h3>
+              {loadingInsights ? (
+                <div className="space-y-2">
+                  <div className="h-3 bg-slate-100 rounded animate-pulse w-3/4" />
+                  <div className="h-3 bg-slate-100 rounded animate-pulse w-5/6" />
+                  <div className="h-3 bg-slate-100 rounded animate-pulse w-2/3" />
+                </div>
+              ) : (
+                <ul className="space-y-2">
+                  {(insights?.whyMatches || []).map((why, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-xs text-slate-700 leading-relaxed">
+                      <span className="text-emerald-500 font-bold shrink-0 mt-0.5">✓</span>
+                      <span>{why}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
 
           {/* 4. Strengths (Green Flags) */}
           <div className="bg-white border border-[#e8e8ed] rounded-2xl p-5 shadow-sm">
             <h3 className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-3.5 flex items-center gap-1.5">
-              <span>🟢</span> Key Candidate Strengths
+              Key Candidate Strengths
             </h3>
-            <ul className="space-y-2.5">
-              {(resume.feedback?.recruiterFeedback?.greenFlags?.length > 0
-                ? resume.feedback.recruiterFeedback.greenFlags
-                : resume.feedback?.strengths || []
-              ).map((strength, idx) => (
-                <li key={idx} className="flex items-start gap-2 text-xs text-slate-700 leading-relaxed">
-                  <span className="text-emerald-500 font-bold shrink-0 mt-0.5">✓</span>
-                  <span>{strength}</span>
-                </li>
-              ))}
-              {(resume.feedback?.recruiterFeedback?.greenFlags?.length === 0 && (!resume.feedback?.strengths || resume.feedback.strengths.length === 0)) && (
-                <p className="text-xs text-slate-400">No strengths logged.</p>
-              )}
-            </ul>
+            {loadingInsights ? (
+              <div className="space-y-2">
+                <div className="h-3 bg-slate-100 rounded animate-pulse w-3/4" />
+                <div className="h-3 bg-slate-100 rounded animate-pulse w-5/6" />
+              </div>
+            ) : (
+              <ul className="space-y-2.5">
+                {(insights?.strengths?.length > 0
+                  ? insights.strengths
+                  : []
+                ).map((strength, idx) => (
+                  <li key={idx} className="flex items-start gap-2 text-xs text-slate-700 leading-relaxed">
+                    <span className="text-emerald-500 font-bold shrink-0 mt-0.5">✓</span>
+                    <span>{strength}</span>
+                  </li>
+                ))}
+                {(!insights?.strengths || insights.strengths.length === 0) && (
+                  <p className="text-xs text-slate-400">No strengths logged.</p>
+                )}
+              </ul>
+            )}
           </div>
 
           {/* 5. Potential Concerns (Red Flags) */}
           <div className="bg-white border border-[#e8e8ed] rounded-2xl p-5 shadow-sm">
             <h3 className="text-xs font-bold text-rose-700 uppercase tracking-wider mb-3.5 flex items-center gap-1.5">
-              <span>🔴</span> Potential Concerns / Improvement Areas
+              Potential Concerns / Improvement Areas
             </h3>
-            <ul className="space-y-2.5">
-              {(resume.feedback?.recruiterFeedback?.redFlags?.length > 0
-                ? resume.feedback.recruiterFeedback.redFlags
-                : resume.feedback?.improvements || []
-              ).map((concern, idx) => (
-                <li key={idx} className="flex items-start gap-2 text-xs text-slate-700 leading-relaxed">
-                  <span className="text-rose-500 font-bold shrink-0 mt-0.5">⚠</span>
-                  <span>{concern}</span>
-                </li>
-              ))}
-              {(resume.feedback?.recruiterFeedback?.redFlags?.length === 0 && (!resume.feedback?.improvements || resume.feedback.improvements.length === 0)) && (
-                <p className="text-xs text-slate-400">No red flags or concerns reported.</p>
-              )}
-            </ul>
+            {loadingInsights ? (
+              <div className="space-y-2">
+                <div className="h-3 bg-slate-100 rounded animate-pulse w-3/4" />
+                <div className="h-3 bg-slate-100 rounded animate-pulse w-5/6" />
+              </div>
+            ) : (
+              <ul className="space-y-2.5">
+                {(insights?.concerns?.length > 0
+                  ? insights.concerns
+                  : []
+                ).map((concern, idx) => (
+                  <li key={idx} className="flex items-start gap-2 text-xs text-slate-700 leading-relaxed">
+                    <span className="text-rose-500 font-bold shrink-0 mt-0.5">⚠</span>
+                    <span>{concern}</span>
+                  </li>
+                ))}
+                {(!insights?.concerns || insights.concerns.length === 0) && (
+                  <p className="text-xs text-slate-400">No red flags or concerns reported.</p>
+                )}
+              </ul>
+            )}
           </div>
 
           {/* 6. Skill Match Breakdown */}
           <div className="bg-white border border-[#e8e8ed] rounded-2xl p-5 shadow-sm">
             <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-1.5">
-              <span>🛠️</span> Skill Fit Diagnostic
+              Skill Fit Diagnostic
             </h3>
             
             <div className="space-y-4">
@@ -412,6 +590,101 @@ export default function RecruiterResumeView({ resume, onClose }) {
 
         </div>
       </div>
+
+      {showInviteModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-[#d2d2d7] overflow-hidden flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-start">
+              <div>
+                <h2 className="text-xl font-bold text-[#1d1d1f] tracking-tight">Invite Candidate</h2>
+                <p className="text-xs text-[#6e6e73] mt-0.5">Send a real interview invitation directly to this candidate's email inbox.</p>
+              </div>
+              <button 
+                onClick={() => setShowInviteModal(false)}
+                className="text-[#86868b] hover:text-[#1d1d1f] text-xl font-bold focus:outline-none"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSendInvite} className="flex flex-col gap-3">
+              <div>
+                <label className="text-xs font-semibold text-[#6e6e73] mb-1 block">Recruiter Name</label>
+                <input
+                  type="text"
+                  required
+                  value={userRecord ? `${userRecord.firstName} ${userRecord.lastName}` : ''}
+                  disabled
+                  className="w-full bg-[#f5f5f7] border border-[#d2d2d7] rounded-xl px-4 py-2.5 text-sm text-[#86868b] focus:outline-none cursor-not-allowed"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-[#6e6e73] mb-1 block">Candidate</label>
+                <input
+                  type="text"
+                  disabled
+                  value={student ? `${student.firstName} ${student.lastName} <${student.email}>` : ''}
+                  className="w-full bg-[#f5f5f7] border border-[#d2d2d7] rounded-xl px-4 py-2.5 text-sm text-[#86868b] focus:outline-none cursor-not-allowed"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-[#6e6e73] mb-1 block">Role Name</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Frontend Developer"
+                    value={roleName}
+                    onChange={(e) => setRoleName(e.target.value)}
+                    className="w-full bg-white border border-[#d2d2d7] rounded-xl px-4 py-2.5 text-sm text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/10 transition"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-[#6e6e73] mb-1 block">Company Name</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Google"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    className="w-full bg-white border border-[#d2d2d7] rounded-xl px-4 py-2.5 text-sm text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/10 transition"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-[#6e6e73] mb-1 block">Custom Message</label>
+                <textarea
+                  required
+                  rows={5}
+                  value={customMessage}
+                  onChange={(e) => setCustomMessage(e.target.value)}
+                  className="w-full bg-white border border-[#d2d2d7] rounded-xl px-4 py-3 text-sm text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/10 transition resize-none leading-relaxed"
+                />
+              </div>
+
+              <div className="flex gap-2.5 justify-end mt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowInviteModal(false)}
+                  className={`${secondaryBtn} px-5 py-2`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={sendingInvite}
+                  className={`${primaryBtn} px-6 py-2 bg-[#0066cc]`}
+                >
+                  {sendingInvite ? 'Sending...' : 'Send Invitation'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

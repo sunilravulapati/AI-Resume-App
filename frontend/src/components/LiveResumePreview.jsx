@@ -1,6 +1,17 @@
 import React, { memo } from 'react';
 
-// a live careerzenith-style resume preview component for the editing resumes
+const PAGE = {
+  fontFamily: '"Helvetica", "Arial", sans-serif',
+  fontSize: '9px',
+  lineHeight: 1.32,
+  padding: '36px 44px',
+  color: '#1e1e1e',
+};
+
+const SECTION_GAP = '14px';
+const ENTRY_GAP = '10px';
+const BULLET_GAP = '3px';
+
 const LiveResumePreview = memo(({ formData, user, template = 'jake-ryan' }) => {
   if (!formData || Object.keys(formData).length === 0) {
     return (
@@ -12,6 +23,7 @@ const LiveResumePreview = memo(({ formData, user, template = 'jake-ryan' }) => {
     );
   }
 
+  const basics = formData.basics || {};
   const summary    = formData.summary ?? '';
   const skills     = formData.skills  ?? [];
   const experience = formData.experience ?? [];
@@ -23,60 +35,54 @@ const LiveResumePreview = memo(({ formData, user, template = 'jake-ryan' }) => {
   const certs      = formData.certifications ?? formData.certs ?? [];
   const extracurricular = formData.extracurriculars ?? formData.extracurricular ?? [];
 
-  const name    = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '';
-  const email   = user?.email   ?? '';
-  const mobile  = user?.mobile  ?? '';
-  const contact = [mobile, email].filter(Boolean).join('  ·  ');
+  const name = basics.name || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '') || 'Your Name';
+  const email = basics.email || user?.email || '';
+  const phone = basics.phone || user?.mobile || '';
+  const tagline = basics.tagline || '';
+  const contactParts = [phone, email, basics.location].filter(Boolean);
 
   return (
-    <div
-      className="preview-page"
-      style={{
-        fontFamily: '"Georgia", "Times New Roman", serif',
-        fontSize: '10.5px',
-        lineHeight: 1.45,
-        padding: '32px 36px',
-        color: '#111',
-      }}
-    >
-      {/* ── Contact Header ── */}
-      <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+    <div className="preview-page" style={PAGE}>
+      {/* ── Header ── */}
+      <div style={{ textAlign: 'center', marginBottom: '12px' }}>
         <h1 style={{
-          fontSize: '20px',
+          fontSize: '17px',
           fontWeight: '700',
-          margin: '0 0 3px',
-          fontFamily: '"Arial", "Helvetica", sans-serif',
-          letterSpacing: '0.03em',
-          color: '#0F172A',
+          margin: '0 0 6px',
+          letterSpacing: '0.04em',
+          color: '#0f0f0f',
         }}>
-          {name || 'Your Name'}
+          {name}
         </h1>
-        {contact && (
-          <p style={{ fontSize: '9.5px', color: '#555', margin: 0, letterSpacing: '0.01em' }}>
-            {contact}
+        {tagline && (
+          <p style={{ fontSize: '8.5px', color: '#444', margin: '0 0 6px', lineHeight: 1.35 }}>{tagline}</p>
+        )}
+        {contactParts.length > 0 && (
+          <p style={{ fontSize: '8.2px', color: '#555', margin: 0, lineHeight: 1.4 }}>
+            {contactParts.join('  |  ')}
           </p>
         )}
       </div>
 
-      <hr style={{ border: 'none', borderTop: '1.5px solid #0F172A', margin: '8px 0' }} />
-
       {/* ── Summary ── */}
       {summary && (
-        <PreviewSection title="Summary">
-          <p style={{ margin: 0, fontSize: '10px', lineHeight: 1.55, color: '#1e293b' }}>{summary}</p>
+        <PreviewSection title="Professional Summary">
+          <p style={{ margin: 0, fontSize: '8.4px', lineHeight: 1.32, color: '#1e1e1e' }}>{summary}</p>
         </PreviewSection>
       )}
 
-      {/* ── Technical Skills ── */}
+      {/* ── Skills ── */}
       {skills.length > 0 && (
-        <PreviewSection title="Technical Skills">
+        <PreviewSection title="Skills">
           {skills.map((row, i) => (
             row.label || row.value ? (
-              <div key={i} style={{ display: 'flex', gap: '6px', marginBottom: '2px' }}>
-                <span style={{ fontWeight: '700', fontSize: '10px', minWidth: '90px', flexShrink: 0, fontFamily: '"Arial", sans-serif' }}>
-                  {row.label}{row.label ? ':' : ''}
-                </span>
-                <span style={{ fontSize: '10px', color: '#334155' }}>{row.value}</span>
+              <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '4px', padding: '2px 0' }}>
+                {row.label && (
+                  <span style={{ fontWeight: '700', fontSize: '8.2px', minWidth: '88px', flexShrink: 0 }}>
+                    {row.label}:
+                  </span>
+                )}
+                <span style={{ fontSize: '8.2px', color: '#1e1e1e', lineHeight: 1.32 }}>{row.value}</span>
               </div>
             ) : null
           ))}
@@ -87,30 +93,25 @@ const LiveResumePreview = memo(({ formData, user, template = 'jake-ryan' }) => {
       {experience.length > 0 && (
         <PreviewSection title="Experience">
           {experience.map((exp, i) => (
-            <div key={i} style={{ marginBottom: '9px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px', flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
-                  <span style={{ fontWeight: '700', fontSize: '11px', fontFamily: '"Arial", sans-serif', color: '#0F172A' }}>
-                    {exp.title || 'Role'}
-                  </span>
-                  {exp.company && exp.company !== exp.title && (
-                    <span style={{ fontSize: '10px', color: '#64748B' }}>— {exp.company}</span>
-                  )}
-                </div>
-                <span style={{ fontSize: '9.5px', color: '#64748B', flexShrink: 0, fontFamily: '"Arial", sans-serif' }}>
+            <div key={i} style={{ marginBottom: ENTRY_GAP }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '10px', marginBottom: '2px' }}>
+                <span style={{ fontWeight: '700', fontSize: '8.7px', color: '#0f0f0f', flex: 1 }}>
+                  {exp.company || exp.title || 'Role'}
+                </span>
+                <span style={{ fontSize: '7.8px', fontStyle: 'italic', color: '#444', flexShrink: 0 }}>
                   {exp.dates || exp.meta || ''}
                 </span>
               </div>
-              {exp.tech && (
-                <p style={{ fontSize: '9.5px', fontStyle: 'italic', color: '#64748B', margin: '1px 0 3px' }}>
-                  {exp.tech}
+              {(exp.title && exp.company) || exp.tech ? (
+                <p style={{ fontSize: '8px', fontStyle: 'italic', color: '#555', margin: '0 0 4px' }}>
+                  {[exp.title && exp.company ? exp.title : '', exp.tech].filter(Boolean).join(' · ')}
                 </p>
-              )}
+              ) : null}
               {(exp.bullets || []).map((bullet, j) => (
                 bullet ? (
-                  <div key={j} style={{ display: 'flex', gap: '6px', marginBottom: '2px' }}>
-                    <span style={{ flexShrink: 0, marginTop: '1px', color: '#475569' }}>•</span>
-                    <span style={{ fontSize: '10px', lineHeight: 1.5, color: '#1e293b' }}>{bullet}</span>
+                  <div key={j} style={{ display: 'flex', gap: '8px', marginBottom: BULLET_GAP, paddingLeft: '4px' }}>
+                    <span style={{ flexShrink: 0, color: '#444' }}>–</span>
+                    <span style={{ fontSize: '8.4px', lineHeight: 1.32, color: '#1e1e1e' }}>{bullet}</span>
                   </div>
                 ) : null
               ))}
@@ -123,27 +124,23 @@ const LiveResumePreview = memo(({ formData, user, template = 'jake-ryan' }) => {
       {projects.length > 0 && (
         <PreviewSection title="Projects">
           {projects.map((proj, i) => (
-            <div key={i} style={{ marginBottom: '9px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px', flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
-                  <span style={{ fontWeight: '700', fontSize: '11px', fontFamily: '"Arial", sans-serif', color: '#0F172A' }}>
-                    {proj.title || 'Project'}
-                  </span>
-                </div>
-                <span style={{ fontSize: '9.5px', color: '#64748B', flexShrink: 0, fontFamily: '"Arial", sans-serif' }}>
+            <div key={i} style={{ marginBottom: ENTRY_GAP }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '10px', marginBottom: '2px' }}>
+                <span style={{ fontWeight: '700', fontSize: '8.7px', color: '#0f0f0f', flex: 1 }}>
+                  {proj.title || 'Project'}
+                </span>
+                <span style={{ fontSize: '7.8px', fontStyle: 'italic', color: '#444', flexShrink: 0 }}>
                   {proj.dates || proj.meta || ''}
                 </span>
               </div>
               {proj.tech && (
-                <p style={{ fontSize: '9.5px', fontStyle: 'italic', color: '#64748B', margin: '1px 0 3px' }}>
-                  {proj.tech}
-                </p>
+                <p style={{ fontSize: '8px', fontStyle: 'italic', color: '#555', margin: '0 0 4px' }}>{proj.tech}</p>
               )}
               {(proj.bullets || []).map((bullet, j) => (
                 bullet ? (
-                  <div key={j} style={{ display: 'flex', gap: '6px', marginBottom: '2px' }}>
-                    <span style={{ flexShrink: 0, marginTop: '1px', color: '#475569' }}>•</span>
-                    <span style={{ fontSize: '10px', lineHeight: 1.5, color: '#1e293b' }}>{bullet}</span>
+                  <div key={j} style={{ display: 'flex', gap: '8px', marginBottom: BULLET_GAP, paddingLeft: '4px' }}>
+                    <span style={{ flexShrink: 0, color: '#444' }}>–</span>
+                    <span style={{ fontSize: '8.4px', lineHeight: 1.32, color: '#1e1e1e' }}>{bullet}</span>
                   </div>
                 ) : null
               ))}
@@ -156,18 +153,12 @@ const LiveResumePreview = memo(({ formData, user, template = 'jake-ryan' }) => {
       {education.length > 0 && (
         <PreviewSection title="Education">
           {education.map((edu, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '10px', marginBottom: '6px' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ fontWeight: '700', fontSize: '11px', fontFamily: '"Arial", sans-serif', color: '#0F172A' }}>
-                  {edu.institution}
-                </span>
-                {edu.degree && (
-                  <span style={{ fontSize: '10px', color: '#64748B' }}> — {edu.degree}</span>
-                )}
+                <span style={{ fontWeight: '700', fontSize: '8.7px', color: '#0f0f0f' }}>{edu.institution}</span>
+                {edu.degree && <span style={{ fontSize: '8.2px', fontStyle: 'italic', color: '#555' }}> — {edu.degree}</span>}
               </div>
-              <span style={{ fontSize: '9.5px', color: '#64748B', flexShrink: 0, fontFamily: '"Arial", sans-serif' }}>
-                {edu.dates || ''}
-              </span>
+              <span style={{ fontSize: '8px', fontStyle: 'italic', color: '#444', flexShrink: 0 }}>{edu.dates || ''}</span>
             </div>
           ))}
         </PreviewSection>
@@ -177,42 +168,22 @@ const LiveResumePreview = memo(({ formData, user, template = 'jake-ryan' }) => {
       {(awards.length > 0 || achievements.length > 0) && (
         <PreviewSection title="Awards & Achievements">
           {awards.map((award, i) => (
-            <div key={`award-${i}`} style={{ marginBottom: '9px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px', flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
-                  <span style={{ fontWeight: '700', fontSize: '11px', fontFamily: '"Arial", sans-serif', color: '#0F172A' }}>
-                    {award.title}
-                  </span>
-                  {award.org && (
-                    <span style={{ fontSize: '10px', color: '#64748B' }}>— {award.org}</span>
-                  )}
-                </div>
-                {award.date && (
-                  <span style={{ fontSize: '9.5px', color: '#64748B', flexShrink: 0, fontFamily: '"Arial", sans-serif' }}>
-                    {award.date}
-                  </span>
-                )}
+            <div key={`award-${i}`} style={{ marginBottom: ENTRY_GAP }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+                <span style={{ fontWeight: '700', fontSize: '8.7px' }}>{award.title}</span>
+                {award.date && <span style={{ fontSize: '8px', fontStyle: 'italic', color: '#444' }}>{award.date}</span>}
               </div>
-              {award.desc && (
-                <p style={{ fontSize: '9.5px', color: '#64748B', margin: '1px 0 3px' }}>
-                  {award.desc}
-                </p>
-              )}
+              {award.org && <p style={{ fontSize: '8px', color: '#555', margin: '2px 0 0' }}>{award.org}</p>}
             </div>
           ))}
-
           {achievements.map((ach, i) => (
-            <div key={`ach-${i}`} style={{ marginBottom: '9px' }}>
-              {ach.category && (
-                <div style={{ fontWeight: '700', fontSize: '10px', fontFamily: '"Arial", sans-serif', color: '#0F172A', marginBottom: '2px' }}>
-                  {ach.category}
-                </div>
-              )}
+            <div key={`ach-${i}`} style={{ marginBottom: ENTRY_GAP }}>
+              {ach.category && <div style={{ fontWeight: '700', fontSize: '8.7px', marginBottom: '3px' }}>{ach.category}</div>}
               {(ach.bullets || []).map((bullet, j) => (
                 bullet ? (
-                  <div key={j} style={{ display: 'flex', gap: '6px', marginBottom: '2px' }}>
-                    <span style={{ flexShrink: 0, marginTop: '1px', color: '#475569' }}>•</span>
-                    <span style={{ fontSize: '10px', lineHeight: 1.5, color: '#1e293b' }}>{bullet}</span>
+                  <div key={j} style={{ display: 'flex', gap: '8px', marginBottom: BULLET_GAP, paddingLeft: '4px' }}>
+                    <span style={{ flexShrink: 0, color: '#444' }}>–</span>
+                    <span style={{ fontSize: '8.4px', lineHeight: 1.32 }}>{bullet}</span>
                   </div>
                 ) : null
               ))}
@@ -221,80 +192,47 @@ const LiveResumePreview = memo(({ formData, user, template = 'jake-ryan' }) => {
         </PreviewSection>
       )}
 
-      {/* ── DSA Proficiency ── */}
       {dsaLines.length > 0 && (
         <PreviewSection title="DSA Proficiency">
-          {dsaLines.map((line, i) => (
-            line ? (
-              <div key={i} style={{ display: 'flex', gap: '6px', marginBottom: '2px' }}>
-                <span style={{ flexShrink: 0, marginTop: '1px', color: '#475569' }}>•</span>
-                <span style={{ fontSize: '10px', lineHeight: 1.5, color: '#1e293b' }}>{line}</span>
-              </div>
-            ) : null
-          ))}
+          {dsaLines.map((line, i) => line ? (
+            <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: BULLET_GAP, paddingLeft: '4px' }}>
+              <span style={{ flexShrink: 0, color: '#444' }}>–</span>
+              <span style={{ fontSize: '8.4px', lineHeight: 1.32 }}>{line}</span>
+            </div>
+          ) : null)}
         </PreviewSection>
       )}
 
-      {/* ── Certifications ── */}
       {certs.length > 0 && (
         <PreviewSection title="Certifications">
           {certs.map((cert, i) => (
-            <div key={i} style={{ marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8px' }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ fontWeight: '700', fontSize: '11px', fontFamily: '"Arial", sans-serif', color: '#0F172A' }}>
-                  {cert.title}
-                </span>
-                {cert.org && (
-                  <span style={{ fontSize: '10px', color: '#64748B' }}> — {cert.org}</span>
-                )}
-                {cert.url && (
-                  <span style={{ fontSize: '10px', color: '#3b82f6', marginLeft: '5px' }}>
-                    <a href={cert.url.startsWith('http') ? cert.url : `https://${cert.url}`} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>
-                      [Link]
-                    </a>
-                  </span>
-                )}
+            <div key={i} style={{ marginBottom: '6px', display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+              <div>
+                <span style={{ fontWeight: '700', fontSize: '8.7px' }}>{cert.title}</span>
+                {cert.org && <span style={{ fontSize: '8px', fontStyle: 'italic', color: '#555' }}> — {cert.org}</span>}
               </div>
-              {cert.dates && (
-                <span style={{ fontSize: '9.5px', color: '#64748B', flexShrink: 0, fontFamily: '"Arial", sans-serif' }}>
-                  {cert.dates}
-                </span>
-              )}
+              {cert.dates && <span style={{ fontSize: '8px', fontStyle: 'italic', color: '#444' }}>{cert.dates}</span>}
             </div>
           ))}
         </PreviewSection>
       )}
 
-      {/* ── Extracurricular Activities ── */}
       {extracurricular.length > 0 && (
         <PreviewSection title="Extracurricular Activities">
           {extracurricular.map((item, i) => (
-            <div key={i} style={{ marginBottom: '9px' }}>
-              {item.title && (
-                <div style={{ fontWeight: '700', fontSize: '10px', fontFamily: '"Arial", sans-serif', color: '#0F172A', marginBottom: '2px' }}>
-                  {item.title}
-                </div>
-              )}
+            <div key={i} style={{ marginBottom: ENTRY_GAP }}>
+              {item.title && <div style={{ fontWeight: '700', fontSize: '8.7px', marginBottom: '3px' }}>{item.title}</div>}
               {(item.bullets || []).map((bullet, j) => (
                 bullet ? (
-                  <div key={j} style={{ display: 'flex', gap: '6px', marginBottom: '2px' }}>
-                    <span style={{ flexShrink: 0, marginTop: '1px', color: '#475569' }}>•</span>
-                    <span style={{ fontSize: '10px', lineHeight: 1.5, color: '#1e293b' }}>{bullet}</span>
+                  <div key={j} style={{ display: 'flex', gap: '8px', marginBottom: BULLET_GAP, paddingLeft: '4px' }}>
+                    <span style={{ flexShrink: 0, color: '#444' }}>–</span>
+                    <span style={{ fontSize: '8.4px', lineHeight: 1.32 }}>{bullet}</span>
                   </div>
                 ) : null
               ))}
             </div>
           ))}
         </PreviewSection>
-      )}
-
-      {/* ── Empty state ── */}
-      {!summary && skills.length === 0 && experience.length === 0 && projects.length === 0 && education.length === 0 && awards.length === 0 && achievements.length === 0 && dsaLines.length === 0 && certs.length === 0 && extracurricular.length === 0 && (
-        <div style={{ padding: '48px 0', textAlign: 'center' }}>
-          <p style={{ fontSize: '12px', color: '#94A3B8', fontFamily: 'Inter, sans-serif' }}>
-            Your edited content will appear here in real time
-          </p>
-        </div>
       )}
     </div>
   );
@@ -302,20 +240,17 @@ const LiveResumePreview = memo(({ formData, user, template = 'jake-ryan' }) => {
 
 LiveResumePreview.displayName = 'LiveResumePreview';
 
-/** Section wrapper — Jake Ryan style heading */
 function PreviewSection({ title, children }) {
   return (
-    <div style={{ marginBottom: '10px' }}>
+    <div style={{ marginBottom: SECTION_GAP }}>
       <div style={{
-        fontSize: '11px',
+        fontSize: '9px',
         fontWeight: '700',
-        textTransform: 'uppercase',
-        letterSpacing: '0.07em',
-        borderBottom: '1.5px solid #0F172A',
-        paddingBottom: '1px',
-        marginBottom: '5px',
-        fontFamily: '"Arial", "Helvetica", sans-serif',
-        color: '#0F172A',
+        letterSpacing: '0.03em',
+        borderBottom: '0.5px solid #1a1a1a',
+        paddingBottom: '3px',
+        marginBottom: '6px',
+        color: '#0f0f0f',
       }}>
         {title}
       </div>

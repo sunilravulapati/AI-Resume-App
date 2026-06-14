@@ -533,6 +533,75 @@ ${JSON.stringify(candidatesData, null, 2)}
   }
 }
 
+// Recruiter Feature: AI-powered single candidate insights generated on-demand.
+export async function generateSingleCandidateInsights(resumeText, roleName, requiredSkills, preferredSkills, experienceLevel) {
+  const isTargeted = !!roleName;
+
+  const systemPrompt = `
+You are a senior technical recruiter evaluating a candidate's resume.
+Analyze the resume text and generate:
+1. summary: A 1-2 sentence professional assessment of the candidate.
+2. whyMatches: Exactly 3 short, concrete bullet points explaining why this candidate matches the role or what makes them a strong general candidate. Do NOT include the "✓" symbol or any bullet symbols, just plain text.
+3. strengths: Exactly 3 key technical strengths or achievements found in their resume.
+4. concerns: Exactly 3 potential improvement areas or red flags (e.g., missing specific tech stack, lack of metrics, tutorial-only projects).
+
+${isTargeted ? `
+Hiring Requirements:
+- Role Name: ${roleName}
+- Required Skills: ${requiredSkills.join(", ")}
+- Preferred Skills: ${preferredSkills.join(", ")}
+- Experience Level: ${experienceLevel}
+` : "General evaluation (no specific target role requirements)."}
+
+Return STRICTLY a JSON object with this exact shape:
+{
+  "summary": "...",
+  "whyMatches": [
+    "...",
+    "...",
+    "..."
+  ],
+  "strengths": [
+    "...",
+    "...",
+    "..."
+  ],
+  "concerns": [
+    "...",
+    "...",
+    "..."
+  ]
+}
+`.trim();
+
+  const userPrompt = `Resume Text:\n\n${resumeText.slice(0, 4000)}`;
+
+  const raw = await callGroq(
+    [
+      { role: "system", content: systemPrompt },
+      { role: "user",   content: userPrompt   },
+    ],
+    { temperature: 0.2, jsonMode: true, maxRetries: 2 }
+  );
+
+  try {
+    return parseJSONRobust(raw);
+  } catch (err) {
+    console.error("Failed to parse generateSingleCandidateInsights response, trying repair:", err);
+    try {
+      return await repairJSON(raw);
+    } catch (repErr) {
+      console.error("JSON repair failed too:", repErr);
+      return {
+        summary: "Could not generate insights.",
+        whyMatches: ["No match information available."],
+        strengths: ["No strengths available."],
+        concerns: ["No concerns available."]
+      };
+    }
+  }
+}
+
 // ENHANCE TEXT INLINE (AI prompt -> specific bullet/section improvement)
 export async function enhanceTextWithAI(text, action, context = "") {
   let instruction = "";

@@ -22,87 +22,68 @@ const F = {
   boldIt: 'Helvetica-BoldOblique',
 };
 
-// FIX v2: Tighter spacing throughout to recover ~40pt of vertical space,
-// which is needed to fit DSA Proficiency, Certifications, and all 4 Awards
-// that were previously missing or truncated.
-//
-// Key changes vs original:
-//   page:         paddingTop 16→12, paddingBottom 14→10, paddingHorizontal 18→16
-//   sectionTitle: fontSize 7.4→7.2, marginBottom 2→1.5
-//   entryWrap:    marginBottom 2→1.5
-//   bullet:       marginBottom 0.5→0.3
-//   bulletText:   fontSize 7.8→7.6, lineHeight 1.27→1.2
-//   skillRow:     paddingVertical 0.4→0.3
-//   skillLabel:   fontSize 7.6→7.4, width 118→110
-//   skillValue:   fontSize 7.6→7.4
-//   section:      marginBottom 3→2
-//   eduRow:       marginBottom 1→0.5
-//   awardRow:     marginBottom 2→1.5
-//   certRow:      marginBottom 2→1.5
-//   contactRow:   gap 4→3, fontSize 7.6→7.4
-//   entryDate:    fontSize 7.2→7.0
-//   entryMeta:    fontSize 7.4→7.2
-//   entryTech:    fontSize 7.4→7.2
+// Spacing tuned for readability — generous margins with a lighter dense fallback
+// only when the resume has many sections.
 const s = StyleSheet.create({
   // ── Page ──────────────────────────────────────────────────────────────────
   page: {
-    paddingTop:        24,
-    paddingBottom:     24,
-    paddingHorizontal: 28,
+    paddingTop:        36,
+    paddingBottom:     32,
+    paddingHorizontal: 44,
     fontFamily:        F.roman,
-    fontSize:          8.7,
+    fontSize:          9,
     color:             C.body,
-    lineHeight:        1.22,
+    lineHeight:        1.32,
   },
 
   // ── Header ────────────────────────────────────────────────────────────────
-  header: { width: '100%', marginBottom: 4 },
+  header: { width: '100%', marginBottom: 10 },
   name: {
-    fontSize:     16,
+    fontSize:     17,
     fontFamily:   F.bold,
     letterSpacing: 0.5,
     color:        C.ink,
     textAlign:    'center',
-    marginBottom: 3,
+    marginBottom: 6,
   },
-  taglineWrap: { width: '100%', marginBottom: 3, paddingHorizontal: 8 },
+  taglineWrap: { width: '100%', marginBottom: 6, paddingHorizontal: 8 },
   tagline: {
-    fontSize:   8.0,
+    fontSize:   8.5,
     color:      C.mid,
     textAlign:  'center',
-    lineHeight: 1.25,
+    lineHeight: 1.35,
   },
   contactRow: {
     flexDirection:  'row',
     flexWrap:       'wrap',
     justifyContent: 'center',
-    gap:            4,
-    fontSize:       8.0,
+    gap:            6,
+    fontSize:       8.2,
     color:          C.mid,
   },
   link: { color: C.accent, textDecoration: 'none' },
   sep:  { color: '#cccccc' },
 
   // ── Section wrapper ───────────────────────────────────────────────────────
-  section: { marginBottom: 4 },
+  section: { marginBottom: 10 },
 
   // ── Section title ─────────────────────────────────────────────────────────
   sectionTitle: {
-    fontSize:          8.7,
+    fontSize:          9,
     fontFamily:        F.bold,
     letterSpacing:     0.3,
     color:             C.ink,
     borderBottomWidth: 0.5,
     borderBottomColor: C.rule,
-    paddingBottom:     1.5,
-    marginBottom:      3,
+    paddingBottom:     3,
+    marginBottom:      6,
   },
 
   // ── Skills ────────────────────────────────────────────────────────────────
   skillRow: {
     flexDirection:  'row',
-    paddingVertical:   0.5,
-    paddingHorizontal: 3,
+    paddingVertical:   1.2,
+    paddingHorizontal: 4,
     marginBottom:   0,
   },
   skillRowShaded: { backgroundColor: C.shade },
@@ -110,14 +91,14 @@ const s = StyleSheet.create({
   skillValue: { flex: 1, fontSize: 8.2, color: C.body },
 
   // ── Experience entry ──────────────────────────────────────────────────────
-  entryWrap: { marginBottom: 3 },
+  entryWrap: { marginBottom: 7 },
 
   // Top row
   entryTopRow: {
     flexDirection:  'row',
     justifyContent: 'space-between',
     alignItems:     'baseline',
-    marginBottom:   1,
+    marginBottom:   2,
   },
   entryTitle: {
     fontSize:   8.7,
@@ -135,7 +116,7 @@ const s = StyleSheet.create({
   // Sub row
   entrySubRow: {
     flexDirection: 'row',
-    marginBottom:  2,
+    marginBottom:  3,
   },
   entryMeta: {
     fontSize:   8.0,
@@ -149,12 +130,12 @@ const s = StyleSheet.create({
   },
 
   // Bullets
-  bullet:    { flexDirection: 'row', marginBottom: 0.8, paddingLeft: 6 },
-  bulletDot: { width: 8, fontSize: 8.2, color: C.mid },
-  bulletText: { flex: 1, fontSize: 8.2, color: C.body, lineHeight: 1.25 },
+  bullet:    { flexDirection: 'row', marginBottom: 1.5, paddingLeft: 8 },
+  bulletDot: { width: 10, fontSize: 8.4, color: C.mid },
+  bulletText: { flex: 1, fontSize: 8.4, color: C.body, lineHeight: 1.32 },
 
   // ── Education ─────────────────────────────────────────────────────────────
-  eduRow:  { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 1 },
+  eduRow:  { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   eduLeft: { flex: 1 },
   eduInst: { fontSize: 8.7, fontFamily: F.bold, color: C.ink },
   eduDeg:  { fontSize: 8.2, fontFamily: F.italic, color: C.mid },
@@ -162,7 +143,7 @@ const s = StyleSheet.create({
   eduDate: { fontSize: 8.0, fontFamily: F.italic, color: C.mid, textAlign: 'right', minWidth: 72 },
 
   // ── Awards ────────────────────────────────────────────────────────────────
-  awardRow:   { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 },
+  awardRow:   { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   awardLeft:  { flex: 1 },
   awardTitle: { fontSize: 8.7, fontFamily: F.bold, color: C.ink },
   awardMeta:  { fontSize: 8.0, color: C.mid, marginTop: 1 },
@@ -176,7 +157,7 @@ const s = StyleSheet.create({
   extraTitle: { fontSize: 8.7, fontFamily: F.bold, color: C.ink, marginBottom: 2, marginTop: 3 },
 
   // ── Certifications ────────────────────────────────────────────────────────
-  certRow:   { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 },
+  certRow:   { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   certLeft:  { flex: 1 },
   certTitle: { fontSize: 8.7, fontFamily: F.bold, color: C.ink },
   certOrg:   { fontSize: 8.0, fontFamily: F.italic, color: C.mid, marginTop: 1 },
@@ -184,9 +165,9 @@ const s = StyleSheet.create({
   certDate:  { fontSize: 8.0, fontFamily: F.italic, color: C.mid, minWidth: 72, textAlign: 'right' },
 
   // ── DSA / plain ───────────────────────────────────────────────────────────
-  plain: { fontSize: 8.2, color: C.body, lineHeight: 1.25 },
+  plain: { fontSize: 8.4, color: C.body, lineHeight: 1.32 },
 
-  contactWrap: { marginBottom: 3 },
+  contactWrap: { marginBottom: 8 },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -301,37 +282,37 @@ export default function TailoredPDF({ tailoredData, parsedText = '', user, userL
   const hasAwardsSection = awards.length > 0 || achievements.length > 0;
 
   const totalItems = workExps.length + projects.length + education.length + (finalSkillRows.length ? 1 : 0) + (awards.length ? 1 : 0) + (certs.length ? 1 : 0);
-  const dense = workExps.length + projects.length >= 4 || totalItems >= 7;
+  const dense = workExps.length + projects.length >= 6 || totalItems >= 11;
 
-  // Dynamic density adjustments to guarantee 100% stable single-page rendering
-  const pageStyle         = [s.page, dense && { paddingTop: 16, paddingBottom: 16, paddingHorizontal: 22, fontSize: 7.9 }];
-  const sectionStyle      = [s.section, dense && { marginBottom: 3 }];
-  const sectionTitleStyle = [s.sectionTitle, dense && { fontSize: 7.9, letterSpacing: 0.2, paddingBottom: 1.0, marginBottom: 2 }];
-  const skillRowStyle     = [s.skillRow, dense && { paddingVertical: 0.3 }];
-  const skillLabelStyle   = [s.skillLabel, dense && { fontSize: 7.5, width: 100 }];
-  const skillValueStyle   = [s.skillValue, dense && { fontSize: 7.5 }];
-  const entryWrapStyle    = [s.entryWrap, dense && { marginBottom: 2 }];
-  const entryTitleStyle   = [s.entryTitle, dense && { fontSize: 7.9 }];
-  const entryDateStyle    = [s.entryDate, dense && { fontSize: 6.8 }];
-  const entrySubRowStyle  = [s.entrySubRow, dense && { marginBottom: 1 }];
-  const entryMetaStyle    = [s.entryMeta, dense && { fontSize: 7.2 }];
-  const bulletStyle       = [s.bullet, dense && { marginBottom: 0.4 }];
-  const bulletTextStyle   = [s.bulletText, dense && { fontSize: 7.5, lineHeight: 1.15 }];
-  const eduRowStyle       = [s.eduRow, dense && { marginBottom: 0.5 }];
-  const eduInstStyle      = [s.eduInst, dense && { fontSize: 7.9 }];
-  const eduDegStyle       = [s.eduDeg, dense && { fontSize: 7.5 }];
-  const eduDetStyle       = [s.eduDet, dense && { fontSize: 7.2 }];
-  const eduDateStyle      = [s.eduDate, dense && { fontSize: 7.2 }];
-  const awardRowStyle     = [s.awardRow, dense && { marginBottom: 1 }];
-  const awardTitleStyle   = [s.awardTitle, dense && { fontSize: 7.9 }];
-  const awardMetaStyle    = [s.awardMeta, dense && { fontSize: 7.2 }];
-  const awardDescStyle    = [s.awardDesc, dense && { fontSize: 7.5 }];
-  const awardDateStyle    = [s.awardDate, dense && { fontSize: 7.2 }];
-  const certRowStyle      = [s.certRow, dense && { marginBottom: 1 }];
-  const certTitleStyle    = [s.certTitle, dense && { fontSize: 7.9 }];
-  const certOrgStyle      = [s.certOrg, dense && { fontSize: 7.2 }];
-  const certDateStyle     = [s.certDate, dense && { fontSize: 7.2 }];
-  const plainStyle        = [s.plain, dense && { fontSize: 7.5, lineHeight: 1.15 }];
+  // Light density fallback — only trims spacing slightly when content is very long
+  const pageStyle         = [s.page, dense && { paddingTop: 28, paddingBottom: 26, paddingHorizontal: 38, fontSize: 8.6 }];
+  const sectionStyle      = [s.section, dense && { marginBottom: 7 }];
+  const sectionTitleStyle = [s.sectionTitle, dense && { fontSize: 8.6, marginBottom: 4, paddingBottom: 2 }];
+  const skillRowStyle     = [s.skillRow, dense && { paddingVertical: 0.8 }];
+  const skillLabelStyle   = [s.skillLabel, dense && { fontSize: 8.0, width: 104 }];
+  const skillValueStyle   = [s.skillValue, dense && { fontSize: 8.0 }];
+  const entryWrapStyle    = [s.entryWrap, dense && { marginBottom: 5 }];
+  const entryTitleStyle   = [s.entryTitle, dense && { fontSize: 8.5 }];
+  const entryDateStyle    = [s.entryDate, dense && { fontSize: 7.4 }];
+  const entrySubRowStyle  = [s.entrySubRow, dense && { marginBottom: 2 }];
+  const entryMetaStyle    = [s.entryMeta, dense && { fontSize: 7.6 }];
+  const bulletStyle       = [s.bullet, dense && { marginBottom: 1 }];
+  const bulletTextStyle   = [s.bulletText, dense && { fontSize: 8.0, lineHeight: 1.26 }];
+  const eduRowStyle       = [s.eduRow, dense && { marginBottom: 3 }];
+  const eduInstStyle      = [s.eduInst, dense && { fontSize: 8.5 }];
+  const eduDegStyle       = [s.eduDeg, dense && { fontSize: 7.8 }];
+  const eduDetStyle       = [s.eduDet, dense && { fontSize: 7.5 }];
+  const eduDateStyle      = [s.eduDate, dense && { fontSize: 7.5 }];
+  const awardRowStyle     = [s.awardRow, dense && { marginBottom: 3 }];
+  const awardTitleStyle   = [s.awardTitle, dense && { fontSize: 8.5 }];
+  const awardMetaStyle    = [s.awardMeta, dense && { fontSize: 7.5 }];
+  const awardDescStyle    = [s.awardDesc, dense && { fontSize: 8.0 }];
+  const awardDateStyle    = [s.awardDate, dense && { fontSize: 7.5 }];
+  const certRowStyle      = [s.certRow, dense && { marginBottom: 3 }];
+  const certTitleStyle    = [s.certTitle, dense && { fontSize: 8.5 }];
+  const certOrgStyle      = [s.certOrg, dense && { fontSize: 7.5 }];
+  const certDateStyle     = [s.certDate, dense && { fontSize: 7.5 }];
+  const plainStyle        = [s.plain, dense && { fontSize: 8.0, lineHeight: 1.26 }];
 
   const renderLink = (href, label) => (
     <Link src={href.startsWith('http') ? href : `https://${href}`} style={s.link}>
