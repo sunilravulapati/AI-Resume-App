@@ -103,7 +103,6 @@ function Register() {
                 <option value="">Select your role…</option>
                 <option value="student">Student / Job Seeker</option>
                 <option value="recruiter">Recruiter / Hiring Manager</option>
-                <option value="faculty">Faculty</option>
               </select>
               {errors.role && <p className="text-[#ff3b30] text-xs mt-1 ml-1">{errors.role.message}</p>}
             </div>
