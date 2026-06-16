@@ -72,8 +72,8 @@
   white-space: nowrap;
 }
 .btn-primary:hover {
-  background: #1A5CFF;
-  border-color: #1A5CFF;
+  background: var(--color-accent);
+  border-color: var(--color-accent);
   transform: translateY(-1px);
 }
 
@@ -191,7 +191,7 @@
 .marquee-dot {
   width: 4px; height: 4px;
   border-radius: 50%;
-  background: #1A5CFF;
+  background: var(--color-accent);
   flex-shrink: 0;
 }
 
@@ -201,7 +201,7 @@
   font-weight: 700;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: #1A5CFF;
+  color: var(--color-accent);
   margin-bottom: 12px;
 }
 .section-title {
@@ -283,7 +283,7 @@
   border-radius: 99px;
   border: 1px solid;
 }
-.mode-tag.general { color: #1A5CFF; border-color: rgba(26,92,255,0.25); background: rgba(26,92,255,0.06); }
+.mode-tag.general { color: var(--color-accent); border-color: var(--color-accent-soft); background: var(--color-accent-soft); }
 .mode-tag.targeted { color: #86EFAC; border-color: rgba(134,239,172,0.25); background: rgba(134,239,172,0.08); }
 
 .new-badge {
@@ -291,7 +291,7 @@
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  background: #1A5CFF;
+  background: var(--color-accent);
   color: #fff;
   padding: 3px 8px;
   border-radius: 99px;
@@ -320,7 +320,7 @@
   flex-shrink: 0;
   font-weight: 900;
 }
-.check-icon.blue { background: rgba(26,92,255,0.1); color: #1A5CFF; }
+.check-icon.blue { background: var(--color-accent-soft); color: var(--color-accent); }
 .check-icon.green { background: rgba(134,239,172,0.15); color: #86EFAC; }
 
 /* ── Export cards ── */
